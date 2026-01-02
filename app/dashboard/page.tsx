@@ -170,13 +170,25 @@ export default function DashboardPage() {
       const initStore = async () => {
         try {
           console.log("🔄 Inicializando store de citas...")
+          
+          // Llamar al health check que inicializa automáticamente la BD
+          try {
+            await fetch("/api/health").catch(() => {
+              // Ignorar errores del health check, no es crítico
+            })
+          } catch {
+            // Ignorar
+          }
+          
           await appointmentsStore.init(true) // Forzar recarga
           console.log("✅ Store inicializado")
           
-          // Si hay citas, asumir que la DB está inicializada
+          // Si se cargaron citas o no hubo error, asumir que la DB está inicializada
           const loadedAppointments = appointmentsStore.getAll()
+          setDbInitialized(true) // Marcar como inicializada siempre que no haya error
+          
           if (loadedAppointments.length > 0) {
-            setDbInitialized(true)
+            console.log(`📊 ${loadedAppointments.length} citas cargadas`)
           }
           
           // Forzar actualización después de inicializar

@@ -5,18 +5,37 @@ export const appointmentsPersistence = {
   async load(): Promise<Appointment[]> {
     try {
       console.log("🔄 Cargando citas desde Supabase...")
+      
+      // Intentar cargar citas (esto inicializará automáticamente si las tablas no existen)
       const appointments = await getAllAppointments()
       console.log(`✅ Cargadas ${appointments.length} citas desde Supabase`)
+      
       if (appointments.length > 0) {
         console.log("📋 Primeras citas cargadas:", appointments.slice(0, 3).map(a => ({
           id: a.id,
           name: a.patientName,
           status: a.status
         })))
+      } else {
+        console.log("ℹ️ No hay citas aún. La base de datos está lista para recibir nuevas citas.")
       }
+      
       return appointments
     } catch (error) {
       console.error("❌ Error cargando citas desde DB:", error)
+      // Si es error de tabla no existe, intentar inicializar
+      if (error instanceof Error && (error.message.includes("does not exist") || error.message.includes("relation") || error.message.includes("42P01"))) {
+        console.log("⚠️ Tablas no existen, inicializando automáticamente...")
+        try {
+          const { initializeDatabase } = await import("@/lib/db")
+          await initializeDatabase()
+          console.log("✅ Base de datos inicializada, reintentando carga...")
+          // Reintentar cargar
+          return await getAllAppointments()
+        } catch (initError) {
+          console.error("❌ Error inicializando base de datos:", initError)
+        }
+      }
       return []
     }
   },
