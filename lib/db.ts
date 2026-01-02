@@ -3,17 +3,26 @@ import { neon } from "@neondatabase/serverless"
 // Obtener la conexión SQL solo si POSTGRES_URL está disponible (Supabase)
 export function getDatabaseConnection() {
   // Vercel agrega variables con prefijo "storage_" cuando conectas Supabase desde el dashboard
-  // Buscar primero las variables normales, luego las que tienen prefijo "storage_"
+  // Priorizar NON_POOLING porque puede tener mejor compatibilidad con Vercel
   const dbUrl = 
-    process.env.POSTGRES_URL || 
-    process.env.storage_POSTGRES_URL ||
     process.env.POSTGRES_URL_NON_POOLING || 
-    process.env.storage_POSTGRES_URL_NON_POOLING
+    process.env.storage_POSTGRES_URL_NON_POOLING ||
+    process.env.POSTGRES_URL || 
+    process.env.storage_POSTGRES_URL
   
   if (!dbUrl) {
     return null
   }
-  return neon(dbUrl)
+  
+  // Configurar neon con opciones para mejor compatibilidad en Vercel
+  try {
+    return neon(dbUrl, {
+      fetchConnectionCache: true,
+    })
+  } catch (error) {
+    console.error("Error creando conexión neon:", error)
+    return null
+  }
 }
 
 /**
