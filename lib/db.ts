@@ -84,6 +84,7 @@ export async function initializeDatabase() {
 
 /**
  * Guardar una cita en la base de datos
+ * Inicializa automáticamente las tablas si no existen
  */
 export async function saveAppointment(appointment: any) {
   const sql = getDatabaseConnection()
@@ -94,69 +95,91 @@ export async function saveAppointment(appointment: any) {
   }
   
   try {
-    // Limitar tamaño de receipt_data si es muy grande (PostgreSQL TEXT puede ser muy grande, pero mejor prevenir)
-    let receiptData = appointment.receiptData || null
-    if (receiptData && receiptData.length > 10485760) { // 10MB en caracteres base64
-      console.warn(`Receipt data muy grande (${(receiptData.length / 1024 / 1024).toFixed(2)}MB), truncando`)
-      receiptData = receiptData.substring(0, 10485760)
+    // Intentar guardar primero
+    return await trySaveAppointment(sql, appointment)
+  } catch (error: any) {
+    // Si el error es porque la tabla no existe, inicializar y reintentar
+    if (error?.message?.includes("does not exist") || error?.message?.includes("relation") || error?.code === "42P01") {
+      console.log("Tablas no existen, inicializando automáticamente...")
+      try {
+        await initializeDatabase()
+        console.log("✅ Base de datos inicializada automáticamente")
+        // Reintentar guardar
+        return await trySaveAppointment(sql, appointment)
+      } catch (initError) {
+        console.error("Error inicializando base de datos:", initError)
+        throw initError
+      }
     }
-
-    await sql`
-      INSERT INTO appointments (
-        id, patient_name, patient_email, patient_phone, consultation_reason,
-        appointment_type, date, time, status, created_at, expires_at,
-        receipt_url, receipt_data, receipt_filename, receipt_mimetype,
-        payment_method, payment_id
-      ) VALUES (
-        ${appointment.id},
-        ${appointment.patientName},
-        ${appointment.patientEmail},
-        ${appointment.patientPhone},
-        ${appointment.consultationReason || null},
-        ${appointment.appointmentType},
-        ${appointment.date.toISOString()},
-        ${appointment.time},
-        ${appointment.status},
-        ${appointment.createdAt.toISOString()},
-        ${appointment.expiresAt.toISOString()},
-        ${appointment.receiptUrl || null},
-        ${receiptData},
-        ${appointment.receiptFilename || null},
-        ${appointment.receiptMimetype || null},
-        ${appointment.paymentMethod || null},
-        ${appointment.mercadoPagoPaymentId || null}
-      )
-      ON CONFLICT (id) 
-      DO UPDATE SET
-        patient_name = EXCLUDED.patient_name,
-        patient_email = EXCLUDED.patient_email,
-        patient_phone = EXCLUDED.patient_phone,
-        consultation_reason = EXCLUDED.consultation_reason,
-        appointment_type = EXCLUDED.appointment_type,
-        date = EXCLUDED.date,
-        time = EXCLUDED.time,
-        status = EXCLUDED.status,
-        expires_at = EXCLUDED.expires_at,
-        receipt_url = EXCLUDED.receipt_url,
-        receipt_data = EXCLUDED.receipt_data,
-        receipt_filename = EXCLUDED.receipt_filename,
-        receipt_mimetype = EXCLUDED.receipt_mimetype,
-        payment_method = EXCLUDED.payment_method,
-        payment_id = EXCLUDED.payment_id
-    `
-    return true
-  } catch (error) {
+    // Si es otro error, lanzarlo
     console.error("Error guardando cita:", error)
     if (error instanceof Error) {
       console.error("Error details:", error.message)
-      console.error("Error stack:", error.stack)
     }
-    throw error // Lanzar el error para que se maneje arriba
+    throw error
   }
 }
 
 /**
+ * Intentar guardar una cita (sin inicialización)
+ */
+async function trySaveAppointment(sql: any, appointment: any): Promise<boolean> {
+  // Limitar tamaño de receipt_data si es muy grande
+  let receiptData = appointment.receiptData || null
+  if (receiptData && receiptData.length > 10485760) { // 10MB en caracteres base64
+    console.warn(`Receipt data muy grande (${(receiptData.length / 1024 / 1024).toFixed(2)}MB), truncando`)
+    receiptData = receiptData.substring(0, 10485760)
+  }
+
+  await sql`
+    INSERT INTO appointments (
+      id, patient_name, patient_email, patient_phone, consultation_reason,
+      appointment_type, date, time, status, created_at, expires_at,
+      receipt_url, receipt_data, receipt_filename, receipt_mimetype,
+      payment_method, payment_id
+    ) VALUES (
+      ${appointment.id},
+      ${appointment.patientName},
+      ${appointment.patientEmail},
+      ${appointment.patientPhone},
+      ${appointment.consultationReason || null},
+      ${appointment.appointmentType},
+      ${appointment.date.toISOString()},
+      ${appointment.time},
+      ${appointment.status},
+      ${appointment.createdAt.toISOString()},
+      ${appointment.expiresAt.toISOString()},
+      ${appointment.receiptUrl || null},
+      ${receiptData},
+      ${appointment.receiptFilename || null},
+      ${appointment.receiptMimetype || null},
+      ${appointment.paymentMethod || null},
+      ${appointment.mercadoPagoPaymentId || null}
+    )
+    ON CONFLICT (id) 
+    DO UPDATE SET
+      patient_name = EXCLUDED.patient_name,
+      patient_email = EXCLUDED.patient_email,
+      patient_phone = EXCLUDED.patient_phone,
+      consultation_reason = EXCLUDED.consultation_reason,
+      appointment_type = EXCLUDED.appointment_type,
+      date = EXCLUDED.date,
+      time = EXCLUDED.time,
+      status = EXCLUDED.status,
+      expires_at = EXCLUDED.expires_at,
+      receipt_url = EXCLUDED.receipt_url,
+      receipt_data = EXCLUDED.receipt_data,
+      receipt_filename = EXCLUDED.receipt_filename,
+      receipt_mimetype = EXCLUDED.receipt_mimetype,
+      payment_method = EXCLUDED.payment_method,
+      payment_id = EXCLUDED.payment_id
+  `
+  return true
+}
+
+/**
  * Obtener todas las citas
+ * Inicializa automáticamente las tablas si no existen
  */
 export async function getAllAppointments() {
   const sql = getDatabaseConnection()
@@ -190,7 +213,19 @@ export async function getAllAppointments() {
       paymentMethod: row.payment_method,
       mercadoPagoPaymentId: row.payment_id,
     }))
-  } catch (error) {
+  } catch (error: any) {
+    // Si el error es porque la tabla no existe, inicializar y retornar vacío
+    if (error?.message?.includes("does not exist") || error?.message?.includes("relation") || error?.code === "42P01") {
+      console.log("Tablas no existen, inicializando automáticamente...")
+      try {
+        await initializeDatabase()
+        console.log("✅ Base de datos inicializada automáticamente")
+        return [] // Retornar vacío después de inicializar
+      } catch (initError) {
+        console.error("Error inicializando base de datos:", initError)
+        return []
+      }
+    }
     console.error("Error obteniendo citas:", error)
     return []
   }
