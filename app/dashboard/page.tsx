@@ -344,6 +344,25 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button 
+              onClick={handleToggleNotifications} 
+              variant={notificationsEnabled ? "default" : "outline"}
+              size="sm"
+              className={notificationsEnabled ? "bg-green-600 hover:bg-green-700 text-white" : "text-muted-foreground hover:text-foreground"}
+              title={notificationsEnabled ? "Notificaciones activadas" : "Activar notificaciones"}
+            >
+              {notificationsEnabled ? (
+                <>
+                  <Bell className="w-4 h-4 mr-2" />
+                  Notificaciones ON
+                </>
+              ) : (
+                <>
+                  <BellOff className="w-4 h-4 mr-2" />
+                  Activar Notificaciones
+                </>
+              )}
+            </Button>
+            <Button 
               variant="outline" 
               onClick={handleManualRefresh} 
               className="text-muted-foreground hover:text-foreground"
