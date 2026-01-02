@@ -21,10 +21,15 @@ export default function LoginPage() {
     e.preventDefault()
     setError("")
 
-    if (authStore.login(email, password)) {
+    if (!email.trim() || !password.trim()) {
+      setError("Por favor, completa todos los campos")
+      return
+    }
+
+    if (authStore.login(email.trim(), password)) {
       router.push("/dashboard")
     } else {
-      setError("Credenciales incorrectas")
+      setError("Credenciales incorrectas. Verifica tu correo y contraseña.")
     }
   }
 

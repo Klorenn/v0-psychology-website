@@ -124,6 +124,12 @@ export const authStore = {
   isInitialized: () => isInitialized,
 
   login: (email: string, password: string): boolean => {
+    // Debug: verificar si las credenciales están configuradas (solo en desarrollo)
+    if (process.env.NODE_ENV === "development") {
+      console.log("Admin email configurado:", ADMIN_CREDENTIALS.email ? "Sí" : "No")
+      console.log("Admin password configurado:", ADMIN_CREDENTIALS.password ? "Sí" : "No")
+    }
+    
     if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
       isAuthenticated = true
       // Guardar en localStorage
