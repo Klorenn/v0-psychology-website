@@ -14,11 +14,9 @@ export function getDatabaseConnection() {
     return null
   }
   
-  // Configurar neon con opciones para mejor compatibilidad en Vercel
+  // Configurar neon para mejor compatibilidad en Vercel
   try {
-    return neon(dbUrl, {
-      fetchConnectionCache: true,
-    })
+    return neon(dbUrl)
   } catch (error) {
     console.error("Error creando conexión neon:", error)
     return null
