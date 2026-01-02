@@ -221,30 +221,6 @@ export function GoogleCalendarSettings() {
             </ul>
           </div>
 
-          <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-            <p className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" />
-              Configuración requerida
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Antes de conectar, asegúrese de configurar las siguientes variables de entorno:
-            </p>
-            <ul className="text-xs text-muted-foreground mt-2 space-y-1 font-mono">
-              <li>• GOOGLE_CLIENT_ID</li>
-              <li>• GOOGLE_CLIENT_SECRET</li>
-              <li>• GOOGLE_REDIRECT_URI (opcional)</li>
-            </ul>
-            <a
-              href="https://console.cloud.google.com/apis/credentials"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-accent hover:underline mt-2 inline-flex items-center gap-1"
-            >
-              Ver instrucciones en Google Cloud Console
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-
           <Button
             onClick={handleConnect}
             disabled={isConnecting}
