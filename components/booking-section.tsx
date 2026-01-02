@@ -646,9 +646,13 @@ export function BookingSection() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handlePaymentMethodSelect("flow")}
+                  onClick={() => setPaymentMethod("flow")}
                   disabled={isCreatingPayment}
-                  className="h-auto p-4 rounded-xl border-2 hover:border-accent hover:bg-accent/5 transition-all text-left justify-start"
+                  className={`h-auto p-4 rounded-xl border-2 transition-all text-left justify-start ${
+                    paymentMethod === "flow"
+                      ? "border-accent bg-accent/10 hover:bg-accent/15"
+                      : "hover:border-accent hover:bg-accent/5"
+                  }`}
                 >
                   <div className="flex items-center gap-3 w-full">
                     <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
@@ -658,8 +662,10 @@ export function BookingSection() {
                       <p className="font-semibold text-foreground text-base">Pago con Tarjeta</p>
                       <p className="text-xs text-muted-foreground">Tarjeta de crédito, débito o cuenta corriente (Flow)</p>
                     </div>
-                    {isCreatingPayment && paymentMethod === "flow" && (
-                      <Loader2 className="w-5 h-5 animate-spin text-accent shrink-0" />
+                    {paymentMethod === "flow" && (
+                      <div className="w-5 h-5 rounded-full bg-accent flex items-center justify-center shrink-0">
+                        <span className="text-white text-xs">✓</span>
+                      </div>
                     )}
                   </div>
                 </Button>
@@ -667,9 +673,13 @@ export function BookingSection() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handlePaymentMethodSelect("transfer")}
+                  onClick={() => setPaymentMethod("transfer")}
                   disabled={isCreatingPayment}
-                  className="h-auto p-4 rounded-xl border-2 hover:border-accent hover:bg-accent/5 transition-all text-left justify-start"
+                  className={`h-auto p-4 rounded-xl border-2 transition-all text-left justify-start ${
+                    paymentMethod === "transfer"
+                      ? "border-accent bg-accent/10 hover:bg-accent/15"
+                      : "hover:border-accent hover:bg-accent/5"
+                  }`}
                 >
                   <div className="flex items-center gap-3 w-full">
                     <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
@@ -683,6 +693,30 @@ export function BookingSection() {
                 </Button>
               </div>
             </div>
+
+            {paymentMethod && (
+              <Button
+                onClick={async () => {
+                  if (paymentMethod === "transfer") {
+                    setShowPaymentMethod(false)
+                    setShowBankDetails(true)
+                  } else {
+                    await handleFlowPayment()
+                  }
+                }}
+                disabled={isCreatingPayment}
+                className="w-full rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 disabled:opacity-50 mt-4"
+              >
+                {isCreatingPayment ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Procesando...
+                  </>
+                ) : (
+                  "Continuar con la reserva"
+                )}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
