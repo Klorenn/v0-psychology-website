@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { appointmentsStore } from "@/lib/appointments-store"
+import { siteConfigStore } from "@/lib/site-config"
+import { siteConfigPersistence } from "@/lib/site-config-persistence"
 import nodemailer from "nodemailer"
 
 const RECIPIENT_EMAIL = "ps.msanluis@gmail.com"
@@ -80,11 +82,41 @@ export async function GET(request: NextRequest) {
 
     const formattedDate = `${appointment.date.getDate()} de ${monthNames[appointment.date.getMonth()]}, ${appointment.date.getFullYear()}`
     const price = appointment.appointmentType === "online" ? "20.000" : "27.000"
+    const appointmentTypeText = appointment.appointmentType === "online" ? "Online" : "Presencial"
 
-    const emailSubject = action === "accept" 
-      ? `Sesión Confirmada - ${formattedDate}`
-      : `Sesión Rechazada - ${formattedDate}`
+    // Cargar configuración para obtener el template de email
+    await siteConfigPersistence.load()
+    const siteConfig = siteConfigStore.get()
+    
+    // Función para reemplazar variables en el template
+    const replaceTemplateVars = (template: string): string => {
+      return template
+        .replace(/\{\{patientName\}\}/g, appointment.patientName)
+        .replace(/\{\{date\}\}/g, formattedDate)
+        .replace(/\{\{time\}\}/g, appointment.time)
+        .replace(/\{\{appointmentType\}\}/g, appointmentTypeText)
+        .replace(/\{\{price\}\}/g, price)
+        .replace(/\{\{meetLink\}\}/g, meetLink || "")
+        .replace(/\{\{#if meetLink\}\}([\s\S]*?)\{\{\/if\}\}/g, meetLink ? "$1" : "")
+    }
 
+    // Usar template personalizado si existe, sino usar el default
+    let emailSubject: string
+    let emailBody: string
+    
+    if (action === "accept" && siteConfig.emailTemplate?.subject && siteConfig.emailTemplate?.body) {
+      emailSubject = replaceTemplateVars(siteConfig.emailTemplate.subject)
+      emailBody = replaceTemplateVars(siteConfig.emailTemplate.body)
+    } else {
+      emailSubject = action === "accept" 
+        ? `Sesión Confirmada - ${formattedDate}`
+        : `Sesión Rechazada - ${formattedDate}`
+      emailBody = action === "accept"
+        ? `Estimado/a ${appointment.patientName},\n\nSu sesión ha sido confirmada para:\n- Fecha: ${formattedDate}\n- Hora: ${appointment.time} hrs\n- Modalidad: ${appointmentTypeText}\n- Valor: $${price} CLP${meetLink ? `\n- Enlace de Google Meet: ${meetLink}` : ""}\n\nPor favor, asegúrese de haber realizado el pago por transferencia antes de la sesión.\n\nSaludos cordiales,\nMaría`
+        : `Estimado/a ${appointment.patientName},\n\nLamento informarle que su solicitud de sesión para el ${formattedDate} a las ${appointment.time} hrs ha sido rechazada.\n\nPor favor, intente agendar otra fecha y hora disponible.\n\nSaludos cordiales,\nMaría`
+    }
+
+    // Convertir el body del template a HTML (simple conversión de saltos de línea)
     const emailHtml = `
       <!DOCTYPE html>
       <html>
@@ -115,6 +147,13 @@ export async function GET(request: NextRequest) {
               border-radius: 8px;
               margin: 15px 0;
             }
+            a {
+              color: #4285F4;
+              text-decoration: none;
+            }
+            a:hover {
+              text-decoration: underline;
+            }
           </style>
         </head>
         <body>
@@ -122,69 +161,13 @@ export async function GET(request: NextRequest) {
             <div class="header">
               <h2>${action === "accept" ? "✓ Sesión Confirmada" : "✗ Sesión Rechazada"}</h2>
             </div>
-            
-            <p>Estimado/a ${appointment.patientName},</p>
-            
-            ${action === "accept" 
-              ? `
-                <p>Su sesión ha sido <strong>confirmada</strong> para:</p>
-                <div class="info-section">
-                  <p><strong>Fecha:</strong> ${formattedDate}</p>
-                  <p><strong>Hora:</strong> ${appointment.time} hrs</p>
-                  <p><strong>Modalidad:</strong> ${appointment.appointmentType === "online" ? "Online" : "Presencial"}</p>
-                  <p><strong>Valor:</strong> $${price} CLP</p>
-                  ${appointment.appointmentType === "online" && meetLink ? `
-                    <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
-                      <strong>Enlace de Google Meet:</strong><br>
-                      <a href="${meetLink}" target="_blank" style="color: #4285F4; text-decoration: none; font-weight: bold;">
-                        ${meetLink}
-                      </a>
-                    </p>
-                    <p style="margin-top: 10px; font-size: 14px; color: #666;">
-                      Puede hacer clic en el enlace para unirse a la sesión en el momento acordado.
-                    </p>
-                  ` : ""}
-                </div>
-                <p>Por favor, asegúrese de haber realizado el pago por transferencia antes de la sesión.</p>
-              `
-              : `
-                <p>Lamento informarle que su solicitud de sesión para el ${formattedDate} a las ${appointment.time} hrs ha sido rechazada.</p>
-                <p>Por favor, intente agendar otra fecha y hora disponible.</p>
-              `
-            }
-            
-            <p>Saludos cordiales,<br>María</p>
+            <div style="white-space: pre-wrap;">${emailBody.replace(/\n/g, "<br>").replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>')}</div>
           </div>
         </body>
       </html>
     `
 
-    const emailText = action === "accept"
-      ? `
-Estimado/a ${appointment.patientName},
-
-Su sesión ha sido confirmada para:
-- Fecha: ${formattedDate}
-- Hora: ${appointment.time} hrs
-- Modalidad: ${appointment.appointmentType === "online" ? "Online" : "Presencial"}
-- Valor: $${price} CLP
-${appointment.appointmentType === "online" && meetLink ? `- Enlace de Google Meet: ${meetLink}` : ""}
-
-Por favor, asegúrese de haber realizado el pago por transferencia antes de la sesión.
-
-Saludos cordiales,
-María
-      `
-      : `
-Estimado/a ${appointment.patientName},
-
-Lamento informarle que su solicitud de sesión para el ${formattedDate} a las ${appointment.time} hrs ha sido rechazada.
-
-Por favor, intente agendar otra fecha y hora disponible.
-
-Saludos cordiales,
-María
-      `
+    const emailText = emailBody
 
     // Enviar correo al paciente
     if (!process.env.SMTP_PASS) {
