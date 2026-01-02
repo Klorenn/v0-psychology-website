@@ -36,6 +36,9 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Importación dinámica para evitar problemas en build
+    const { createClient } = await import("@supabase/supabase-js")
+    
     const supabase = createClient(supabaseUrl, supabaseKey, {
       auth: {
         persistSession: false,
