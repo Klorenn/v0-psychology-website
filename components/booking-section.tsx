@@ -670,17 +670,46 @@ export function BookingSection() {
                     <li>Número de cuenta destino</li>
                     <li>Fecha de la transferencia</li>
                   </ul>
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      const subject = encodeURIComponent("Comprobante de transferencia - Reserva")
-                      const body = encodeURIComponent(`Hola ${patientName},\n\nAdjunto el comprobante de transferencia bancaria por el monto de $${getPrice()} CLP.\n\nGracias.`)
-                      window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=ps.mariasanluis@gmail.com&su=${subject}&body=${body}`, '_blank')
-                    }}
-                    className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    📧 Abrir Gmail para enviar comprobante
-                  </Button>
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="userEmailForReceipt" className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                        Su correo electrónico para enviar el comprobante
+                      </Label>
+                      <Input
+                        id="userEmailForReceipt"
+                        type="email"
+                        value={patientEmail}
+                        onChange={(e) => {
+                          setPatientEmail(e.target.value)
+                          if (validationErrors.email) {
+                            setValidationErrors((prev) => ({ ...prev, email: "" }))
+                          }
+                        }}
+                        placeholder="su@correo.com"
+                        className={`rounded-xl border-border/50 ${validationErrors.email ? "border-destructive" : ""}`}
+                        required
+                      />
+                      {validationErrors.email && (
+                        <p className="text-sm text-destructive">{validationErrors.email}</p>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (!patientEmail || !validateEmail(patientEmail)) {
+                          setValidationErrors((prev) => ({ ...prev, email: "Ingrese un correo electrónico válido" }))
+                          return
+                        }
+                        const subject = encodeURIComponent("Comprobante de transferencia - Reserva")
+                        const body = encodeURIComponent(`Hola ${patientName},\n\nAdjunto el comprobante de transferencia bancaria por el monto de $${getPrice()} CLP.\n\nGracias.`)
+                        // Usar mailto: para abrir el cliente de correo del usuario
+                        window.location.href = `mailto:ps.mariasanluis@gmail.com?subject=${subject}&body=${body}`
+                      }}
+                      className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      📧 Abrir correo para enviar comprobante
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
