@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { appointmentsStore, type Appointment } from "@/lib/appointments-store"
 import { authStore } from "@/lib/auth-store"
-import { Check, X, Clock, LogOut, Calendar, FileText, ExternalLink, Settings, Mail, Video, Copy, CheckCircle, Bell, BellOff } from "lucide-react"
+import { Check, X, Clock, LogOut, Calendar, FileText, ExternalLink, Settings, Mail, Video, Copy, CheckCircle, Bell, BellOff, Loader2 } from "lucide-react"
 import { requestNotificationPermission, canSendNotifications, notifyAppointmentApproved, notifyAppointmentRejected } from "@/lib/notifications"
 import { VisualPageEditor } from "@/components/visual-page-editor"
 import { GoogleCalendarSettings } from "@/components/google-calendar-settings"
@@ -642,6 +642,9 @@ export default function DashboardPage() {
                 <ConfirmedAppointmentCard
                   key={appointment.id}
                   appointment={appointment}
+                  siteConfig={siteConfig}
+                  onConfigChange={handleConfigChange}
+                  onSaveConfig={handleSaveConfig}
                 />
               ))}
             </div>
@@ -831,11 +834,25 @@ function AppointmentCard({
   )
 }
 
-function ConfirmedAppointmentCard({ appointment }: { appointment: Appointment }) {
+function ConfirmedAppointmentCard({ 
+  appointment,
+  siteConfig,
+  onConfigChange,
+  onSaveConfig,
+}: { 
+  appointment: Appointment
+  siteConfig: any
+  onConfigChange: (config: any) => void
+  onSaveConfig: () => Promise<void>
+}) {
   const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [isCreatingMeet, setIsCreatingMeet] = useState(false)
   const [showEmailPreset, setShowEmailPreset] = useState(false)
   const [emailPreset, setEmailPreset] = useState<{ subject: string; body: string } | null>(null)
+  const [editingPreset, setEditingPreset] = useState(false)
+  const [editedSubject, setEditedSubject] = useState("")
+  const [editedBody, setEditedBody] = useState("")
+  const [isSavingPreset, setIsSavingPreset] = useState(false)
   const [copied, setCopied] = useState(false)
   const [meetLink, setMeetLink] = useState<string | null>(null)
 
@@ -896,12 +913,55 @@ function ConfirmedAppointmentCard({ appointment }: { appointment: Appointment })
       const response = await fetch(`/api/appointments/send-confirmation-email?appointmentId=${appointment.id}`)
       if (response.ok) {
         const data = await response.json()
-        setEmailPreset({ subject: data.emailSubject, body: data.emailBody })
+        const preset = { subject: data.emailSubject, body: data.emailBody }
+        setEmailPreset(preset)
+        setEditedSubject(preset.subject)
+        setEditedBody(preset.body)
         setShowEmailPreset(true)
+        setEditingPreset(false)
       }
     } catch (error) {
       console.error("Error:", error)
     }
+  }
+
+  const handleEditPreset = () => {
+    setEditingPreset(true)
+  }
+
+  const handleSavePreset = async () => {
+    setIsSavingPreset(true)
+    try {
+      // Actualizar el siteConfig con el nuevo template
+      const updatedConfig = {
+        ...siteConfig,
+        emailTemplate: {
+          subject: editedSubject,
+          body: editedBody,
+        },
+      }
+      onConfigChange(updatedConfig)
+      await onSaveConfig()
+      
+      // Actualizar el preset mostrado
+      setEmailPreset({ subject: editedSubject, body: editedBody })
+      setEditingPreset(false)
+      alert("✅ Plantilla de correo guardada correctamente")
+    } catch (error) {
+      console.error("Error guardando preset:", error)
+      alert("❌ Error al guardar la plantilla")
+    } finally {
+      setIsSavingPreset(false)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    // Restaurar valores originales
+    if (emailPreset) {
+      setEditedSubject(emailPreset.subject)
+      setEditedBody(emailPreset.body)
+    }
+    setEditingPreset(false)
   }
 
   const handleCopyPreset = () => {
@@ -1022,36 +1082,98 @@ function ConfirmedAppointmentCard({ appointment }: { appointment: Appointment })
 
       {showEmailPreset && emailPreset && (
         <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-medium text-foreground">Preset de Correo:</p>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={handleCopyPreset} className="text-xs">
-                {copied ? (
-                  <>
-                    <CheckCircle className="w-3.5 h-3.5 mr-1" />
-                    Copiado
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5 mr-1" />
-                    Copiar
-                  </>
-                )}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setShowEmailPreset(false)} className="text-xs">
+              {!editingPreset && (
+                <>
+                  <Button size="sm" variant="outline" onClick={handleEditPreset} className="text-xs">
+                    <Settings className="w-3.5 h-3.5 mr-1" />
+                    Editar
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={handleCopyPreset} className="text-xs">
+                    {copied ? (
+                      <>
+                        <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                        Copiado
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 mr-1" />
+                        Copiar
+                      </>
+                    )}
+                  </Button>
+                </>
+              )}
+              <Button size="sm" variant="ghost" onClick={() => {
+                setShowEmailPreset(false)
+                setEditingPreset(false)
+              }} className="text-xs">
                 Cerrar
               </Button>
             </div>
           </div>
-          <div className="space-y-2 text-xs">
+          <div className="space-y-3 text-xs">
             <div>
-              <p className="font-medium text-muted-foreground mb-1">Asunto:</p>
-              <p className="text-foreground bg-background p-2 rounded border">{emailPreset.subject}</p>
+              <p className="font-medium text-muted-foreground mb-1.5">Asunto:</p>
+              {editingPreset ? (
+                <input
+                  type="text"
+                  value={editedSubject}
+                  onChange={(e) => setEditedSubject(e.target.value)}
+                  className="w-full text-foreground bg-background p-2 rounded border border-border focus:outline-none focus:ring-2 focus:ring-accent"
+                  placeholder="Asunto del correo"
+                />
+              ) : (
+                <p className="text-foreground bg-background p-2 rounded border">{emailPreset.subject}</p>
+              )}
             </div>
             <div>
-              <p className="font-medium text-muted-foreground mb-1">Cuerpo:</p>
-              <p className="text-foreground bg-background p-2 rounded border whitespace-pre-wrap">{emailPreset.body}</p>
+              <p className="font-medium text-muted-foreground mb-1.5">Cuerpo:</p>
+              {editingPreset ? (
+                <textarea
+                  value={editedBody}
+                  onChange={(e) => setEditedBody(e.target.value)}
+                  rows={8}
+                  className="w-full text-foreground bg-background p-2 rounded border border-border focus:outline-none focus:ring-2 focus:ring-accent font-mono text-xs resize-y"
+                  placeholder="Contenido del correo"
+                />
+              ) : (
+                <p className="text-foreground bg-background p-2 rounded border whitespace-pre-wrap">{emailPreset.body}</p>
+              )}
             </div>
+            {editingPreset && (
+              <div className="flex gap-2 pt-2">
+                <Button
+                  size="sm"
+                  onClick={handleSavePreset}
+                  disabled={isSavingPreset}
+                  className="text-xs bg-accent text-accent-foreground hover:bg-accent/90"
+                >
+                  {isSavingPreset ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                      Guardar Plantilla
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                  disabled={isSavingPreset}
+                  className="text-xs"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}
