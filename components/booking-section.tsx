@@ -57,6 +57,9 @@ export function BookingSection() {
   const [showBankDetails, setShowBankDetails] = useState(false)
   const [receiptUploaded, setReceiptUploaded] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState<"transfer" | "flow" | null>(null)
+  const [showPaymentMethod, setShowPaymentMethod] = useState(false)
+  const [isCreatingPayment, setIsCreatingPayment] = useState(false)
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -124,7 +127,7 @@ export function BookingSection() {
   }
 
   const handleContinueAfterForm = () => {
-    // Validar datos básicos antes de mostrar datos bancarios
+    // Validar datos básicos antes de mostrar opciones de pago
     if (!patientName.trim() || !validateName(patientName)) {
       setValidationErrors({ name: "El nombre es requerido y debe ser válido" })
       return
@@ -144,7 +147,93 @@ export function BookingSection() {
     
     setValidationErrors({})
     setShowForm(false)
-    setShowBankDetails(true)
+    setShowPaymentMethod(true)
+  }
+
+  const handlePaymentMethodSelect = async (method: "transfer" | "flow") => {
+    setPaymentMethod(method)
+    
+    if (method === "transfer") {
+      setShowPaymentMethod(false)
+      setShowBankDetails(true)
+    } else {
+      // Crear pago con Flow
+      await handleFlowPayment()
+    }
+  }
+
+  const handleFlowPayment = async () => {
+    if (!selectedDate || !selectedTime) return
+    
+    setIsCreatingPayment(true)
+    setUploadError("")
+    
+    try {
+      const appointmentId = crypto.randomUUID()
+      const amount = appointmentType === "online" ? 20000 : 27000
+      const description = `Sesión ${appointmentType === "online" ? "Online" : "Presencial"} - ${selectedDate.getDate()} de ${monthNames[selectedDate.getMonth()]} a las ${selectedTime} hrs`
+      
+      // Formatear teléfono con código de país si es online
+      let formattedPhone = patientPhone
+      if (appointmentType === "online" && selectedCountry) {
+        if (!patientPhone.startsWith("+") && !patientPhone.startsWith(selectedCountry.dialCode)) {
+          formattedPhone = `${selectedCountry.dialCode} ${patientPhone.trim()}`
+        } else if (patientPhone.startsWith(selectedCountry.dialCode)) {
+          formattedPhone = patientPhone
+        }
+      }
+
+      // Crear la cita primero (pendiente de pago)
+      await appointmentsStore.add({
+        id: appointmentId,
+        patientName: sanitizeName(patientName),
+        patientEmail: sanitizeString(patientEmail).toLowerCase(),
+        patientPhone: sanitizePhone(formattedPhone),
+        consultationReason: sanitizeString(consultationReason) || undefined,
+        appointmentType,
+        date: selectedDate,
+        time: selectedTime,
+        status: "pending",
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutos para pagar
+        paymentMethod: "flow",
+      })
+
+      // Crear pago en Flow
+      const paymentResponse = await fetch("/api/flow/create-payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          appointmentId,
+          amount,
+          description,
+          patientEmail: sanitizeString(patientEmail).toLowerCase(),
+          patientName: sanitizeName(patientName),
+        }),
+      })
+
+      if (!paymentResponse.ok) {
+        const errorData = await paymentResponse.json().catch(() => ({}))
+        throw new Error(errorData.error || "Error al crear el pago. Por favor, intente nuevamente.")
+      }
+
+      const paymentData = await paymentResponse.json()
+      
+      // Redirigir al checkout de Flow
+      if (paymentData.url) {
+        window.location.href = paymentData.url
+      } else {
+        throw new Error("No se pudo obtener la URL de pago")
+      }
+    } catch (error) {
+      console.error("Error creando pago con Flow:", error)
+      const errorMessage = error instanceof Error ? error.message : "Error al procesar el pago. Por favor, intente nuevamente."
+      setUploadError(errorMessage)
+      alert(errorMessage)
+      setIsCreatingPayment(false)
+    }
   }
 
   const validateForm = (): boolean => {
@@ -535,6 +624,71 @@ export function BookingSection() {
           </p>
         </div>
       </div>
+
+      {/* Payment Method Selection Dialog */}
+      <Dialog open={showPaymentMethod} onOpenChange={setShowPaymentMethod}>
+        <DialogContent className="sm:max-w-md bg-background border-border/50">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl">Método de pago</DialogTitle>
+            <DialogDescription>
+              Seleccione cómo desea realizar el pago de su sesión
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4">
+            <div className="bg-muted/50 rounded-xl p-4 text-sm space-y-2">
+              <p className="font-medium text-foreground mb-1">Resumen de la cita</p>
+              <p className="text-muted-foreground">
+                {selectedDate?.getDate()} de {selectedDate && monthNames[selectedDate.getMonth()]} a las {selectedTime}{" "}
+                hrs
+              </p>
+              <p className="text-muted-foreground">
+                Modalidad: <span className="font-medium text-foreground capitalize">{appointmentType}</span>
+              </p>
+              <p className="text-muted-foreground">
+                Valor: <span className="font-medium text-foreground">${getPrice()} CLP</span>
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              <button
+                onClick={() => handlePaymentMethodSelect("flow")}
+                disabled={isCreatingPayment}
+                className="p-4 rounded-xl border-2 border-border/50 hover:border-accent/50 bg-background hover:bg-muted/50 transition-all text-left disabled:opacity-50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <span className="text-xl font-bold text-blue-600 dark:text-blue-400">Flow</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">Flow</p>
+                    <p className="text-xs text-muted-foreground">Pago rápido y seguro con tarjeta, transferencia o efectivo</p>
+                  </div>
+                  {isCreatingPayment && (
+                    <Loader2 className="w-5 h-5 animate-spin text-accent" />
+                  )}
+                </div>
+              </button>
+
+              <button
+                onClick={() => handlePaymentMethodSelect("transfer")}
+                disabled={isCreatingPayment}
+                className="p-4 rounded-xl border-2 border-border/50 hover:border-accent/50 bg-background hover:bg-muted/50 transition-all text-left disabled:opacity-50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <span className="text-xl">🏦</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">Transferencia bancaria</p>
+                    <p className="text-xs text-muted-foreground">Transferencia directa desde su banco</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Bank Details Dialog with Receipt Upload */}
       <Dialog open={showBankDetails} onOpenChange={setShowBankDetails}>

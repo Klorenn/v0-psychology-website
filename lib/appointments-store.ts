@@ -16,6 +16,9 @@ export interface Appointment {
   createdAt: Date
   expiresAt: Date
   receiptUrl?: string
+  paymentMethod?: "transfer" | "flow"
+  mercadoPagoPaymentId?: string // Reutilizado para Flow payment ID
+  mercadoPagoPreferenceId?: string
 }
 
 // Global in-memory store
