@@ -1,6 +1,6 @@
 {
   "buildCommand": "npm run build",
-  "installCommand": "rm -f pnpm-lock.yaml yarn.lock 2>/dev/null || true && npm install",
+  "installCommand": "rm -rf pnpm-lock.yaml yarn.lock .pnpm-store 2>/dev/null || true && npm install --legacy-peer-deps",
   "framework": "nextjs"
 }
 
