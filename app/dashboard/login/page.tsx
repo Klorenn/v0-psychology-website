@@ -47,6 +47,7 @@ export default function LoginPage() {
               placeholder="tu@correo.com"
               className="rounded-lg"
               required
+              suppressHydrationWarning={true}
             />
           </div>
 
@@ -61,6 +62,7 @@ export default function LoginPage() {
                 placeholder="••••••"
                 className="rounded-lg pr-10"
                 required
+                suppressHydrationWarning={true}
               />
               <button
                 type="button"

@@ -37,15 +37,19 @@ function formatTimeRemaining(expiresAt: Date): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`
 }
 
+// Funciones de snapshot en caché para evitar loops infinitos
+const getServerSnapshotForAuth = () => false
+const getServerSnapshotForAppointments = () => []
+
 export default function DashboardPage() {
   const router = useRouter()
   const [timeUpdate, setTimeUpdate] = useState(0)
   const [activeTab, setActiveTab] = useState<"appointments" | "settings">("appointments")
   const [siteConfig, setSiteConfig] = useState(siteConfigStore.get())
 
-  const isAuth = useSyncExternalStore(authStore.subscribe, authStore.isAuthenticated, () => false)
+  const isAuth = useSyncExternalStore(authStore.subscribe, authStore.isAuthenticated, getServerSnapshotForAuth)
 
-  const appointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAll, () => [])
+  const appointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAll, getServerSnapshotForAppointments)
 
   // Load site config on mount
   useEffect(() => {
@@ -176,8 +180,8 @@ export default function DashboardPage() {
 
         {activeTab === "settings" ? (
           <div className="space-y-6">
-            <ThemeSelectorExtended />
             <GoogleCalendarSettings />
+            <ThemeSelectorExtended />
             <VisualPageEditor
               config={siteConfig}
               onConfigChange={handleConfigChange}
