@@ -339,16 +339,38 @@ export default function DashboardPage() {
                     <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
                       <Check className="w-5 h-5 text-green-600" />
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">{appointment.patientName}</p>
-                      <p className="text-sm text-muted-foreground">{appointment.patientEmail}</p>
-                      <p className="text-sm text-muted-foreground">{appointment.patientPhone}</p>
-                      {appointment.consultationReason && (
-                        <div className="mt-2 p-2 bg-muted/50 rounded-lg">
-                          <p className="text-xs text-muted-foreground mb-1">Motivo de consulta:</p>
-                          <p className="text-xs text-foreground italic">{appointment.consultationReason}</p>
+                    <div className="flex-1">
+                      <div className="space-y-2">
+                        <div>
+                          <p className="font-medium text-foreground">{appointment.patientName}</p>
+                          <p className="text-sm text-muted-foreground">{appointment.patientEmail}</p>
+                          <p className="text-sm text-muted-foreground">{appointment.patientPhone}</p>
                         </div>
-                      )}
+                        {appointment.consultationReason && (
+                          <div className="mt-2 p-2 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground mb-1">Motivo de consulta:</p>
+                            <p className="text-xs text-foreground italic">{appointment.consultationReason}</p>
+                          </div>
+                        )}
+                        {appointment.emergencyContactName && (
+                          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1">Contacto de emergencia:</p>
+                            {appointment.emergencyContactRelation && (
+                              <p className="text-xs text-blue-800 dark:text-blue-200">
+                                <span className="font-medium">Relación:</span> {appointment.emergencyContactRelation.charAt(0).toUpperCase() + appointment.emergencyContactRelation.slice(1)}
+                              </p>
+                            )}
+                            <p className="text-xs text-blue-800 dark:text-blue-200">
+                              <span className="font-medium">Nombre:</span> {appointment.emergencyContactName}
+                            </p>
+                            {appointment.emergencyContactPhone && (
+                              <p className="text-xs text-blue-800 dark:text-blue-200">
+                                <span className="font-medium">Teléfono:</span> {appointment.emergencyContactPhone}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="text-right">
@@ -429,30 +451,52 @@ function AppointmentCard({
           <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
             <Clock className="w-5 h-5 text-amber-600" />
           </div>
-          <div>
-            <p className="font-medium text-foreground">{appointment.patientName}</p>
-            <p className="text-sm text-muted-foreground">{appointment.patientEmail}</p>
-            <p className="text-sm text-muted-foreground">{appointment.patientPhone}</p>
-            {appointment.consultationReason && (
-              <div className="mt-2 p-2 bg-muted/50 rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">Motivo de consulta:</p>
-                <p className="text-xs text-foreground italic">{appointment.consultationReason}</p>
+          <div className="flex-1">
+            <div className="space-y-2">
+              <div>
+                <p className="font-medium text-foreground">{appointment.patientName}</p>
+                <p className="text-sm text-muted-foreground">{appointment.patientEmail}</p>
+                <p className="text-sm text-muted-foreground">{appointment.patientPhone}</p>
               </div>
-            )}
-            {appointment.receiptUrl && (
-              <div className="mt-2">
-                <a
-                  href={appointment.receiptUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs text-accent hover:text-accent/80 transition-colors"
-                >
-                  <FileText className="h-3.5 w-3.5" />
-                  Ver comprobante
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-            )}
+              {appointment.consultationReason && (
+                <div className="mt-2 p-2 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Motivo de consulta:</p>
+                  <p className="text-xs text-foreground italic">{appointment.consultationReason}</p>
+                </div>
+              )}
+              {appointment.emergencyContactName && (
+                <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1">Contacto de emergencia:</p>
+                  {appointment.emergencyContactRelation && (
+                    <p className="text-xs text-blue-800 dark:text-blue-200">
+                      <span className="font-medium">Relación:</span> {appointment.emergencyContactRelation.charAt(0).toUpperCase() + appointment.emergencyContactRelation.slice(1)}
+                    </p>
+                  )}
+                  <p className="text-xs text-blue-800 dark:text-blue-200">
+                    <span className="font-medium">Nombre:</span> {appointment.emergencyContactName}
+                  </p>
+                  {appointment.emergencyContactPhone && (
+                    <p className="text-xs text-blue-800 dark:text-blue-200">
+                      <span className="font-medium">Teléfono:</span> {appointment.emergencyContactPhone}
+                    </p>
+                  )}
+                </div>
+              )}
+              {appointment.receiptUrl && (
+                <div className="mt-2">
+                  <a
+                    href={appointment.receiptUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-accent hover:text-accent/80 transition-colors"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Ver comprobante
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

@@ -44,6 +44,8 @@ export function BookingSection() {
   const [patientPhone, setPatientPhone] = useState("")
   const [selectedCountry, setSelectedCountry] = useState<CountryCode>(defaultCountryCode)
   const [showCountryDropdown, setShowCountryDropdown] = useState(false)
+  const [emergencyContactCountry, setEmergencyContactCountry] = useState<CountryCode>(defaultCountryCode)
+  const [showEmergencyContactCountryDropdown, setShowEmergencyContactCountryDropdown] = useState(false)
   const [consultationReason, setConsultationReason] = useState("")
   const [emergencyContactRelation, setEmergencyContactRelation] = useState("")
   const [emergencyContactName, setEmergencyContactName] = useState("")
@@ -276,8 +278,13 @@ export function BookingSection() {
 
     if (!emergencyContactPhone.trim()) {
       errors.emergencyContactPhone = "El teléfono del contacto de emergencia es requerido"
-    } else if (!validatePhone(emergencyContactPhone, false)) {
-      errors.emergencyContactPhone = "Ingrese un número de teléfono válido (ej: +56 9 1234 5678)"
+    } else {
+      const emergencyPhoneToValidate = emergencyContactCountry
+        ? `${emergencyContactCountry.dialCode} ${emergencyContactPhone.trim()}`
+        : emergencyContactPhone
+      if (!validatePhone(emergencyPhoneToValidate, false)) {
+        errors.emergencyContactPhone = "Ingrese un número de teléfono válido"
+      }
     }
 
     setValidationErrors(errors)
@@ -323,6 +330,15 @@ export function BookingSection() {
         }
       }
 
+      // Formatear teléfono de contacto de emergencia con código de país
+      let formattedEmergencyPhone = emergencyContactPhone
+      if (emergencyContactCountry) {
+        if (!emergencyContactPhone.startsWith("+") && !emergencyContactPhone.startsWith(emergencyContactCountry.dialCode)) {
+          formattedEmergencyPhone = `${emergencyContactCountry.dialCode} ${emergencyContactPhone.trim()}`
+        } else if (emergencyContactPhone.startsWith(emergencyContactCountry.dialCode)) {
+          formattedEmergencyPhone = emergencyContactPhone
+        }
+      }
 
       const sanitizedData = {
         appointmentId,
@@ -332,7 +348,7 @@ export function BookingSection() {
         consultationReason: sanitizeString(consultationReason),
         emergencyContactRelation: sanitizeString(emergencyContactRelation),
         emergencyContactName: sanitizeName(emergencyContactName),
-        emergencyContactPhone: sanitizePhone(emergencyContactPhone),
+        emergencyContactPhone: sanitizePhone(formattedEmergencyPhone),
         appointmentType,
         date: selectedDate.toISOString(),
         time: selectedTime,
@@ -372,6 +388,7 @@ export function BookingSection() {
     setShowForm(false)
       setShowBankDetails(false)
       setSelectedCountry(defaultCountryCode)
+      setEmergencyContactCountry(defaultCountryCode)
       setConsultationReason("")
       setEmergencyContactRelation("")
       setEmergencyContactName("")
@@ -400,6 +417,7 @@ export function BookingSection() {
     setPatientEmail("")
     setPatientPhone("")
     setSelectedCountry(defaultCountryCode)
+    setEmergencyContactCountry(defaultCountryCode)
     setConsultationReason("")
     setEmergencyContactRelation("")
     setEmergencyContactName("")
@@ -1000,20 +1018,60 @@ export function BookingSection() {
 
             <div className="space-y-2">
               <Label htmlFor="emergencyContactPhone">Contacto de emergencia - Teléfono</Label>
-              <Input
-                id="emergencyContactPhone"
-                type="tel"
-                value={emergencyContactPhone}
-                onChange={(e) => {
-                  setEmergencyContactPhone(e.target.value)
-                  if (validationErrors.emergencyContactPhone) {
-                    setValidationErrors((prev) => ({ ...prev, emergencyContactPhone: "" }))
-                  }
-                }}
-                placeholder="+56 9 1234 5678"
-                className={`rounded-xl border-border/50 ${validationErrors.emergencyContactPhone ? "border-destructive" : ""}`}
-                required
-              />
+              <div className="flex gap-2">
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmergencyContactCountryDropdown(!showEmergencyContactCountryDropdown)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border/50 bg-background hover:bg-muted/50 transition-colors min-w-[140px]"
+                  >
+                    <span className="text-lg">{emergencyContactCountry.flag}</span>
+                    <span className="text-sm font-medium">{emergencyContactCountry.dialCode}</span>
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                  {showEmergencyContactCountryDropdown && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setShowEmergencyContactCountryDropdown(false)}
+                      />
+                      <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-20 max-h-64 overflow-y-auto w-64">
+                        {countryCodes.map((country) => (
+                          <button
+                            key={country.code}
+                            type="button"
+                            onClick={() => {
+                              setEmergencyContactCountry(country)
+                              setShowEmergencyContactCountryDropdown(false)
+                            }}
+                            className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-muted/50 transition-colors ${
+                              emergencyContactCountry.code === country.code ? "bg-accent/10" : ""
+                            }`}
+                          >
+                            <span className="text-lg">{country.flag}</span>
+                            <span className="text-sm flex-1 text-left">{country.name}</span>
+                            <span className="text-sm text-muted-foreground">{country.dialCode}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+                <Input
+                  id="emergencyContactPhone"
+                  type="tel"
+                  value={emergencyContactPhone}
+                  onChange={(e) => {
+                    setEmergencyContactPhone(e.target.value)
+                    if (validationErrors.emergencyContactPhone) {
+                      setValidationErrors((prev) => ({ ...prev, emergencyContactPhone: "" }))
+                    }
+                  }}
+                  placeholder="9 1234 5678"
+                  className={`flex-1 rounded-xl border-border/50 ${validationErrors.emergencyContactPhone ? "border-destructive" : ""}`}
+                  required
+                />
+              </div>
               {validationErrors.emergencyContactPhone && (
                 <p className="text-sm text-destructive">{validationErrors.emergencyContactPhone}</p>
               )}
