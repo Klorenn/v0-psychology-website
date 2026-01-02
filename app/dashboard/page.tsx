@@ -116,10 +116,12 @@ export default function DashboardPage() {
   useEffect(() => {
     // Verificar autenticación desde localStorage primero
     const checkAuth = () => {
+      // Forzar verificación de localStorage
       const authenticated = authStore.isAuthenticated()
       setIsCheckingAuth(false)
       
       if (!authenticated) {
+        // Solo redirigir si realmente no está autenticado
         router.push("/dashboard/login")
       } else {
         // Inicializar el store cuando el usuario está autenticado
@@ -127,17 +129,22 @@ export default function DashboardPage() {
       }
     }
     
-    // Dar tiempo para que localStorage esté disponible
+    // Dar tiempo para que localStorage esté disponible y verificar
     if (typeof window !== "undefined") {
-      // Verificar inmediatamente
-      checkAuth()
+      // Pequeño delay para asegurar que localStorage esté disponible
+      const timer = setTimeout(() => {
+        checkAuth()
+      }, 50)
       
       // También verificar cuando cambie el estado
       const unsubscribe = authStore.subscribe(() => {
         checkAuth()
       })
       
-      return unsubscribe
+      return () => {
+        clearTimeout(timer)
+        unsubscribe()
+      }
     } else {
       setIsCheckingAuth(false)
     }
