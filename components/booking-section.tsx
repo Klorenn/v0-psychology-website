@@ -641,7 +641,7 @@ export function BookingSection() {
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl">Datos para transferencia</DialogTitle>
             <DialogDescription>
-              Realice la transferencia bancaria y suba el comprobante para confirmar su reserva
+              Realice la transferencia bancaria y envíe el comprobante por correo para confirmar su reserva
             </DialogDescription>
           </DialogHeader>
 
@@ -664,12 +664,23 @@ export function BookingSection() {
                   <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
                     El comprobante debe ser legible y mostrar claramente:
                   </p>
-                  <ul className="text-sm text-blue-800 dark:text-blue-200 list-disc list-inside space-y-1">
+                  <ul className="text-sm text-blue-800 dark:text-blue-200 list-disc list-inside space-y-1 mb-3">
                     <li>Banco emisor</li>
                     <li>Monto transferido</li>
                     <li>Número de cuenta destino</li>
                     <li>Fecha de la transferencia</li>
                   </ul>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const subject = encodeURIComponent("Comprobante de transferencia - Reserva")
+                      const body = encodeURIComponent(`Hola ${patientName},\n\nAdjunto el comprobante de transferencia bancaria por el monto de $${getPrice()} CLP.\n\nGracias.`)
+                      window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=ps.mariasanluis@gmail.com&su=${subject}&body=${body}`, '_blank')
+                    }}
+                    className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    📧 Abrir Gmail para enviar comprobante
+                  </Button>
                 </div>
               </div>
             </div>
