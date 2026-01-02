@@ -33,9 +33,27 @@ let authListeners: (() => void)[] = []
 let isInitialized = false
 
 // Inicializar inmediatamente si estamos en el cliente
+// Esto se ejecuta ANTES de cualquier componente React
 if (typeof window !== "undefined") {
-  isAuthenticated = getInitialAuthState()
-  isInitialized = true
+  try {
+    const stored = localStorage.getItem(AUTH_KEY)
+    if (stored) {
+      const { email, timestamp } = JSON.parse(stored)
+      const isExpired = Date.now() - timestamp > 24 * 60 * 60 * 1000
+      if (email === ADMIN_CREDENTIALS.email && !isExpired) {
+        isAuthenticated = true
+      } else {
+        // Limpiar si está expirado o incorrecto
+        localStorage.removeItem(AUTH_KEY)
+        isAuthenticated = false
+      }
+    }
+    isInitialized = true
+  } catch (error) {
+    console.error("Error inicializando autenticación:", error)
+    isAuthenticated = false
+    isInitialized = true
+  }
 }
 
 export const authStore = {
@@ -57,6 +75,7 @@ export const authStore = {
   },
   
   // Método para restaurar sesión sin contraseña (útil después de redirecciones)
+  // Este método sincroniza el estado interno con localStorage
   restoreSession: () => {
     if (typeof window !== "undefined") {
       try {
@@ -65,26 +84,32 @@ export const authStore = {
           const { email, timestamp } = JSON.parse(stored)
           const isExpired = Date.now() - timestamp > 24 * 60 * 60 * 1000
           if (email === ADMIN_CREDENTIALS.email && !isExpired) {
-            // Restaurar el estado interno
-            isAuthenticated = true
-            isInitialized = true
-            notifyAuthListeners()
+            // Restaurar el estado interno solo si cambió
+            if (!isAuthenticated) {
+              isAuthenticated = true
+              notifyAuthListeners()
+            }
             return true
           } else {
             // Limpiar si está expirado o incorrecto
             localStorage.removeItem(AUTH_KEY)
-            isAuthenticated = false
-            isInitialized = true
-            notifyAuthListeners()
+            if (isAuthenticated) {
+              isAuthenticated = false
+              notifyAuthListeners()
+            }
           }
         } else {
-          isAuthenticated = false
-          isInitialized = true
+          if (isAuthenticated) {
+            isAuthenticated = false
+            notifyAuthListeners()
+          }
         }
       } catch (error) {
         console.error("Error restaurando sesión:", error)
-        isAuthenticated = false
-        isInitialized = true
+        if (isAuthenticated) {
+          isAuthenticated = false
+          notifyAuthListeners()
+        }
       }
     }
     return isAuthenticated
