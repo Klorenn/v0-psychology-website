@@ -40,8 +40,8 @@ FLOW_ENVIRONMENT=sandbox
 # ===================================
 # 🔐 Dashboard Admin
 # ===================================
-NEXT_PUBLIC_ADMIN_EMAIL=tu-email@ejemplo.com
-NEXT_PUBLIC_ADMIN_PASSWORD=tu-contraseña-segura
+NEXT_PUBLIC_ADMIN_EMAIL=ps.msanluis@gmail.com
+NEXT_PUBLIC_ADMIN_PASSWORD=misakki12_
 
 # ===================================
 # 📧 Email Configuration
