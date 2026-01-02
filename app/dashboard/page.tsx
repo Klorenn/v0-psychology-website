@@ -495,8 +495,60 @@ export default function DashboardPage() {
                 <AppointmentCard
                   key={appointment.id}
                   appointment={appointment}
-                  onApprove={async () => await appointmentsStore.approve(appointment.id)}
-                  onReject={async () => await appointmentsStore.reject(appointment.id)}
+                  onApprove={async () => {
+                    try {
+                      // Actualizar en el servidor primero
+                      const response = await fetch("/api/appointments/update-status", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ id: appointment.id, status: "confirmed" }),
+                      })
+                      
+                      if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}))
+                        throw new Error(errorData.error || "Error al confirmar la cita")
+                      }
+                      
+                      // Actualizar en el store local
+                      await appointmentsStore.approve(appointment.id)
+                      
+                      // Mostrar feedback
+                      alert(`✅ Cita de ${appointment.patientName} confirmada correctamente`)
+                    } catch (error) {
+                      console.error("Error aprobando cita:", error)
+                      alert(`❌ Error: ${error instanceof Error ? error.message : "Error al confirmar la cita"}`)
+                    }
+                  }}
+                  onReject={async () => {
+                    // Confirmación antes de rechazar
+                    const confirmMessage = `¿Estás seguro de que deseas rechazar la cita de ${appointment.patientName}?\n\nEsta acción no se puede deshacer.`
+                    if (!window.confirm(confirmMessage)) {
+                      return
+                    }
+                    
+                    try {
+                      // Actualizar en el servidor primero
+                      const response = await fetch("/api/appointments/update-status", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ id: appointment.id, status: "cancelled" }),
+                      })
+                      
+                      if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}))
+                        throw new Error(errorData.error || "Error al rechazar la cita")
+                      }
+                      
+                      // Actualizar en el store local
+                      await appointmentsStore.reject(appointment.id)
+                      
+                      // Mostrar feedback
+                      alert(`✅ Cita de ${appointment.patientName} rechazada correctamente`)
+                    } catch (error) {
+                      console.error("Error rechazando cita:", error)
+                      alert(`❌ Error: ${error instanceof Error ? error.message : "Error al rechazar la cita"}`)
+                    }
+                  }}
                 />
               ))}
             </div>
@@ -575,6 +627,8 @@ function AppointmentCard({
   onReject: () => Promise<void>
 }) {
   const [timeRemaining, setTimeRemaining] = useState(formatTimeRemaining(appointment.expiresAt))
+  const [isApproving, setIsApproving] = useState(false)
+  const [isRejecting, setIsRejecting] = useState(false)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -660,11 +714,46 @@ function AppointmentCard({
           </Badge>
 
           <div className="flex gap-2">
-            <Button size="sm" onClick={onApprove} className="rounded-full bg-green-600 hover:bg-green-700 text-white">
-              <Check className="w-4 h-4" />
+            <Button 
+              size="sm" 
+              onClick={async () => {
+                setIsApproving(true)
+                try {
+                  await onApprove()
+                } finally {
+                  setIsApproving(false)
+                }
+              }}
+              disabled={isApproving || isRejecting}
+              className="rounded-full bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              title="Confirmar cita"
+            >
+              {isApproving ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
             </Button>
-            <Button size="sm" variant="destructive" onClick={onReject} className="rounded-full">
-              <X className="w-4 h-4" />
+            <Button 
+              size="sm" 
+              variant="destructive" 
+              onClick={async () => {
+                setIsRejecting(true)
+                try {
+                  await onReject()
+                } finally {
+                  setIsRejecting(false)
+                }
+              }}
+              disabled={isApproving || isRejecting}
+              className="rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              title="Rechazar cita"
+            >
+              {isRejecting ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <X className="w-4 h-4" />
+              )}
             </Button>
           </div>
         </div>
