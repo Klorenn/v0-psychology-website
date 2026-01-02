@@ -95,6 +95,13 @@ export default function DashboardPage() {
     serverSnapshotForAppointments
   )
 
+  // Verificar permisos de notificación al cargar
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setNotificationsEnabled(canSendNotifications())
+    }
+  }, [])
+
   // Load site config on mount
   useEffect(() => {
     const loadConfig = async () => {
