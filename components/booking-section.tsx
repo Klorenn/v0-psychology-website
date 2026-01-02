@@ -952,31 +952,6 @@ export function BookingSection() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="consultationReason">Motivo de consulta</Label>
-              <textarea
-                id="consultationReason"
-                value={consultationReason}
-                onChange={(e) => {
-                  setConsultationReason(e.target.value)
-                  if (validationErrors.consultationReason) {
-                    setValidationErrors((prev) => ({ ...prev, consultationReason: "" }))
-                  }
-                }}
-                placeholder="Cuénteme brevemente el motivo de su consulta..."
-                rows={4}
-                className={`w-full rounded-xl border border-border/50 bg-transparent px-3 py-2 text-sm resize-none ${
-                  validationErrors.consultationReason ? "border-destructive" : ""
-                }`}
-              />
-              {validationErrors.consultationReason && (
-                <p className="text-sm text-destructive">{validationErrors.consultationReason}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Esta información me ayuda a preparar mejor su sesión
-              </p>
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="emergencyContactRelation">Contacto de emergencia - Relación</Label>
               <select
                 id="emergencyContactRelation"
@@ -995,8 +970,6 @@ export function BookingSection() {
                 <option value="">Seleccione una opción</option>
                 <option value="madre">Madre</option>
                 <option value="padre">Padre</option>
-                <option value="hermano/a">Hermano/a</option>
-                <option value="amigo">Amigo</option>
                 <option value="pareja">Pareja</option>
                 <option value="otro">Otro</option>
               </select>
@@ -1044,6 +1017,31 @@ export function BookingSection() {
               {validationErrors.emergencyContactPhone && (
                 <p className="text-sm text-destructive">{validationErrors.emergencyContactPhone}</p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="consultationReason">Motivo de consulta</Label>
+              <textarea
+                id="consultationReason"
+                value={consultationReason}
+                onChange={(e) => {
+                  setConsultationReason(e.target.value)
+                  if (validationErrors.consultationReason) {
+                    setValidationErrors((prev) => ({ ...prev, consultationReason: "" }))
+                  }
+                }}
+                placeholder="Cuénteme brevemente el motivo de su consulta..."
+                rows={4}
+                className={`w-full rounded-xl border border-border/50 bg-transparent px-3 py-2 text-sm resize-none ${
+                  validationErrors.consultationReason ? "border-destructive" : ""
+                }`}
+              />
+              {validationErrors.consultationReason && (
+                <p className="text-sm text-destructive">{validationErrors.consultationReason}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Esta información me ayuda a preparar mejor su sesión
+              </p>
             </div>
 
             <div className="space-y-2">
