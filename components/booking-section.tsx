@@ -877,7 +877,7 @@ export function BookingSection() {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="sm:max-w-md bg-background border-border/50 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-md bg-background border-border/50 max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl">Sus datos</DialogTitle>
             <DialogDescription>Complete sus datos personales</DialogDescription>
