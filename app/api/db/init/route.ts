@@ -30,16 +30,16 @@ async function handleInit() {
     const errorStack = error instanceof Error ? error.stack : undefined
     
     // Verificar qué variables están configuradas para dar un hint más específico
-    const hasPostgresUrl = !!process.env.POSTGRES_URL
-    const hasPostgresUrlNonPooling = !!process.env.POSTGRES_URL_NON_POOLING
-    let hint = "Verifica que POSTGRES_URL o POSTGRES_URL_NON_POOLING estén configurados en Vercel."
+    const hasPostgresUrl = !!(process.env.POSTGRES_URL || process.env.storage_POSTGRES_URL)
+    const hasPostgresUrlNonPooling = !!(process.env.POSTGRES_URL_NON_POOLING || process.env.storage_POSTGRES_URL_NON_POOLING)
+    let hint = "Verifica que POSTGRES_URL o storage_POSTGRES_URL estén configurados en Vercel."
     
     if (!hasPostgresUrl && !hasPostgresUrlNonPooling) {
-      hint = "POSTGRES_URL no está configurado. Si conectaste Supabase desde Vercel, las variables deberían agregarse automáticamente. Ve a Vercel → Settings → Storage → Supabase para verificar la conexión."
+      hint = "POSTGRES_URL o storage_POSTGRES_URL no están configurados. Si conectaste Supabase desde Vercel, las variables deberían tener el prefijo 'storage_'. Ve a Vercel → Settings → Storage → Supabase para verificar la conexión."
     } else if (errorMessage.includes("connection") || errorMessage.includes("timeout")) {
       hint = "Error de conexión. Verifica que la URL de conexión de Supabase sea correcta y que el proyecto esté activo."
     } else if (errorMessage.includes("authentication") || errorMessage.includes("password")) {
-      hint = "Error de autenticación. Verifica que POSTGRES_PASSWORD sea correcto en las variables de entorno."
+      hint = "Error de autenticación. Verifica que storage_POSTGRES_PASSWORD sea correcto en las variables de entorno."
     }
     
     return NextResponse.json(

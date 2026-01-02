@@ -2,8 +2,14 @@ import { neon } from "@neondatabase/serverless"
 
 // Obtener la conexión SQL solo si POSTGRES_URL está disponible (Supabase)
 const getDatabaseConnection = () => {
-  // Usar POSTGRES_URL (Supabase) o POSTGRES_URL_NON_POOLING como fallback
-  const dbUrl = process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING
+  // Vercel agrega variables con prefijo "storage_" cuando conectas Supabase desde el dashboard
+  // Buscar primero las variables normales, luego las que tienen prefijo "storage_"
+  const dbUrl = 
+    process.env.POSTGRES_URL || 
+    process.env.storage_POSTGRES_URL ||
+    process.env.POSTGRES_URL_NON_POOLING || 
+    process.env.storage_POSTGRES_URL_NON_POOLING
+  
   if (!dbUrl) {
     return null
   }
@@ -17,9 +23,13 @@ export async function initializeDatabase() {
   const sql = getDatabaseConnection()
   
   if (!sql) {
-    const dbUrl = process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING
+    const dbUrl = 
+      process.env.POSTGRES_URL || 
+      process.env.storage_POSTGRES_URL ||
+      process.env.POSTGRES_URL_NON_POOLING || 
+      process.env.storage_POSTGRES_URL_NON_POOLING
     const errorMsg = !dbUrl 
-      ? "POSTGRES_URL o POSTGRES_URL_NON_POOLING no están configurados. Por favor, configura estas variables en Vercel Settings → Environment Variables."
+      ? "POSTGRES_URL o storage_POSTGRES_URL no están configurados. Si conectaste Supabase desde Vercel, las variables deberían tener el prefijo 'storage_'. Verifica en Vercel Settings → Environment Variables."
       : "No se pudo establecer conexión con la base de datos. Verifica que las credenciales sean correctas."
     throw new Error(errorMsg)
   }
