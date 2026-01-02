@@ -49,29 +49,20 @@ export default function DashboardPage() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [initialAuthCheck, setInitialAuthCheck] = useState(false)
 
-  // Verificar autenticación desde localStorage al montar
+  // RESTAURAR SESIÓN DESDE LOCALSTORAGE INMEDIATAMENTE AL MONTAR
   useEffect(() => {
     if (typeof window !== "undefined" && !initialAuthCheck) {
-      // Verificar localStorage directamente
-      try {
-        const stored = localStorage.getItem("psychology_dashboard_auth")
-        if (stored) {
-          const { email, timestamp } = JSON.parse(stored)
-          const isExpired = Date.now() - timestamp > 24 * 60 * 60 * 1000
-          if (email === "ps.msanluis@gmail.com" && !isExpired) {
-            // Restaurar sesión si es válida
-            authStore.login("ps.msanluis@gmail.com", "misakki12_")
-          } else {
-            localStorage.removeItem("psychology_dashboard_auth")
-          }
-        }
-      } catch {
-        // Si hay error, continuar
-      }
+      // Restaurar sesión desde localStorage si existe
+      const restored = authStore.restoreSession()
       setInitialAuthCheck(true)
       setIsCheckingAuth(false)
+      
+      // Si no se pudo restaurar, redirigir al login
+      if (!restored) {
+        router.push("/dashboard/login")
+      }
     }
-  }, [initialAuthCheck])
+  }, [initialAuthCheck, router])
 
   const isAuth = useSyncExternalStore(authStore.subscribe, authStore.isAuthenticated, getServerSnapshotForAuth)
 

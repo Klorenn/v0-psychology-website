@@ -40,13 +40,31 @@ export const authStore = {
   isAuthenticated: () => {
     // Verificar localStorage cada vez por si cambió en otra pestaña
     if (typeof window !== "undefined") {
-      const stored = getInitialAuthState()
-      if (stored !== isAuthenticated) {
-        isAuthenticated = stored
-        notifyAuthListeners()
+      try {
+        const stored = getInitialAuthState()
+        if (stored !== isAuthenticated) {
+          isAuthenticated = stored
+          notifyAuthListeners()
+        }
+      } catch (error) {
+        // Si hay error, mantener el estado actual
+        console.error("Error verificando autenticación:", error)
       }
     }
     return isAuthenticated
+  },
+  
+  // Método para restaurar sesión sin contraseña (útil después de redirecciones)
+  restoreSession: () => {
+    if (typeof window !== "undefined") {
+      const stored = getInitialAuthState()
+      if (stored) {
+        isAuthenticated = true
+        notifyAuthListeners()
+        return true
+      }
+    }
+    return false
   },
 
   login: (email: string, password: string): boolean => {
