@@ -1,7 +1,7 @@
 import { neon } from "@neondatabase/serverless"
 
 // Obtener la conexión SQL solo si POSTGRES_URL está disponible (Supabase)
-const getDatabaseConnection = () => {
+export function getDatabaseConnection() {
   // Vercel agrega variables con prefijo "storage_" cuando conectas Supabase desde el dashboard
   // Buscar primero las variables normales, luego las que tienen prefijo "storage_"
   const dbUrl = 
