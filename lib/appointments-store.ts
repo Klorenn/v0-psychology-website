@@ -1,4 +1,15 @@
-import { appointmentsPersistence } from "./appointments-persistence"
+// Usar DB en producción, JSON en desarrollo
+const useDatabase = process.env.POSTGRES_URL !== undefined
+
+let appointmentsPersistence: any
+
+if (useDatabase) {
+  // En producción (Vercel con Postgres)
+  appointmentsPersistence = require("./appointments-persistence-db").appointmentsPersistence
+} else {
+  // En desarrollo (archivos JSON)
+  appointmentsPersistence = require("./appointments-persistence").appointmentsPersistence
+}
 
 export type AppointmentStatus = "pending" | "confirmed" | "cancelled" | "expired"
 export type AppointmentType = "online" | "presencial"
