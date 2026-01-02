@@ -5,11 +5,18 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ChevronLeft, ChevronRight, Clock, Loader2, CalendarDays } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, Loader2, CalendarDays, Shield } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { appointmentsStore } from "@/lib/appointments-store"
+import { BankTransferDetails } from "@/components/bank-transfer-details"
+import { FileUpload } from "@/components/file-upload"
+import { validateEmail, validatePhone, validateName, sanitizeName, sanitizePhone, sanitizeString } from "@/lib/validation"
+import { countryCodes, defaultCountryCode, type CountryCode } from "@/lib/country-codes"
+import { ChevronDown } from "lucide-react"
 
 const DEFAULT_SLOTS = ["09:00", "10:00", "11:00", "12:00", "15:00", "16:00", "17:00", "18:00"]
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "application/pdf"]
 
 const monthNames = [
   "Enero",
@@ -35,9 +42,21 @@ export function BookingSection() {
   const [showForm, setShowForm] = useState(false)
   const [patientName, setPatientName] = useState("")
   const [patientEmail, setPatientEmail] = useState("")
+  const [patientPhone, setPatientPhone] = useState("")
+  const [selectedCountry, setSelectedCountry] = useState<CountryCode>(defaultCountryCode)
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false)
+  const [consultationReason, setConsultationReason] = useState("")
+  const [appointmentType, setAppointmentType] = useState<"online" | "presencial">("online")
   const [showConfirmation, setShowConfirmation] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
+  const [uploadError, setUploadError] = useState<string>("")
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const [showBankDetails, setShowBankDetails] = useState(false)
+  const [receiptUploaded, setReceiptUploaded] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -104,19 +123,221 @@ export function BookingSection() {
     setShowForm(true)
   }
 
-  const handleSubmitBooking = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedDate || !selectedTime || !patientName || !patientEmail) return
+  const handleContinueAfterForm = () => {
+    // Validar datos básicos antes de mostrar datos bancarios
+    if (!patientName.trim() || !validateName(patientName)) {
+      setValidationErrors({ name: "El nombre es requerido y debe ser válido" })
+      return
+    }
+    if (!patientEmail.trim() || !validateEmail(patientEmail)) {
+      setValidationErrors({ email: "El correo electrónico es requerido y debe ser válido" })
+      return
+    }
+    if (!patientPhone.trim() || !validatePhone(patientPhone)) {
+      setValidationErrors({ phone: "El teléfono es requerido y debe ser válido" })
+      return
+    }
+    if (!appointmentType) {
+      setValidationErrors({ appointmentType: "Seleccione el tipo de atención" })
+      return
+    }
+    
+    setValidationErrors({})
+    setShowForm(false)
+    setShowBankDetails(true)
+  }
 
-    appointmentsStore.add({
-      patientName,
-      patientEmail,
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {}
+
+    if (!patientName.trim()) {
+      errors.name = "El nombre es requerido"
+    } else if (!validateName(patientName)) {
+      errors.name = "El nombre debe contener solo letras y espacios"
+    }
+
+    if (!patientEmail.trim()) {
+      errors.email = "El correo electrónico es requerido"
+    } else if (!validateEmail(patientEmail)) {
+      errors.email = "Ingrese un correo electrónico válido"
+    }
+
+    if (!patientPhone.trim()) {
+      errors.phone = "El teléfono es requerido"
+    } else {
+      // Validar teléfono según el tipo de atención
+      const phoneToValidate = appointmentType === "online" && selectedCountry
+        ? `${selectedCountry.dialCode} ${patientPhone.trim()}`
+        : patientPhone
+      
+      if (!validatePhone(phoneToValidate, appointmentType === "online")) {
+        if (appointmentType === "online") {
+          errors.phone = "Ingrese un número de teléfono válido"
+        } else {
+          errors.phone = "Ingrese un número de teléfono válido (ej: +56 9 1234 5678)"
+        }
+      }
+    }
+
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const validateReceipt = (file: File): string | null => {
+    // Validar tipo
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return "Tipo de archivo no permitido. Solo se aceptan JPG, PNG o PDF."
+    }
+
+    // Validar tamaño
+    if (file.size > MAX_FILE_SIZE) {
+      return `El archivo es demasiado grande. Tamaño máximo: ${MAX_FILE_SIZE / 1024 / 1024}MB`
+    }
+
+    // Validar tamaño mínimo (archivos muy pequeños pueden ser falsos)
+    const MIN_FILE_SIZE = 10 * 1024 // 10KB mínimo
+    if (file.size < MIN_FILE_SIZE) {
+      return "El archivo es demasiado pequeño. Asegúrese de subir un comprobante válido."
+    }
+
+    return null
+  }
+
+  const handleSubmitBooking = async () => {
+    if (isSubmitting) return
+
+    if (!selectedDate || !selectedTime) return
+
+    // Validar datos básicos
+    if (!validateForm()) {
+      return
+    }
+
+    // Validar comprobante
+    if (!receiptFile) {
+      setValidationErrors((prev) => ({ ...prev, receipt: "El comprobante de transferencia es requerido" }))
+      return
+    }
+
+    const receiptValidation = validateReceipt(receiptFile)
+    if (receiptValidation) {
+      setUploadError(receiptValidation)
+      return
+    }
+
+    setIsSubmitting(true)
+    setUploadError("")
+
+    try {
+      const appointmentId = crypto.randomUUID()
+
+      let receiptUrl = ""
+      if (receiptFile) {
+        setIsUploading(true)
+        setUploadError("")
+        try {
+          const formData = new FormData()
+          formData.append("file", receiptFile)
+          formData.append("appointmentId", appointmentId)
+
+          const uploadResponse = await fetch("/api/appointments/upload-receipt", {
+            method: "POST",
+            body: formData,
+          })
+
+          if (!uploadResponse.ok) {
+            const errorData = await uploadResponse.json().catch(() => ({}))
+            throw new Error(errorData.error || "Error al subir el comprobante. Por favor, intente nuevamente.")
+          }
+
+          const uploadData = await uploadResponse.json()
+          receiptUrl = uploadData.url || ""
+        } catch (uploadError) {
+          setIsUploading(false)
+          const errorMessage = uploadError instanceof Error ? uploadError.message : "Error al subir el comprobante. Por favor, intente nuevamente."
+          setUploadError(errorMessage)
+          throw uploadError
+        } finally {
+          setIsUploading(false)
+        }
+      }
+
+      // Formatear teléfono con código de país si es online
+      let formattedPhone = patientPhone
+      if (appointmentType === "online" && selectedCountry) {
+        // Si el teléfono ya incluye el código, no duplicarlo
+        if (!patientPhone.startsWith("+") && !patientPhone.startsWith(selectedCountry.dialCode)) {
+          formattedPhone = `${selectedCountry.dialCode} ${patientPhone.trim()}`
+        } else if (patientPhone.startsWith(selectedCountry.dialCode)) {
+          formattedPhone = patientPhone
+        }
+      }
+
+      const sanitizedData = {
+        appointmentId,
+        patientName: sanitizeName(patientName),
+        patientEmail: sanitizeString(patientEmail).toLowerCase(),
+        patientPhone: sanitizePhone(formattedPhone),
+        consultationReason: sanitizeString(consultationReason),
+        appointmentType,
+        date: selectedDate.toISOString(),
+        time: selectedTime,
+        receiptUrl,
+      }
+
+      const response = await fetch("/api/appointments/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(sanitizedData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || "Error al enviar la solicitud. Por favor, intente nuevamente.")
+      }
+
+      await appointmentsStore.add({
+        id: appointmentId,
+        patientName: sanitizedData.patientName,
+        patientEmail: sanitizedData.patientEmail,
+        patientPhone: sanitizedData.patientPhone,
+        consultationReason: sanitizedData.consultationReason || undefined,
+        appointmentType,
       date: selectedDate,
       time: selectedTime,
+        status: "pending",
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        receiptUrl: receiptUrl || undefined,
     })
 
     setShowForm(false)
+      setShowBankDetails(false)
+      setReceiptUploaded(false)
+      setReceiptFile(null)
+      setSelectedCountry(defaultCountryCode)
+      setConsultationReason("")
     setShowConfirmation(true)
+    } catch (error) {
+      console.error("Error al procesar solicitud")
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Hubo un error al procesar su solicitud. Por favor, verifique los datos e intente nuevamente."
+      
+      if (!uploadError) {
+        setUploadError(errorMessage)
+      }
+      
+      if (!isUploading) {
+        alert(errorMessage)
+      }
+    } finally {
+      setIsSubmitting(false)
+      setIsUploading(false)
+    }
   }
 
   const handleCloseConfirmation = () => {
@@ -125,6 +346,19 @@ export function BookingSection() {
     setSelectedTime(null)
     setPatientName("")
     setPatientEmail("")
+    setPatientPhone("")
+    setSelectedCountry(defaultCountryCode)
+    setConsultationReason("")
+    setAppointmentType("online")
+    setReceiptFile(null)
+    setValidationErrors({})
+    setUploadError("")
+    setReceiptUploaded(false)
+    setShowBankDetails(false)
+  }
+
+  const getPrice = () => {
+    return appointmentType === "online" ? "20.000" : "27.000"
   }
 
   const isDateDisabled = (day: number) => {
@@ -145,9 +379,9 @@ export function BookingSection() {
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-accent/10 mb-4">
             <CalendarDays className="w-6 h-6 text-accent" strokeWidth={1.5} />
           </div>
-          <h2 className="font-serif text-3xl md:text-4xl text-foreground mb-3">Agenda tu sesión</h2>
+          <h2 className="font-serif text-3xl md:text-4xl text-foreground mb-3">Agende su sesión</h2>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Selecciona una fecha y hora disponible para tu primera consulta
+            Seleccione una fecha y hora disponible para su primera consulta
           </p>
         </div>
 
@@ -228,7 +462,7 @@ export function BookingSection() {
                       <Clock className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <p className="text-muted-foreground text-sm">
-                      Selecciona una fecha para ver los horarios disponibles
+                      Seleccione una fecha para ver los horarios disponibles
                     </p>
                   </div>
                 ) : (
@@ -302,25 +536,190 @@ export function BookingSection() {
         </div>
       </div>
 
-      {/* Form Dialog */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="sm:max-w-md bg-background border-border/50">
+      {/* Bank Details Dialog with Receipt Upload */}
+      <Dialog open={showBankDetails} onOpenChange={setShowBankDetails}>
+        <DialogContent className="sm:max-w-lg bg-background border-border/50 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-serif text-2xl">Tus datos</DialogTitle>
-            <DialogDescription>Completa tus datos para solicitar la cita</DialogDescription>
+            <DialogTitle className="font-serif text-2xl">Datos para transferencia</DialogTitle>
+            <DialogDescription>
+              Realice la transferencia bancaria y suba el comprobante para confirmar su reserva
+            </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmitBooking} className="space-y-4 mt-4">
+          <div className="space-y-6 mt-4">
+            <BankTransferDetails amount={getPrice()} />
+
+            <div className="space-y-3">
+              <Label className="text-base font-medium">Comprobante de transferencia</Label>
+              <p className="text-sm text-muted-foreground">
+                Suba una foto o PDF del comprobante de transferencia. El archivo debe ser legible y mostrar claramente los datos de la transferencia.
+              </p>
+              
+              <FileUpload
+                value={receiptFile}
+                onChange={(file) => {
+                  if (file) {
+                    const validationError = validateReceipt(file)
+                    if (validationError) {
+                      setUploadError(validationError)
+                      setReceiptFile(null)
+                      setReceiptUploaded(false)
+                      return
+                    }
+                    setUploadError("")
+                    setReceiptFile(file)
+                    setReceiptUploaded(true)
+                  } else {
+                    setReceiptFile(null)
+                    setReceiptUploaded(false)
+                    setUploadError("")
+                  }
+                }}
+                error={validationErrors.receipt || uploadError}
+                required
+                isUploading={isUploading}
+              />
+
+              {receiptUploaded && !uploadError && (
+                <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl p-3 text-sm">
+                  <p className="text-green-900 dark:text-green-100 flex items-center gap-2">
+                    <span className="text-green-600">✓</span>
+                    Comprobante cargado correctamente. Verifique que sea legible antes de continuar.
+                  </p>
+                </div>
+              )}
+
+              {uploadError && (
+                <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl p-3 text-sm">
+                  <p className="text-red-900 dark:text-red-100">{uploadError}</p>
+                </div>
+              )}
+
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-sm">
+                <p className="text-amber-900 dark:text-amber-100 font-medium mb-1">⚠️ Importante</p>
+                <p className="text-amber-800 dark:text-amber-200 text-xs">
+                  El comprobante debe mostrar claramente: banco emisor, monto transferido, número de cuenta destino y fecha. 
+                  Los comprobantes ilegibles o falsos serán rechazados.
+                </p>
+              </div>
+            </div>
+
+            <Button
+              onClick={handleSubmitBooking}
+              disabled={isSubmitting || isUploading || !receiptFile}
+              className="w-full rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
+            >
+              {isUploading ? "Subiendo comprobante..." : isSubmitting ? "Enviando solicitud..." : "Confirmar y enviar solicitud"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Form Dialog */}
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="sm:max-w-md bg-background border-border/50 max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl">Sus datos</DialogTitle>
+            <DialogDescription>Complete sus datos personales</DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={(e) => { e.preventDefault(); handleContinueAfterForm(); }} className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre completo</Label>
               <Input
                 id="name"
                 value={patientName}
-                onChange={(e) => setPatientName(e.target.value)}
-                placeholder="Tu nombre"
-                className="rounded-xl border-border/50"
+                onChange={(e) => {
+                  setPatientName(e.target.value)
+                  if (validationErrors.name) {
+                    setValidationErrors((prev) => ({ ...prev, name: "" }))
+                  }
+                }}
+                placeholder="Su nombre completo"
+                className={`rounded-xl border-border/50 ${validationErrors.name ? "border-destructive" : ""}`}
                 required
               />
+              {validationErrors.name && (
+                <p className="text-sm text-destructive">{validationErrors.name}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Número de teléfono</Label>
+              {appointmentType === "online" ? (
+                <div className="flex gap-2">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border/50 bg-background hover:bg-muted/50 transition-colors min-w-[140px]"
+                    >
+                      <span className="text-lg">{selectedCountry.flag}</span>
+                      <span className="text-sm font-medium">{selectedCountry.dialCode}</span>
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                    {showCountryDropdown && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setShowCountryDropdown(false)}
+                        />
+                        <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-20 max-h-64 overflow-y-auto w-64">
+                          {countryCodes.map((country) => (
+                            <button
+                              key={country.code}
+                              type="button"
+                              onClick={() => {
+                                setSelectedCountry(country)
+                                setShowCountryDropdown(false)
+                              }}
+                              className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-muted/50 transition-colors ${
+                                selectedCountry.code === country.code ? "bg-accent/10" : ""
+                              }`}
+                            >
+                              <span className="text-lg">{country.flag}</span>
+                              <span className="text-sm flex-1 text-left">{country.name}</span>
+                              <span className="text-sm text-muted-foreground">{country.dialCode}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={patientPhone}
+                    onChange={(e) => {
+                      setPatientPhone(e.target.value)
+                      if (validationErrors.phone) {
+                        setValidationErrors((prev) => ({ ...prev, phone: "" }))
+                      }
+                    }}
+                    placeholder="9 1234 5678"
+                    className={`flex-1 rounded-xl border-border/50 ${validationErrors.phone ? "border-destructive" : ""}`}
+                    required
+                  />
+                </div>
+              ) : (
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={patientPhone}
+                  onChange={(e) => {
+                    setPatientPhone(e.target.value)
+                    if (validationErrors.phone) {
+                      setValidationErrors((prev) => ({ ...prev, phone: "" }))
+                    }
+                  }}
+                  placeholder="+56 9 1234 5678"
+                  className={`rounded-xl border-border/50 ${validationErrors.phone ? "border-destructive" : ""}`}
+                  required
+                />
+              )}
+              {validationErrors.phone && (
+                <p className="text-sm text-destructive">{validationErrors.phone}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -329,23 +728,116 @@ export function BookingSection() {
                 id="email"
                 type="email"
                 value={patientEmail}
-                onChange={(e) => setPatientEmail(e.target.value)}
-                placeholder="tu@correo.com"
-                className="rounded-xl border-border/50"
+                onChange={(e) => {
+                  setPatientEmail(e.target.value)
+                  if (validationErrors.email) {
+                    setValidationErrors((prev) => ({ ...prev, email: "" }))
+                  }
+                }}
+                placeholder="su@correo.com"
+                className={`rounded-xl border-border/50 ${validationErrors.email ? "border-destructive" : ""}`}
                 required
               />
+              {validationErrors.email && (
+                <p className="text-sm text-destructive">{validationErrors.email}</p>
+              )}
             </div>
 
-            <div className="bg-muted/50 rounded-xl p-4 text-sm">
+            <div className="space-y-2">
+              <Label htmlFor="consultationReason">Motivo de consulta</Label>
+              <textarea
+                id="consultationReason"
+                value={consultationReason}
+                onChange={(e) => {
+                  setConsultationReason(e.target.value)
+                  if (validationErrors.consultationReason) {
+                    setValidationErrors((prev) => ({ ...prev, consultationReason: "" }))
+                  }
+                }}
+                placeholder="Cuénteme brevemente el motivo de su consulta..."
+                rows={4}
+                className={`w-full rounded-xl border border-border/50 bg-transparent px-3 py-2 text-sm resize-none ${
+                  validationErrors.consultationReason ? "border-destructive" : ""
+                }`}
+              />
+              {validationErrors.consultationReason && (
+                <p className="text-sm text-destructive">{validationErrors.consultationReason}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Esta información me ayuda a preparar mejor su sesión
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>¿Cómo desea atenderse?</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppointmentType("online")
+                    setShowCountryDropdown(false)
+                  }}
+                  className={`
+                    py-3 px-4 rounded-xl text-sm font-medium transition-all border-2
+                    ${
+                      appointmentType === "online"
+                        ? "bg-accent text-accent-foreground border-accent"
+                        : "bg-muted/50 text-foreground border-border/50 hover:bg-muted"
+                    }
+                  `}
+                >
+                  Online
+                  <span className="block text-xs mt-1 opacity-80">$20.000</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppointmentType("presencial")
+                    setShowCountryDropdown(false)
+                  }}
+                  className={`
+                    py-3 px-4 rounded-xl text-sm font-medium transition-all border-2
+                    ${
+                      appointmentType === "presencial"
+                        ? "bg-accent text-accent-foreground border-accent"
+                        : "bg-muted/50 text-foreground border-border/50 hover:bg-muted"
+                    }
+                  `}
+                >
+                  Presencial
+                  <span className="block text-xs mt-1 opacity-80">$27.000</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-muted/50 rounded-xl p-4 text-sm space-y-2">
               <p className="font-medium text-foreground mb-1">Resumen de la cita</p>
               <p className="text-muted-foreground">
                 {selectedDate?.getDate()} de {selectedDate && monthNames[selectedDate.getMonth()]} a las {selectedTime}{" "}
                 hrs
               </p>
+              <p className="text-muted-foreground">
+                Modalidad: <span className="font-medium text-foreground capitalize">{appointmentType}</span>
+              </p>
+              <p className="text-muted-foreground">
+                Valor: <span className="font-medium text-foreground">${getPrice()} CLP</span>
+              </p>
             </div>
 
-            <Button type="submit" className="w-full rounded-xl bg-accent text-accent-foreground hover:bg-accent/90">
-              Solicitar cita
+            <div className="bg-muted/30 rounded-xl p-3 text-xs flex items-start gap-2">
+              <Shield className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <p className="text-muted-foreground">
+                Sus datos son confidenciales y se utilizan únicamente para gestionar su cita. No comparto
+                información con terceros.
+              </p>
+            </div>
+
+            <Button
+              type="button"
+              onClick={handleContinueAfterForm}
+              className="w-full rounded-xl bg-accent text-accent-foreground hover:bg-accent/90"
+            >
+              Continuar con el pago
             </Button>
           </form>
         </DialogContent>
@@ -360,16 +852,22 @@ export function BookingSection() {
             </div>
             <DialogTitle className="font-serif text-2xl text-center">Solicitud enviada</DialogTitle>
             <DialogDescription className="text-center pt-2">
-              Tu solicitud de cita para el{" "}
+              Su solicitud de cita para el{" "}
               <span className="font-medium text-foreground">
                 {selectedDate?.getDate()} de {selectedDate && monthNames[selectedDate.getMonth()]}
               </span>{" "}
               a las <span className="font-medium text-foreground">{selectedTime} hrs</span> ha sido enviada.
               <br />
               <br />
-              <span className="text-amber-600 font-medium">La psicóloga tiene 5 minutos para confirmar tu cita.</span>
+              <span className="text-green-600 font-medium">
+                ✓ Comprobante recibido correctamente
+              </span>
               <br />
-              Recibirás un correo cuando sea confirmada.
+              <br />
+              <span className="text-sm">
+                La reserva se confirma una vez recibido el comprobante de transferencia. Recibirá un correo cuando
+                confirme su cita.
+              </span>
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center mt-4">

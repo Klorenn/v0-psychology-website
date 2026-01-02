@@ -77,8 +77,6 @@ export default function LoginPage() {
           <Button type="submit" className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
             Iniciar sesión
           </Button>
-
-          <p className="text-xs text-muted-foreground text-center mt-4">Demo: psicologa@clinica.cl / 123456</p>
         </form>
       </div>
     </main>

@@ -6,7 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { appointmentsStore, type Appointment } from "@/lib/appointments-store"
 import { authStore } from "@/lib/auth-store"
-import { Check, X, Clock, LogOut, Calendar } from "lucide-react"
+import { Check, X, Clock, LogOut, Calendar, FileText, ExternalLink, Settings } from "lucide-react"
+import { VisualPageEditor } from "@/components/visual-page-editor"
+import { GoogleCalendarSettings } from "@/components/google-calendar-settings"
+import { ThemeSelectorExtended } from "@/components/theme-selector-extended"
+import { useSiteConfig } from "@/lib/use-site-config"
+import { siteConfigStore } from "@/lib/site-config"
 
 const monthNames = [
   "Enero",
@@ -35,22 +40,79 @@ function formatTimeRemaining(expiresAt: Date): string {
 export default function DashboardPage() {
   const router = useRouter()
   const [timeUpdate, setTimeUpdate] = useState(0)
+  const [activeTab, setActiveTab] = useState<"appointments" | "settings">("appointments")
+  const [siteConfig, setSiteConfig] = useState(siteConfigStore.get())
 
   const isAuth = useSyncExternalStore(authStore.subscribe, authStore.isAuthenticated, () => false)
 
   const appointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAll, () => [])
 
-  // Check auth on mount
+  // Load site config on mount
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const response = await fetch("/api/site-config")
+        if (response.ok) {
+          const config = await response.json()
+          // Asegurar que el tema tenga valores por defecto si no existen
+          if (!config.theme) {
+            config.theme = {
+              themeId: "lavender",
+              darkThemeId: "dark-lavender",
+              darkMode: false,
+            }
+          }
+          siteConfigStore.set(config)
+          setSiteConfig(config)
+        }
+      } catch (error) {
+        console.error("Error cargando configuración:", error)
+      }
+    }
+    loadConfig()
+
+    const unsubscribe = siteConfigStore.subscribe(() => {
+      setSiteConfig(siteConfigStore.get())
+    })
+
+    return unsubscribe
+  }, [])
+
+  const handleConfigChange = (newConfig: typeof siteConfig) => {
+    setSiteConfig(newConfig)
+    siteConfigStore.set(newConfig)
+  }
+
+  const handleSaveConfig = async () => {
+    try {
+      const response = await fetch("/api/site-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(siteConfig),
+      })
+      if (!response.ok) {
+        throw new Error("Error al guardar")
+      }
+    } catch (error) {
+      console.error("Error guardando configuración:", error)
+      throw error
+    }
+  }
+
+  // Initialize store and check auth on mount
   useEffect(() => {
     if (!isAuth) {
       router.push("/dashboard/login")
+    } else {
+      // Inicializar el store cuando el usuario está autenticado
+      appointmentsStore.init()
     }
   }, [isAuth, router])
 
   // Update timer every second and check for expired appointments
   useEffect(() => {
-    const interval = setInterval(() => {
-      appointmentsStore.checkExpired()
+    const interval = setInterval(async () => {
+      await appointmentsStore.checkExpired()
       setTimeUpdate((t) => t + 1)
     }, 1000)
     return () => clearInterval(interval)
@@ -75,7 +137,7 @@ export default function DashboardPage() {
       <header className="border-b border-border bg-card">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="font-serif text-2xl text-foreground">Dashboard</h1>
+            <h1 className="font-serif text-2xl text-foreground">{siteConfig.navigation.logoText || "Dashboard"}</h1>
             <p className="text-sm text-muted-foreground">Gestión de citas</p>
           </div>
           <Button variant="ghost" onClick={handleLogout} className="text-muted-foreground hover:text-foreground">
@@ -86,8 +148,46 @@ export default function DashboardPage() {
       </header>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6 border-b border-border">
+          <button
+            onClick={() => setActiveTab("appointments")}
+            className={`px-4 py-2 font-medium text-sm transition-colors ${
+              activeTab === "appointments"
+                ? "text-foreground border-b-2 border-accent"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Calendar className="w-4 h-4 inline mr-2" />
+            Citas
+          </button>
+          <button
+            onClick={() => setActiveTab("settings")}
+            className={`px-4 py-2 font-medium text-sm transition-colors ${
+              activeTab === "settings"
+                ? "text-foreground border-b-2 border-accent"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Settings className="w-4 h-4 inline mr-2" />
+            Configuración del Sitio
+          </button>
+        </div>
+
+        {activeTab === "settings" ? (
+          <div className="space-y-6">
+            <ThemeSelectorExtended />
+            <GoogleCalendarSettings />
+            <VisualPageEditor
+              config={siteConfig}
+              onConfigChange={handleConfigChange}
+              onSave={handleSaveConfig}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-card rounded-xl p-6 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
@@ -143,8 +243,8 @@ export default function DashboardPage() {
                 <AppointmentCard
                   key={appointment.id}
                   appointment={appointment}
-                  onApprove={() => appointmentsStore.approve(appointment.id)}
-                  onReject={() => appointmentsStore.reject(appointment.id)}
+                  onApprove={async () => await appointmentsStore.approve(appointment.id)}
+                  onReject={async () => await appointmentsStore.reject(appointment.id)}
                 />
               ))}
             </div>
@@ -177,6 +277,13 @@ export default function DashboardPage() {
                     <div>
                       <p className="font-medium text-foreground">{appointment.patientName}</p>
                       <p className="text-sm text-muted-foreground">{appointment.patientEmail}</p>
+                      <p className="text-sm text-muted-foreground">{appointment.patientPhone}</p>
+                      {appointment.consultationReason && (
+                        <div className="mt-2 p-2 bg-muted/50 rounded-lg">
+                          <p className="text-xs text-muted-foreground mb-1">Motivo de consulta:</p>
+                          <p className="text-xs text-foreground italic">{appointment.consultationReason}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="text-right">
@@ -184,6 +291,9 @@ export default function DashboardPage() {
                       {appointment.date.getDate()} de {monthNames[appointment.date.getMonth()]}
                     </p>
                     <p className="text-sm text-muted-foreground">{appointment.time} hrs</p>
+                    <Badge variant="outline" className="mt-1 capitalize">
+                      {appointment.appointmentType}
+                    </Badge>
                   </div>
                 </div>
               ))}
@@ -211,6 +321,7 @@ export default function DashboardPage() {
                     <div>
                       <p className="font-medium text-foreground line-through">{appointment.patientName}</p>
                       <p className="text-sm text-muted-foreground">{appointment.patientEmail}</p>
+                      <p className="text-sm text-muted-foreground">{appointment.patientPhone}</p>
                     </div>
                   </div>
                   <Badge variant="destructive" className="rounded-full">
@@ -220,6 +331,8 @@ export default function DashboardPage() {
               ))}
             </div>
           </section>
+        )}
+          </>
         )}
       </div>
     </main>
@@ -232,8 +345,8 @@ function AppointmentCard({
   onReject,
 }: {
   appointment: Appointment
-  onApprove: () => void
-  onReject: () => void
+  onApprove: () => Promise<void>
+  onReject: () => Promise<void>
 }) {
   const [timeRemaining, setTimeRemaining] = useState(formatTimeRemaining(appointment.expiresAt))
 
@@ -254,6 +367,27 @@ function AppointmentCard({
           <div>
             <p className="font-medium text-foreground">{appointment.patientName}</p>
             <p className="text-sm text-muted-foreground">{appointment.patientEmail}</p>
+            <p className="text-sm text-muted-foreground">{appointment.patientPhone}</p>
+            {appointment.consultationReason && (
+              <div className="mt-2 p-2 bg-muted/50 rounded-lg">
+                <p className="text-xs text-muted-foreground mb-1">Motivo de consulta:</p>
+                <p className="text-xs text-foreground italic">{appointment.consultationReason}</p>
+              </div>
+            )}
+            {appointment.receiptUrl && (
+              <div className="mt-2">
+                <a
+                  href={appointment.receiptUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-accent hover:text-accent/80 transition-colors"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Ver comprobante
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            )}
           </div>
         </div>
 
@@ -263,6 +397,14 @@ function AppointmentCard({
               {appointment.date.getDate()} de {monthNames[appointment.date.getMonth()]}
             </p>
             <p className="text-sm text-muted-foreground">{appointment.time} hrs</p>
+            <Badge variant="outline" className="mt-1 capitalize">
+              {appointment.appointmentType}
+            </Badge>
+            {appointment.receiptUrl && (
+              <Badge variant="secondary" className="mt-1 text-xs">
+                ✓ Comprobante
+              </Badge>
+            )}
           </div>
 
           <Badge variant="secondary" className="rounded-full font-mono">

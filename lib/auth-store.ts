@@ -1,6 +1,6 @@
 const ADMIN_CREDENTIALS = {
-  email: "psicologa@clinica.cl",
-  password: "123456",
+  email: "ps.msanluis@gmail.com",
+  password: "misakki12_",
 }
 
 let isAuthenticated = false
