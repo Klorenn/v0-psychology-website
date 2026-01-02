@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
 
 /**
  * Endpoint temporal para probar conexión directa con Supabase
@@ -29,6 +28,9 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Importación dinámica para evitar problemas en build
+    const { createClient } = await import("@supabase/supabase-js")
+    
     const supabase = createClient(supabaseUrl, supabaseKey, {
       auth: {
         persistSession: false,
