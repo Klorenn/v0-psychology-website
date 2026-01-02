@@ -17,7 +17,11 @@ export async function initializeDatabase() {
   const sql = getDatabaseConnection()
   
   if (!sql) {
-    throw new Error("POSTGRES_URL no está configurado")
+    const dbUrl = process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING
+    const errorMsg = !dbUrl 
+      ? "POSTGRES_URL o POSTGRES_URL_NON_POOLING no están configurados. Por favor, configura estas variables en Vercel Settings → Environment Variables."
+      : "No se pudo establecer conexión con la base de datos. Verifica que las credenciales sean correctas."
+    throw new Error(errorMsg)
   }
   
   try {
