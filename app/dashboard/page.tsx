@@ -10,6 +10,7 @@ import { Check, X, Clock, LogOut, Calendar, FileText, ExternalLink, Settings } f
 import { VisualPageEditor } from "@/components/visual-page-editor"
 import { GoogleCalendarSettings } from "@/components/google-calendar-settings"
 import { ThemeSelectorExtended } from "@/components/theme-selector-extended"
+import { EmailTemplateEditor } from "@/components/email-template-editor"
 import { useSiteConfig } from "@/lib/use-site-config"
 import { siteConfigStore } from "@/lib/site-config"
 
@@ -237,6 +238,11 @@ export default function DashboardPage() {
           <div className="space-y-6">
             <GoogleCalendarSettings />
             <ThemeSelectorExtended />
+            <EmailTemplateEditor
+              config={siteConfig}
+              onConfigChange={handleConfigChange}
+              onSave={handleSaveConfig}
+            />
             <VisualPageEditor
               config={siteConfig}
               onConfigChange={handleConfigChange}

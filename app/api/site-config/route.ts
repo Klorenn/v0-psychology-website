@@ -40,11 +40,19 @@ export async function POST(request: NextRequest) {
     const config = body as SiteConfig
     
     // Validar estructura básica
-    if (!config.hero || !config.navigation || !config.values || !config.location || !config.social || !config.theme) {
+    if (!config.hero || !config.navigation || !config.values || !config.location || !config.social || !config.theme || !config.emailTemplate) {
       return NextResponse.json(
         { error: "Configuración inválida" },
         { status: 400 }
       )
+    }
+    
+    // Asegurar que emailTemplate tenga valores por defecto si faltan
+    if (!config.emailTemplate.subject) {
+      config.emailTemplate.subject = "Sesión Confirmada - {{date}}"
+    }
+    if (!config.emailTemplate.body) {
+      config.emailTemplate.body = `Estimado/a {{patientName}},\n\nSu sesión ha sido confirmada para:\n- Fecha: {{date}}\n- Hora: {{time}} hrs\n- Modalidad: {{appointmentType}}\n- Valor: {{price}} CLP\n\nPor favor, asegúrese de haber realizado el pago por transferencia antes de la sesión.\n\nSaludos cordiales,\nMaría`
     }
     
     // Asegurar que el tema tenga valores por defecto si faltan
