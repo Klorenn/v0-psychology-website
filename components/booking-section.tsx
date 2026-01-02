@@ -651,7 +651,7 @@ export function BookingSection() {
               </p>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <p className="text-sm font-medium text-foreground">Seleccione su método de pago:</p>
               <div className="grid grid-cols-1 gap-3">
                 <Button
@@ -663,11 +663,11 @@ export function BookingSection() {
                 >
                   <div className="flex items-center gap-3 w-full">
                     <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-                      <span className="text-xl font-bold text-blue-600 dark:text-blue-400">Flow</span>
+                      <span className="text-2xl">💳</span>
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="font-semibold text-foreground">Flow</p>
-                      <p className="text-xs text-muted-foreground">Pago con tarjeta, transferencia o efectivo</p>
+                      <p className="font-semibold text-foreground text-base">Pago con Tarjeta</p>
+                      <p className="text-xs text-muted-foreground">Tarjeta de crédito, débito o cuenta corriente (Flow)</p>
                     </div>
                     {isCreatingPayment && paymentMethod === "flow" && (
                       <Loader2 className="w-5 h-5 animate-spin text-accent shrink-0" />
@@ -684,11 +684,11 @@ export function BookingSection() {
                 >
                   <div className="flex items-center gap-3 w-full">
                     <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
-                      <span className="text-xl">🏦</span>
+                      <span className="text-2xl">🏦</span>
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="font-semibold text-foreground">Transferencia bancaria</p>
-                      <p className="text-xs text-muted-foreground">Transferencia directa desde su banco</p>
+                      <p className="font-semibold text-foreground text-base">Pago con Transferencia Bancaria</p>
+                      <p className="text-xs text-muted-foreground">Transferencia directa y suba su comprobante</p>
                     </div>
                   </div>
                 </Button>

@@ -33,4 +33,5 @@ next-env.d.ts
 /data/google-calendar-tokens.json
 
 # receipts
-/public/receipts/
+/public/receipts/*
+!/public/receipts/.gitkeep
