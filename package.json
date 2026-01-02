@@ -2,8 +2,9 @@
   "name": "my-v0-project",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.0.0",
   "scripts": {
-    "preinstall": "rm -f pnpm-lock.yaml yarn.lock 2>/dev/null || true",
+    "preinstall": "find . -name 'pnpm-lock.yaml' -delete 2>/dev/null || true && find . -name 'yarn.lock' -delete 2>/dev/null || true",
     "build": "next build",
     "dev": "next dev",
     "lint": "eslint .",
