@@ -11,7 +11,6 @@ import { appointmentsStore } from "@/lib/appointments-store"
 import { BankTransferDetails } from "@/components/bank-transfer-details"
 import { TermsAndConditions } from "@/components/terms-and-conditions"
 import { Checkbox } from "@/components/ui/checkbox"
-import { FileUpload } from "@/components/file-upload"
 import { validateEmail, validatePhone, validateName, sanitizeName, sanitizePhone, sanitizeString } from "@/lib/validation"
 import { countryCodes, defaultCountryCode, type CountryCode } from "@/lib/country-codes"
 import { ChevronDown } from "lucide-react"
@@ -59,9 +58,6 @@ export function BookingSection() {
   const [hasMadeTransfer, setHasMadeTransfer] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [showTerms, setShowTerms] = useState(false)
-  const [receiptFile, setReceiptFile] = useState<File | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string>("")
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -162,7 +158,6 @@ export function BookingSection() {
     if (!selectedDate || !selectedTime) return
     
     setIsCreatingPayment(true)
-    setUploadError("")
     
     try {
       const appointmentId = crypto.randomUUID()
@@ -226,7 +221,6 @@ export function BookingSection() {
     } catch (error) {
       console.error("Error creando pago con Flow:", error)
       const errorMessage = error instanceof Error ? error.message : "Error al procesar el pago. Por favor, intente nuevamente."
-      setUploadError(errorMessage)
       alert(errorMessage)
       setIsCreatingPayment(false)
     }
@@ -282,22 +276,16 @@ export function BookingSection() {
     // Validar checkboxes para transferencia bancaria
     if (paymentMethod === "transfer") {
       if (!hasMadeTransfer) {
-        setValidationErrors((prev) => ({ ...prev, transfer: "Debe confirmar que ha realizado la transferencia" }))
+        setValidationErrors((prev) => ({ ...prev, transfer: "Debe confirmar que ha realizado la transferencia y enviado el comprobante por correo" }))
         return
       }
       if (!acceptedTerms) {
         setValidationErrors((prev) => ({ ...prev, terms: "Debe aceptar los términos y condiciones" }))
         return
       }
-      if (!receiptFile) {
-        setValidationErrors((prev) => ({ ...prev, receipt: "Debe subir el comprobante de transferencia" }))
-        return
-      }
     }
 
     setIsSubmitting(true)
-    setIsUploading(true)
-    setUploadError("")
 
     try {
       const appointmentId = crypto.randomUUID()
@@ -313,44 +301,6 @@ export function BookingSection() {
         }
       }
 
-      // Subir comprobante si existe
-      let receiptData: { receiptData?: string; receiptFilename?: string; receiptMimetype?: string } = {}
-      if (paymentMethod === "transfer" && receiptFile) {
-        try {
-          const formData = new FormData()
-          formData.append("file", receiptFile)
-          formData.append("appointmentId", appointmentId)
-
-          const uploadResponse = await fetch("/api/appointments/upload-receipt", {
-            method: "POST",
-            body: formData,
-          })
-
-          if (!uploadResponse.ok) {
-            const errorData = await uploadResponse.json().catch(() => ({}))
-            throw new Error(errorData.error || "Error al subir el comprobante. Por favor, intente nuevamente.")
-          }
-
-          const uploadData = await uploadResponse.json()
-          if (uploadData.receiptData && uploadData.receiptFilename && uploadData.receiptMimetype) {
-            receiptData = {
-              receiptData: uploadData.receiptData,
-              receiptFilename: uploadData.receiptFilename,
-              receiptMimetype: uploadData.receiptMimetype,
-            }
-          } else {
-            throw new Error("No se recibieron los datos del comprobante del servidor")
-          }
-        } catch (uploadError) {
-          console.error("Error subiendo comprobante:", uploadError)
-          const errorMessage = uploadError instanceof Error ? uploadError.message : "Error al subir el comprobante"
-          setUploadError(errorMessage)
-          setIsUploading(false)
-          setIsSubmitting(false)
-          alert(errorMessage)
-          return
-        }
-      }
 
       const sanitizedData = {
         appointmentId,
@@ -389,7 +339,6 @@ export function BookingSection() {
         createdAt: new Date(),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas para enviar el comprobante
         paymentMethod: "transfer",
-        ...receiptData,
       })
 
     setShowForm(false)
@@ -398,8 +347,6 @@ export function BookingSection() {
       setConsultationReason("")
       setHasMadeTransfer(false)
       setAcceptedTerms(false)
-      setReceiptFile(null)
-      setUploadError("")
     setShowConfirmation(true)
     } catch (error) {
       console.error("Error al procesar solicitud", error)
@@ -408,11 +355,9 @@ export function BookingSection() {
           ? error.message
           : "Hubo un error al procesar su solicitud. Por favor, verifique los datos e intente nuevamente."
       
-      setUploadError(errorMessage)
       alert(errorMessage)
     } finally {
       setIsSubmitting(false)
-      setIsUploading(false)
     }
   }
 
@@ -430,8 +375,6 @@ export function BookingSection() {
     setShowBankDetails(false)
     setHasMadeTransfer(false)
     setAcceptedTerms(false)
-    setReceiptFile(null)
-    setUploadError("")
   }
 
   const getPrice = () => {
@@ -705,28 +648,42 @@ export function BookingSection() {
           <div className="space-y-6 mt-4">
             <BankTransferDetails amount={getPrice()} />
 
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">📧</span>
+                <div className="flex-1">
+                  <p className="font-medium text-blue-900 dark:text-blue-100 mb-2">
+                    Envíe el comprobante por correo
+                  </p>
+                  <p className="text-sm text-blue-800 dark:text-blue-200 mb-2">
+                    Después de realizar la transferencia, debe enviar el comprobante por correo electrónico a:
+                  </p>
+                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-3">
+                    ps.mariasanluis@gmail.com
+                  </p>
+                  <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+                    El comprobante debe ser legible y mostrar claramente:
+                  </p>
+                  <ul className="text-sm text-blue-800 dark:text-blue-200 list-disc list-inside space-y-1">
+                    <li>Banco emisor</li>
+                    <li>Monto transferido</li>
+                    <li>Número de cuenta destino</li>
+                    <li>Fecha de la transferencia</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
 
             <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-sm">
               <p className="text-amber-900 dark:text-amber-100 font-medium mb-1">⚠️ Importante</p>
               <p className="text-amber-800 dark:text-amber-200 text-xs">
-                Tiene un plazo de <strong>24 horas</strong> para subir el comprobante de transferencia. 
-                El comprobante debe mostrar claramente: banco emisor, monto transferido, número de cuenta destino y fecha. 
-                Los comprobantes ilegibles o falsos serán rechazados.
+                Tiene un plazo de <strong>24 horas</strong> para enviar el comprobante de transferencia al correo indicado. 
+                Su reserva quedará pendiente hasta que recibamos el comprobante. 
+                Recibirá un correo de confirmación una vez que validemos el pago.
               </p>
             </div>
 
             <div className="space-y-4">
-              <FileUpload
-                value={receiptFile}
-                onChange={(file) => {
-                  setReceiptFile(file)
-                  setValidationErrors((prev) => ({ ...prev, receipt: undefined }))
-                  setUploadError("")
-                }}
-                error={validationErrors.receipt || uploadError}
-                required
-                isUploading={isUploading}
-              />
               <div className="flex items-start gap-3">
                 <Checkbox
                   id="transfer-confirmation"
@@ -742,7 +699,7 @@ export function BookingSection() {
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
                 >
                   <span className="text-foreground">
-                    He realizado la transferencia bancaria por el monto de ${getPrice()} CLP
+                    He realizado la transferencia bancaria por el monto de ${getPrice()} CLP y he enviado el comprobante por correo a ps.mariasanluis@gmail.com
                   </span>
                   {validationErrors.transfer && (
                     <p className="text-sm text-destructive mt-1">{validationErrors.transfer}</p>
@@ -783,10 +740,10 @@ export function BookingSection() {
 
             <Button
               onClick={handleSubmitBooking}
-              disabled={isSubmitting || isUploading || !hasMadeTransfer || !acceptedTerms || !receiptFile}
+              disabled={isSubmitting || !hasMadeTransfer || !acceptedTerms}
               className="w-full rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
             >
-              {isUploading ? "Subiendo comprobante..." : isSubmitting ? "Enviando solicitud..." : "Confirmar y enviar solicitud"}
+              {isSubmitting ? "Enviando solicitud..." : "Confirmar y enviar solicitud"}
             </Button>
           </div>
         </DialogContent>
