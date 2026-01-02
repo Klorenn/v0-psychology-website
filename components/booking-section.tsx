@@ -45,6 +45,9 @@ export function BookingSection() {
   const [selectedCountry, setSelectedCountry] = useState<CountryCode>(defaultCountryCode)
   const [showCountryDropdown, setShowCountryDropdown] = useState(false)
   const [consultationReason, setConsultationReason] = useState("")
+  const [emergencyContactRelation, setEmergencyContactRelation] = useState("")
+  const [emergencyContactName, setEmergencyContactName] = useState("")
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState("")
   const [appointmentType, setAppointmentType] = useState<"online" | "presencial">("online")
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -181,6 +184,9 @@ export function BookingSection() {
         patientEmail: sanitizeString(patientEmail).toLowerCase(),
         patientPhone: sanitizePhone(formattedPhone),
         consultationReason: sanitizeString(consultationReason) || undefined,
+        emergencyContactRelation: sanitizeString(emergencyContactRelation) || undefined,
+        emergencyContactName: sanitizeName(emergencyContactName) || undefined,
+        emergencyContactPhone: sanitizePhone(emergencyContactPhone) || undefined,
         appointmentType,
         date: selectedDate,
         time: selectedTime,
@@ -258,6 +264,22 @@ export function BookingSection() {
       }
     }
 
+    if (!emergencyContactRelation.trim()) {
+      errors.emergencyContactRelation = "Debe seleccionar la relación del contacto de emergencia"
+    }
+
+    if (!emergencyContactName.trim()) {
+      errors.emergencyContactName = "El nombre del contacto de emergencia es requerido"
+    } else if (!validateName(emergencyContactName)) {
+      errors.emergencyContactName = "El nombre debe contener solo letras y espacios"
+    }
+
+    if (!emergencyContactPhone.trim()) {
+      errors.emergencyContactPhone = "El teléfono del contacto de emergencia es requerido"
+    } else if (!validatePhone(emergencyContactPhone, false)) {
+      errors.emergencyContactPhone = "Ingrese un número de teléfono válido (ej: +56 9 1234 5678)"
+    }
+
     setValidationErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -308,6 +330,9 @@ export function BookingSection() {
         patientEmail: sanitizeString(patientEmail).toLowerCase(),
         patientPhone: sanitizePhone(formattedPhone),
         consultationReason: sanitizeString(consultationReason),
+        emergencyContactRelation: sanitizeString(emergencyContactRelation),
+        emergencyContactName: sanitizeName(emergencyContactName),
+        emergencyContactPhone: sanitizePhone(emergencyContactPhone),
         appointmentType,
         date: selectedDate.toISOString(),
         time: selectedTime,
@@ -332,6 +357,9 @@ export function BookingSection() {
         patientEmail: sanitizedData.patientEmail,
         patientPhone: sanitizedData.patientPhone,
         consultationReason: sanitizedData.consultationReason || undefined,
+        emergencyContactRelation: sanitizedData.emergencyContactRelation || undefined,
+        emergencyContactName: sanitizedData.emergencyContactName || undefined,
+        emergencyContactPhone: sanitizedData.emergencyContactPhone || undefined,
         appointmentType,
         date: selectedDate,
         time: selectedTime,
@@ -345,6 +373,9 @@ export function BookingSection() {
       setShowBankDetails(false)
       setSelectedCountry(defaultCountryCode)
       setConsultationReason("")
+      setEmergencyContactRelation("")
+      setEmergencyContactName("")
+      setEmergencyContactPhone("")
       setHasMadeTransfer(false)
       setAcceptedTerms(false)
     setShowConfirmation(true)
@@ -370,6 +401,9 @@ export function BookingSection() {
     setPatientPhone("")
     setSelectedCountry(defaultCountryCode)
     setConsultationReason("")
+    setEmergencyContactRelation("")
+    setEmergencyContactName("")
+    setEmergencyContactPhone("")
     setAppointmentType("online")
     setValidationErrors({})
     setShowBankDetails(false)
@@ -940,6 +974,76 @@ export function BookingSection() {
               <p className="text-xs text-muted-foreground">
                 Esta información me ayuda a preparar mejor su sesión
               </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="emergencyContactRelation">Contacto de emergencia - Relación</Label>
+              <select
+                id="emergencyContactRelation"
+                value={emergencyContactRelation}
+                onChange={(e) => {
+                  setEmergencyContactRelation(e.target.value)
+                  if (validationErrors.emergencyContactRelation) {
+                    setValidationErrors((prev) => ({ ...prev, emergencyContactRelation: "" }))
+                  }
+                }}
+                className={`w-full rounded-xl border border-border/50 bg-background px-3 py-2 text-sm ${
+                  validationErrors.emergencyContactRelation ? "border-destructive" : ""
+                }`}
+                required
+              >
+                <option value="">Seleccione una opción</option>
+                <option value="madre">Madre</option>
+                <option value="padre">Padre</option>
+                <option value="hermano/a">Hermano/a</option>
+                <option value="amigo">Amigo</option>
+                <option value="pareja">Pareja</option>
+                <option value="otro">Otro</option>
+              </select>
+              {validationErrors.emergencyContactRelation && (
+                <p className="text-sm text-destructive">{validationErrors.emergencyContactRelation}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="emergencyContactName">Contacto de emergencia - Nombre</Label>
+              <Input
+                id="emergencyContactName"
+                value={emergencyContactName}
+                onChange={(e) => {
+                  setEmergencyContactName(e.target.value)
+                  if (validationErrors.emergencyContactName) {
+                    setValidationErrors((prev) => ({ ...prev, emergencyContactName: "" }))
+                  }
+                }}
+                placeholder="Nombre completo del contacto"
+                className={`rounded-xl border-border/50 ${validationErrors.emergencyContactName ? "border-destructive" : ""}`}
+                required
+              />
+              {validationErrors.emergencyContactName && (
+                <p className="text-sm text-destructive">{validationErrors.emergencyContactName}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="emergencyContactPhone">Contacto de emergencia - Teléfono</Label>
+              <Input
+                id="emergencyContactPhone"
+                type="tel"
+                value={emergencyContactPhone}
+                onChange={(e) => {
+                  setEmergencyContactPhone(e.target.value)
+                  if (validationErrors.emergencyContactPhone) {
+                    setValidationErrors((prev) => ({ ...prev, emergencyContactPhone: "" }))
+                  }
+                }}
+                placeholder="+56 9 1234 5678"
+                className={`rounded-xl border-border/50 ${validationErrors.emergencyContactPhone ? "border-destructive" : ""}`}
+                required
+              />
+              {validationErrors.emergencyContactPhone && (
+                <p className="text-sm text-destructive">{validationErrors.emergencyContactPhone}</p>
+              )}
             </div>
 
             <div className="space-y-2">
