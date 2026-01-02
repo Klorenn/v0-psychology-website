@@ -57,9 +57,11 @@ export default function DashboardPage() {
       setInitialAuthCheck(true)
       setIsCheckingAuth(false)
       
-      // Si no se pudo restaurar, redirigir al login
+      // Si no se pudo restaurar, redirigir al login después de un pequeño delay
       if (!restored) {
-        router.push("/dashboard/login")
+        setTimeout(() => {
+          router.push("/dashboard/login")
+        }, 100)
       }
     }
   }, [initialAuthCheck, router])
@@ -175,7 +177,7 @@ export default function DashboardPage() {
   const expiredAppointments = appointments.filter((a) => a.status === "expired" || a.status === "cancelled")
 
   // Mostrar loading mientras se verifica la autenticación
-  if (isCheckingAuth) {
+  if (isCheckingAuth || !initialAuthCheck) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
