@@ -53,6 +53,7 @@ export default function DashboardPage() {
   const [authRestored, setAuthRestored] = useState(false)
   const [dbInitialized, setDbInitialized] = useState(false)
   const [isInitializingDb, setIsInitializingDb] = useState(false)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
 
   // RESTAURAR SESIÓN DESDE LOCALSTORAGE INMEDIATAMENTE AL MONTAR
   // Esto debe ejecutarse ANTES de que useSyncExternalStore se evalúe
