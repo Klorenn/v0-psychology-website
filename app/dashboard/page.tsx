@@ -47,26 +47,36 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<"appointments" | "settings">("appointments")
   const [siteConfig, setSiteConfig] = useState(siteConfigStore.get())
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
-  const [initialAuthCheck, setInitialAuthCheck] = useState(false)
+  const [authRestored, setAuthRestored] = useState(false)
 
-  // RESTAURAR SESIÓN DESDE LOCALSTORAGE INMEDIATAMENTE AL MONTAR
+  // RESTAURAR SESIÓN DESDE LOCALSTORAGE INMEDIATAMENTE AL MONTAR (ANTES de useSyncExternalStore)
   useEffect(() => {
-    if (typeof window !== "undefined" && !initialAuthCheck) {
+    if (typeof window !== "undefined" && !authRestored) {
       // Restaurar sesión desde localStorage si existe
       const restored = authStore.restoreSession()
-      setInitialAuthCheck(true)
-      setIsCheckingAuth(false)
+      setAuthRestored(true)
       
-      // Si no se pudo restaurar, redirigir al login después de un pequeño delay
+      // Si no se pudo restaurar, redirigir al login
       if (!restored) {
+        setIsCheckingAuth(false)
+        // Pequeño delay para evitar flash de contenido
         setTimeout(() => {
           router.push("/dashboard/login")
-        }, 100)
+        }, 50)
+        return
       }
+      
+      // Si se restauró correctamente, marcar como no checking
+      setIsCheckingAuth(false)
     }
-  }, [initialAuthCheck, router])
+  }, [authRestored, router])
 
-  const isAuth = useSyncExternalStore(authStore.subscribe, authStore.isAuthenticated, getServerSnapshotForAuth)
+  // Solo usar useSyncExternalStore DESPUÉS de restaurar la sesión
+  const isAuth = useSyncExternalStore(
+    authStore.subscribe, 
+    authStore.isAuthenticated, 
+    getServerSnapshotForAuth
+  )
 
   const appointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAll, getServerSnapshotForAppointments)
 
@@ -130,33 +140,19 @@ export default function DashboardPage() {
     }
   }
 
-  // Initialize store and check auth on mount
+  // Initialize store when authenticated
   useEffect(() => {
-    // Esperar a que se complete la verificación inicial
-    if (!initialAuthCheck) return
+    // Solo inicializar si la sesión fue restaurada y está autenticado
+    if (!authRestored) return
     
-    const checkAuth = () => {
-      const authenticated = authStore.isAuthenticated()
-      
-      if (!authenticated) {
-        // Solo redirigir si realmente no está autenticado
-        router.push("/dashboard/login")
-      } else {
-        // Inicializar el store cuando el usuario está autenticado
-        appointmentsStore.init()
-      }
+    if (isAuth) {
+      // Inicializar el store cuando el usuario está autenticado
+      appointmentsStore.init()
+    } else if (!isCheckingAuth) {
+      // Solo redirigir si realmente no está autenticado y ya terminamos de verificar
+      router.push("/dashboard/login")
     }
-    
-    // Verificar después de que se complete la verificación inicial
-    checkAuth()
-    
-    // También verificar cuando cambie el estado
-    const unsubscribe = authStore.subscribe(() => {
-      checkAuth()
-    })
-    
-    return unsubscribe
-  }, [router, initialAuthCheck])
+  }, [authRestored, isAuth, isCheckingAuth, router])
 
   // Update timer every second and check for expired appointments
   useEffect(() => {
@@ -177,7 +173,7 @@ export default function DashboardPage() {
   const expiredAppointments = appointments.filter((a) => a.status === "expired" || a.status === "cancelled")
 
   // Mostrar loading mientras se verifica la autenticación
-  if (isCheckingAuth || !initialAuthCheck) {
+  if (isCheckingAuth || !authRestored) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -188,6 +184,7 @@ export default function DashboardPage() {
     )
   }
 
+  // Si no está autenticado después de restaurar, no renderizar nada (ya se redirigió)
   if (!isAuth) {
     return null
   }

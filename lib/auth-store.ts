@@ -28,12 +28,14 @@ function getInitialAuthState(): boolean {
 }
 
 // Inicializar desde localStorage si está disponible
-let isAuthenticated = typeof window !== "undefined" ? getInitialAuthState() : false
+let isAuthenticated = false
 let authListeners: (() => void)[] = []
+let isInitialized = false
 
 // Inicializar inmediatamente si estamos en el cliente
 if (typeof window !== "undefined") {
   isAuthenticated = getInitialAuthState()
+  isInitialized = true
 }
 
 export const authStore = {
@@ -57,15 +59,39 @@ export const authStore = {
   // Método para restaurar sesión sin contraseña (útil después de redirecciones)
   restoreSession: () => {
     if (typeof window !== "undefined") {
-      const stored = getInitialAuthState()
-      if (stored) {
-        isAuthenticated = true
-        notifyAuthListeners()
-        return true
+      try {
+        const stored = localStorage.getItem(AUTH_KEY)
+        if (stored) {
+          const { email, timestamp } = JSON.parse(stored)
+          const isExpired = Date.now() - timestamp > 24 * 60 * 60 * 1000
+          if (email === ADMIN_CREDENTIALS.email && !isExpired) {
+            // Restaurar el estado interno
+            isAuthenticated = true
+            isInitialized = true
+            notifyAuthListeners()
+            return true
+          } else {
+            // Limpiar si está expirado o incorrecto
+            localStorage.removeItem(AUTH_KEY)
+            isAuthenticated = false
+            isInitialized = true
+            notifyAuthListeners()
+          }
+        } else {
+          isAuthenticated = false
+          isInitialized = true
+        }
+      } catch (error) {
+        console.error("Error restaurando sesión:", error)
+        isAuthenticated = false
+        isInitialized = true
       }
     }
-    return false
+    return isAuthenticated
   },
+  
+  // Verificar si está inicializado
+  isInitialized: () => isInitialized,
 
   login: (email: string, password: string): boolean => {
     if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {

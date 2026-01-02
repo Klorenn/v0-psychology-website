@@ -1,0 +1,23 @@
+# Variables de Entorno para Vercel
+# Copia y pega estas variables en Vercel > Settings > Environment Variables
+
+# ============================================
+# SMTP - Configuración de Correo Electrónico
+# ============================================
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=ps.msanluis@gmail.com
+SMTP_PASS=TU_CONTRASEÑA_DE_APLICACIÓN_DE_GOOGLE_16_CARACTERES
+
+# ============================================
+# Google Calendar - OAuth 2.0
+# ============================================
+GOOGLE_CLIENT_ID=953104782981-abonftgsg034mckjn8qbnv4jqm1imosa.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+
+# ============================================
+# URLs - Configuración de la Aplicación
+# ============================================
+NEXT_PUBLIC_BASE_URL=https://v0-psychology-website-ryco.vercel.app
+GOOGLE_REDIRECT_URI=https://v0-psychology-website-ryco.vercel.app/api/google-calendar/callback
+
