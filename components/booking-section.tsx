@@ -340,12 +340,19 @@ export function BookingSection() {
               console.error("Error parseando respuesta:", textError)
               errorMessage = textError || errorMessage
             }
-            throw new Error(errorMessage)
+            // No lanzar error - solo mostrar mensaje y permitir continuar
+            setUploadError(errorMessage)
+            setIsUploading(false)
+            return // Salir del bloque de upload pero permitir que el usuario reintente
           }
 
           const uploadData = await uploadResponse.json()
           if (!uploadData.success) {
-            throw new Error(uploadData.error || "Error al procesar el comprobante")
+            // No lanzar error - solo mostrar mensaje
+            const errorMsg = uploadData.error || "Error al procesar el comprobante"
+            setUploadError(errorMsg)
+            setIsUploading(false)
+            return // Salir pero permitir reintentar
           }
           
           receiptUrl = uploadData.url || ""
@@ -362,15 +369,15 @@ export function BookingSection() {
           setIsUploading(false)
           const errorMessage = uploadError instanceof Error ? uploadError.message : "Error al procesar el comprobante. Por favor, intente nuevamente."
           setUploadError(errorMessage)
-          // No lanzar el error - permitir continuar si el usuario quiere
-          // Solo mostrar el error pero no bloquear el proceso
           console.error("Error en upload:", uploadError)
-          // Si hay error, limpiar el estado pero permitir reintentar
-          if (errorMessage.includes("Tipo de archivo")) {
+          // No lanzar el error - solo mostrar mensaje y permitir reintentar
+          // Limpiar estado si es error de tipo de archivo
+          if (errorMessage.includes("Tipo de archivo") || errorMessage.includes("no permitido")) {
             setReceiptFile(null)
             setReceiptUploaded(false)
           }
-          // No hacer throw para permitir que el usuario pueda reintentar
+          // Salir del bloque pero no bloquear el proceso completo
+          return
         } finally {
           setIsUploading(false)
         }
