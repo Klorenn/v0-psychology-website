@@ -257,6 +257,17 @@ export default function DashboardPage() {
     router.push("/dashboard/login")
   }
 
+  const handleManualRefresh = async () => {
+    try {
+      console.log("🔄 Recarga manual iniciada...")
+      await appointmentsStore.init(true)
+      setTimeUpdate((t) => t + 1)
+      console.log("✅ Recarga manual completada")
+    } catch (error) {
+      console.error("❌ Error en recarga manual:", error)
+    }
+  }
+
   const pendingAppointments = appointments.filter((a) => a.status === "pending")
   const confirmedAppointments = appointments.filter((a) => a.status === "confirmed")
   const expiredAppointments = appointments.filter((a) => a.status === "expired" || a.status === "cancelled")
@@ -312,10 +323,21 @@ export default function DashboardPage() {
             <h1 className="font-serif text-2xl text-foreground">{siteConfig.navigation.logoText || "Dashboard"}</h1>
             <p className="text-sm text-muted-foreground">Gestión de citas</p>
           </div>
-          <Button variant="ghost" onClick={handleLogout} className="text-muted-foreground hover:text-foreground">
-            <LogOut className="w-4 h-4 mr-2" />
-            Cerrar sesión
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleManualRefresh} 
+              className="text-muted-foreground hover:text-foreground"
+              size="sm"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Recargar
+            </Button>
+            <Button variant="ghost" onClick={handleLogout} className="text-muted-foreground hover:text-foreground">
+              <LogOut className="w-4 h-4 mr-2" />
+              Cerrar sesión
+            </Button>
+          </div>
         </div>
       </header>
 
