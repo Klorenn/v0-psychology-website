@@ -36,8 +36,17 @@ export async function POST(request: NextRequest) {
     const getPaymentSignature = signFlowParams(getPaymentParams, secretKey)
     getPaymentParams.s = getPaymentSignature
 
-    const paymentResponse = await fetch(`${baseUrl}/payment/getStatus?${new URLSearchParams(getPaymentParams)}`, {
-      method: "GET",
+    const statusFormData = new URLSearchParams()
+    Object.entries(getPaymentParams).forEach(([key, value]) => {
+      statusFormData.append(key, value)
+    })
+
+    const paymentResponse = await fetch(`${baseUrl}/payment/getStatus`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: statusFormData,
     })
 
     if (!paymentResponse.ok) {
@@ -81,22 +90,23 @@ export async function POST(request: NextRequest) {
       // Confirmar cita automáticamente
       await appointmentsStore.approve(appointmentId)
       
-      // Actualizar información de pago
-      const updatedAppointments = appointmentsStore.getAll()
-      const updatedAppointment = updatedAppointments.find((a) => a.id === appointmentId)
-      if (updatedAppointment) {
-        // Guardar información del pago
-        const allAppointments = appointmentsStore.getAll()
-        const appointmentIndex = allAppointments.findIndex((a) => a.id === appointmentId)
-        if (appointmentIndex !== -1) {
-          allAppointments[appointmentIndex] = {
-            ...updatedAppointment,
-            paymentMethod: "flow",
-            mercadoPagoPaymentId: flowOrder, // Reutilizamos el campo para Flow
-          }
-          // Guardar cambios
-          await appointmentsStore.add(allAppointments[appointmentIndex])
+      // Actualizar información de pago en la cita
+      const allAppointments = appointmentsStore.getAll()
+      const appointmentIndex = allAppointments.findIndex((a) => a.id === appointmentId)
+      if (appointmentIndex !== -1) {
+        const updatedAppointment = {
+          ...allAppointments[appointmentIndex],
+          paymentMethod: "flow" as const,
+          mercadoPagoPaymentId: flowOrder, // Reutilizamos el campo para Flow payment ID
         }
+        // Actualizar en el array
+        allAppointments[appointmentIndex] = updatedAppointment
+        // Guardar cambios usando persist directamente
+        const { appointmentsPersistence } = await import("@/lib/appointments-persistence")
+        await appointmentsPersistence.save(allAppointments)
+        // Notificar listeners
+        const { notifyListeners } = await import("@/lib/appointments-store")
+        notifyListeners()
       }
 
       // Crear evento en Google Calendar si está conectado
