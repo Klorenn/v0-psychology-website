@@ -269,15 +269,22 @@ export default function DashboardPage() {
       console.log(`✅ Confirmadas: ${confirmedAppointments.length}`)
       console.log(`❌ Canceladas/Expiradas: ${expiredAppointments.length}`)
       if (appointments.length > 0) {
-        console.log("📋 Primeras citas:", appointments.slice(0, 3).map(a => ({
+        console.log("📋 Todas las citas:", appointments.map(a => ({
           id: a.id,
           name: a.patientName,
           status: a.status,
-          date: a.date
+          date: a.date,
+          time: a.time
         })))
+      } else {
+        console.log("⚠️ No hay citas en el store. Verificando base de datos...")
+        // Forzar recarga inmediata si no hay citas
+        appointmentsStore.init(true).catch(err => {
+          console.error("Error forzando recarga:", err)
+        })
       }
     }
-  }, [appointments.length, isAuth, authRestored])
+  }, [appointments.length, isAuth, authRestored, pendingAppointments.length, confirmedAppointments.length])
 
   // Mostrar loading mientras se verifica la autenticación
   if (isCheckingAuth || !authRestored) {

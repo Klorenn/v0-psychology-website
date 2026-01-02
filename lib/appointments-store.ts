@@ -55,21 +55,44 @@ async function initialize(force = false) {
   }
   
   try {
-    console.log("🔄 Cargando citas desde persistencia...")
+    console.log("🔄 Cargando citas desde persistencia...", { force, wasInitialized: isInitialized })
     const loadedAppointments = await appointmentsPersistence.load()
     console.log(`✅ Cargadas ${loadedAppointments.length} citas desde persistencia`)
     
-    // Convertir fechas de string a Date si es necesario
-    const processedAppointments = loadedAppointments.map((apt: any) => ({
-      ...apt,
-      date: apt.date instanceof Date ? apt.date : new Date(apt.date),
-      createdAt: apt.createdAt instanceof Date ? apt.createdAt : new Date(apt.createdAt),
-      expiresAt: apt.expiresAt instanceof Date ? apt.expiresAt : new Date(apt.expiresAt),
-    }))
+    if (loadedAppointments.length > 0) {
+      console.log("📋 Detalles de citas cargadas:", loadedAppointments.map(a => ({
+        id: a.id,
+        name: a.patientName,
+        status: a.status,
+        date: a.date
+      })))
+    }
     
+    // Convertir fechas de string a Date si es necesario
+    const processedAppointments = loadedAppointments.map((apt: any) => {
+      try {
+        return {
+          ...apt,
+          date: apt.date instanceof Date ? apt.date : new Date(apt.date),
+          createdAt: apt.createdAt instanceof Date ? apt.createdAt : new Date(apt.createdAt),
+          expiresAt: apt.expiresAt instanceof Date ? apt.expiresAt : new Date(apt.expiresAt),
+        }
+      } catch (dateError) {
+        console.error(`Error procesando fecha de cita ${apt.id}:`, dateError)
+        return apt
+      }
+    })
+    
+    const previousCount = appointments.length
     appointments = processedAppointments
     isInitialized = true
-    console.log(`📊 Store actualizado con ${appointments.length} citas`)
+    
+    if (appointments.length !== previousCount) {
+      console.log(`📊 Store actualizado: ${previousCount} → ${appointments.length} citas`)
+    } else {
+      console.log(`📊 Store actualizado con ${appointments.length} citas (sin cambios)`)
+    }
+    
     notifyListeners() // Notificar después de cargar
   } catch (error) {
     console.error("❌ Error cargando citas:", error)
