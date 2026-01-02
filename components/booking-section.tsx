@@ -705,33 +705,13 @@ export function BookingSection() {
           <div className="space-y-6 mt-4">
             <BankTransferDetails amount={getPrice()} />
 
-            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">📤</span>
-                <div className="flex-1">
-                  <p className="font-medium text-blue-900 dark:text-blue-100 mb-2">
-                    Suba el comprobante de transferencia
-                  </p>
-                  <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
-                    Después de realizar la transferencia, suba una foto o PDF del comprobante usando el campo de abajo. 
-                    El comprobante debe ser legible y mostrar claramente:
-                  </p>
-                  <ul className="text-sm text-blue-800 dark:text-blue-200 list-disc list-inside space-y-1">
-                    <li>Banco emisor</li>
-                    <li>Monto transferido</li>
-                    <li>Número de cuenta destino</li>
-                    <li>Fecha de la transferencia</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
 
             <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-sm">
               <p className="text-amber-900 dark:text-amber-100 font-medium mb-1">⚠️ Importante</p>
               <p className="text-amber-800 dark:text-amber-200 text-xs">
-                Tiene un plazo de <strong>24 horas</strong> para enviar el comprobante de transferencia. 
-                Su reserva quedará pendiente hasta que recibamos el comprobante. 
-                Recibirá un correo de confirmación una vez que validemos el pago.
+                Tiene un plazo de <strong>24 horas</strong> para subir el comprobante de transferencia. 
+                El comprobante debe mostrar claramente: banco emisor, monto transferido, número de cuenta destino y fecha. 
+                Los comprobantes ilegibles o falsos serán rechazados.
               </p>
             </div>
 
