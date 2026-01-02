@@ -4,12 +4,34 @@ import type { Appointment } from "./appointments-store"
 export const appointmentsPersistence = {
   async load(): Promise<Appointment[]> {
     try {
-      // Solo ejecutar en el servidor
+      // Si estamos en el cliente, usar el endpoint API
       if (typeof window !== "undefined") {
-        return []
+        console.log("🔄 Cargando citas desde API (cliente)...")
+        try {
+          const response = await fetch("/api/appointments/list")
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+          const data = await response.json()
+          if (data.success) {
+            console.log(`✅ Cargadas ${data.count} citas desde API`)
+            // Convertir fechas de string a Date
+            return data.appointments.map((apt: any) => ({
+              ...apt,
+              date: apt.date instanceof Date ? apt.date : new Date(apt.date),
+              createdAt: apt.createdAt instanceof Date ? apt.createdAt : new Date(apt.createdAt),
+              expiresAt: apt.expiresAt instanceof Date ? apt.expiresAt : new Date(apt.expiresAt),
+            }))
+          }
+          return []
+        } catch (fetchError) {
+          console.error("❌ Error cargando citas desde API:", fetchError)
+          return []
+        }
       }
       
-      console.log("🔄 Cargando citas desde Supabase...")
+      // En el servidor, cargar directamente desde la BD
+      console.log("🔄 Cargando citas desde Supabase (servidor)...")
       
       // Importación dinámica solo en el servidor
       const { getAllAppointments } = await import("./db")
@@ -39,6 +61,7 @@ export const appointmentsPersistence = {
           await initializeDatabase()
           console.log("✅ Base de datos inicializada, reintentando carga...")
           // Reintentar cargar
+          const { getAllAppointments } = await import("./db")
           return await getAllAppointments()
         } catch (initError) {
           console.error("❌ Error inicializando base de datos:", initError)
