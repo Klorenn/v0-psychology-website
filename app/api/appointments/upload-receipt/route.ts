@@ -6,7 +6,7 @@ import { existsSync } from "fs"
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "application/pdf"]
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".pdf"]
-const UPLOAD_DIR = path.join(process.cwd(), "public", "receipts")
+const UPLOAD_DIR = path.join(process.cwd(), "data", "receipts")
 
 function isValidUUID(uuid: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     await writeFile(filePath, buffer)
 
-    const fileUrl = `/receipts/${fileName}`
+    const fileUrl = `/api/receipts/${fileName}`
 
     return NextResponse.json({
       success: true,
