@@ -91,8 +91,8 @@ export async function POST(request: NextRequest) {
       emailSubject = replaceTemplateVars(siteConfig.emailTemplate.subject)
       emailBody = replaceTemplateVars(siteConfig.emailTemplate.body)
     } else {
-      emailSubject = `Sesión Confirmada - ${formattedDate}`
-      emailBody = `Estimado/a ${appointment.patientName},\n\nSu sesión ha sido confirmada para:\n- Fecha: ${formattedDate}\n- Hora: ${appointment.time} hrs\n- Modalidad: ${appointmentTypeText}\n- Valor: $${price} CLP${meetLink ? `\n- Enlace de Google Meet: ${meetLink}` : ""}\n\nPor favor, asegúrese de haber realizado el pago por transferencia antes de la sesión.\n\nSaludos cordiales,\nMaría`
+      emailSubject = `Confirmación de Sesión - ${formattedDate}`
+      emailBody = `Hola ${appointment.patientName},\n\nEspero que estés teniendo un lindo día.\nQuería escribirte para confirmarte con cariño los detalles de tu próxima sesión:\n\n🗓 **${formattedDate}**\n⏰ **${appointment.time} hrs**\n📍 **Modalidad:** ${appointmentTypeText}\n💰 **Valor:** $${price} CLP${meetLink ? `\n🔗 **Enlace de Google Meet:** ${meetLink}` : ""}\n\nPara cuidar tu espacio y dejar la hora reservada, te agradeceré realizar el pago por **transferencia bancaria antes de la sesión**.\n\nSi necesitas decirme algo antes de venir, tienes alguna inquietud o te surge la necesidad de reprogramar, puedes escribirme con total confianza. Estoy aquí para acompañarte 🌿\n\nUn abrazo grande,\n**María Jesús Chávez**\nPsicóloga Clínica`
     }
 
     // Convertir el body del template a HTML
@@ -233,8 +233,8 @@ export async function GET(request: NextRequest) {
       emailSubject = replaceTemplateVars(siteConfig.emailTemplate.subject)
       emailBody = replaceTemplateVars(siteConfig.emailTemplate.body)
     } else {
-      emailSubject = `Sesión Confirmada - ${formattedDate}`
-      emailBody = `Estimado/a ${appointment.patientName},\n\nSu sesión ha sido confirmada para:\n- Fecha: ${formattedDate}\n- Hora: ${appointment.time} hrs\n- Modalidad: ${appointmentTypeText}\n- Valor: $${price} CLP\n- Enlace de Google Meet: [ENLACE_GOOGLE_MEET]\n\nPor favor, asegúrese de haber realizado el pago por transferencia antes de la sesión.\n\nSaludos cordiales,\nMaría`
+      emailSubject = `Confirmación de Sesión - ${formattedDate}`
+      emailBody = `Hola ${appointment.patientName},\n\nEspero que estés teniendo un lindo día.\nQuería escribirte para confirmarte con cariño los detalles de tu próxima sesión:\n\n🗓 **${formattedDate}**\n⏰ **${appointment.time} hrs**\n📍 **Modalidad:** ${appointmentTypeText}\n💰 **Valor:** $${price} CLP\n🔗 **Enlace de Google Meet:** [ENLACE_GOOGLE_MEET]\n\nPara cuidar tu espacio y dejar la hora reservada, te agradeceré realizar el pago por **transferencia bancaria antes de la sesión**.\n\nSi necesitas decirme algo antes de venir, tienes alguna inquietud o te surge la necesidad de reprogramar, puedes escribirme con total confianza. Estoy aquí para acompañarte 🌿\n\nUn abrazo grande,\n**María Jesús Chávez**\nPsicóloga Clínica`
     }
 
     return NextResponse.json({

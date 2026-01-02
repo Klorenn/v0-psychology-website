@@ -59,10 +59,31 @@ export async function POST(request: NextRequest) {
     
     // Asegurar que emailTemplate tenga valores por defecto si faltan
     if (!config.emailTemplate.subject) {
-      config.emailTemplate.subject = "Sesión Confirmada - {{date}}"
+      config.emailTemplate.subject = "Confirmación de Sesión - {{date}}"
     }
     if (!config.emailTemplate.body) {
-      config.emailTemplate.body = `Estimado/a {{patientName}},\n\nSu sesión ha sido confirmada para:\n- Fecha: {{date}}\n- Hora: {{time}} hrs\n- Modalidad: {{appointmentType}}\n- Valor: {{price}} CLP\n\nPor favor, asegúrese de haber realizado el pago por transferencia antes de la sesión.\n\nSaludos cordiales,\nMaría`
+      config.emailTemplate.body = [
+        "Hola {{patientName}},",
+        "",
+        "Espero que estés teniendo un lindo día.",
+        "Quería escribirte para confirmarte con cariño los detalles de tu próxima sesión:",
+        "",
+        "🗓 **{{date}}**",
+        "⏰ **{{time}} hrs**",
+        "📍 **Modalidad:** {{appointmentType}}",
+        "💰 **Valor:** ${{price}} CLP",
+        "{{#if meetLink}}",
+        "🔗 **Enlace de Google Meet:** {{meetLink}}",
+        "{{/if}}",
+        "",
+        "Para cuidar tu espacio y dejar la hora reservada, te agradeceré realizar el pago por **transferencia bancaria antes de la sesión**.",
+        "",
+        "Si necesitas decirme algo antes de venir, tienes alguna inquietud o te surge la necesidad de reprogramar, puedes escribirme con total confianza. Estoy aquí para acompañarte 🌿",
+        "",
+        "Un abrazo grande,",
+        "**María Jesús Chávez**",
+        "Psicóloga Clínica"
+      ].join("\n")
     }
     
     // Asegurar que el tema tenga valores por defecto si faltan

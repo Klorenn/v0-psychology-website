@@ -50,24 +50,26 @@ export function EmailTemplateEditor({ config, onConfigChange, onSave }: EmailTem
 
   const handleRestore = () => {
     const defaultTemplate = {
-      subject: "Confirmación de Sesión - {{date}} {{time}}",
-      body: `Estimado/a {{patientName}},
+      subject: "Confirmación de Sesión - {{date}}",
+      body: `Hola {{patientName}},
 
-¡Su sesión ha sido confirmada!
+Espero que estés teniendo un lindo día.
+Quería escribirte para confirmarte con cariño los detalles de tu próxima sesión:
 
-Detalles de su sesión:
-Fecha: {{date}}
-Hora: {{time}} hrs
-Modalidad: {{appointmentType}}
-Valor: ${{price}} CLP
-{{#if meetLink}}Enlace de Google Meet: {{meetLink}}{{/if}}
+🗓 **{{date}}**
+⏰ **{{time}} hrs**
+📍 **Modalidad:** {{appointmentType}}
+💰 **Valor:** ${{price}} CLP
+{{#if meetLink}}
+🔗 **Enlace de Google Meet:** {{meetLink}}
+{{/if}}
 
-Por favor, asegúrese de estar listo/a 5 minutos antes de la hora.
+Para cuidar tu espacio y dejar la hora reservada, te agradeceré realizar el pago por **transferencia bancaria antes de la sesión**.
 
-Si tiene alguna pregunta, no dude en contactarme.
+Si necesitas decirme algo antes de venir, tienes alguna inquietud o te surge la necesidad de reprogramar, puedes escribirme con total confianza. Estoy aquí para acompañarte 🌿
 
-Saludos cordiales,
-María Jesús Chavez San Luis
+Un abrazo grande,
+**María Jesús Chávez**
 Psicóloga Clínica`
     }
     setSubject(defaultTemplate.subject)
