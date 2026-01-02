@@ -34,6 +34,9 @@ export async function initializeDatabase() {
         created_at TIMESTAMP NOT NULL,
         expires_at TIMESTAMP NOT NULL,
         receipt_url TEXT,
+        receipt_data TEXT,
+        receipt_filename TEXT,
+        receipt_mimetype TEXT,
         payment_method TEXT,
         payment_id TEXT
       )
@@ -94,7 +97,8 @@ export async function saveAppointment(appointment: any) {
       INSERT INTO appointments (
         id, patient_name, patient_email, patient_phone, consultation_reason,
         appointment_type, date, time, status, created_at, expires_at,
-        receipt_url, payment_method, payment_id
+        receipt_url, receipt_data, receipt_filename, receipt_mimetype,
+        payment_method, payment_id
       ) VALUES (
         ${appointment.id},
         ${appointment.patientName},
@@ -108,6 +112,9 @@ export async function saveAppointment(appointment: any) {
         ${appointment.createdAt.toISOString()},
         ${appointment.expiresAt.toISOString()},
         ${appointment.receiptUrl || null},
+        ${appointment.receiptData || null},
+        ${appointment.receiptFilename || null},
+        ${appointment.receiptMimetype || null},
         ${appointment.paymentMethod || null},
         ${appointment.mercadoPagoPaymentId || null}
       )
@@ -123,6 +130,9 @@ export async function saveAppointment(appointment: any) {
         status = EXCLUDED.status,
         expires_at = EXCLUDED.expires_at,
         receipt_url = EXCLUDED.receipt_url,
+        receipt_data = EXCLUDED.receipt_data,
+        receipt_filename = EXCLUDED.receipt_filename,
+        receipt_mimetype = EXCLUDED.receipt_mimetype,
         payment_method = EXCLUDED.payment_method,
         payment_id = EXCLUDED.payment_id
     `
@@ -162,6 +172,9 @@ export async function getAllAppointments() {
       createdAt: new Date(row.created_at),
       expiresAt: new Date(row.expires_at),
       receiptUrl: row.receipt_url,
+      receiptData: row.receipt_data,
+      receiptFilename: row.receipt_filename,
+      receiptMimetype: row.receipt_mimetype,
       paymentMethod: row.payment_method,
       mercadoPagoPaymentId: row.payment_id,
     }))

@@ -315,6 +315,10 @@ export function BookingSection() {
       const appointmentId = crypto.randomUUID()
 
       let receiptUrl = ""
+      let receiptData = ""
+      let receiptFilename = ""
+      let receiptMimetype = ""
+      
       if (receiptFile) {
         setIsUploading(true)
         setUploadError("")
@@ -330,14 +334,17 @@ export function BookingSection() {
 
           if (!uploadResponse.ok) {
             const errorData = await uploadResponse.json().catch(() => ({}))
-            throw new Error(errorData.error || "Error al subir el comprobante. Por favor, intente nuevamente.")
+            throw new Error(errorData.error || "Error al procesar el comprobante. Por favor, intente nuevamente.")
           }
 
           const uploadData = await uploadResponse.json()
           receiptUrl = uploadData.url || ""
+          receiptData = uploadData.receiptData || ""
+          receiptFilename = uploadData.receiptFilename || ""
+          receiptMimetype = uploadData.receiptMimetype || ""
         } catch (uploadError) {
           setIsUploading(false)
-          const errorMessage = uploadError instanceof Error ? uploadError.message : "Error al subir el comprobante. Por favor, intente nuevamente."
+          const errorMessage = uploadError instanceof Error ? uploadError.message : "Error al procesar el comprobante. Por favor, intente nuevamente."
           setUploadError(errorMessage)
           throw uploadError
         } finally {
@@ -388,13 +395,16 @@ export function BookingSection() {
         patientPhone: sanitizedData.patientPhone,
         consultationReason: sanitizedData.consultationReason || undefined,
         appointmentType,
-      date: selectedDate,
-      time: selectedTime,
+        date: selectedDate,
+        time: selectedTime,
         status: "pending",
         createdAt: new Date(),
         expiresAt: new Date(Date.now() + 5 * 60 * 1000),
         receiptUrl: receiptUrl || undefined,
-    })
+        receiptData: receiptData || undefined,
+        receiptFilename: receiptFilename || undefined,
+        receiptMimetype: receiptMimetype || undefined,
+      })
 
     setShowForm(false)
       setShowBankDetails(false)

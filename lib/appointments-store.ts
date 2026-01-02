@@ -27,6 +27,9 @@ export interface Appointment {
   createdAt: Date
   expiresAt: Date
   receiptUrl?: string
+  receiptData?: string // Base64 del comprobante
+  receiptFilename?: string // Nombre original del archivo
+  receiptMimetype?: string // Tipo MIME del archivo
   paymentMethod?: "transfer" | "flow"
   mercadoPagoPaymentId?: string // Reutilizado para Flow payment ID
   mercadoPagoPreferenceId?: string
