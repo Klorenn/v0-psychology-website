@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { appointmentsStore } from "@/lib/appointments-store"
+import { saveAppointment } from "@/lib/db"
 
 /**
  * Endpoint de prueba para crear una cita de prueba
