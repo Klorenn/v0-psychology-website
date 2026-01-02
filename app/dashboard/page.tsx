@@ -50,6 +50,8 @@ export default function DashboardPage() {
   const [siteConfig, setSiteConfig] = useState(siteConfigStore.get())
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [authRestored, setAuthRestored] = useState(false)
+  const [dbInitialized, setDbInitialized] = useState(false)
+  const [isInitializingDb, setIsInitializingDb] = useState(false)
 
   // RESTAURAR SESIÓN DESDE LOCALSTORAGE INMEDIATAMENTE AL MONTAR
   // Esto debe ejecutarse ANTES de que useSyncExternalStore se evalúe
@@ -170,6 +172,13 @@ export default function DashboardPage() {
           console.log("🔄 Inicializando store de citas...")
           await appointmentsStore.init(true) // Forzar recarga
           console.log("✅ Store inicializado")
+          
+          // Si hay citas, asumir que la DB está inicializada
+          const loadedAppointments = appointmentsStore.getAll()
+          if (loadedAppointments.length > 0) {
+            setDbInitialized(true)
+          }
+          
           // Forzar actualización después de inicializar
           setTimeUpdate((t) => t + 1)
         } catch (error) {
@@ -180,6 +189,7 @@ export default function DashboardPage() {
             const initData = await initResponse.json()
             if (initData.success) {
               console.log("✅ Base de datos inicializada, reintentando carga...")
+              setDbInitialized(true)
               await appointmentsStore.init(true)
               setTimeUpdate((t) => t + 1)
             }
@@ -334,8 +344,8 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
-            {/* Botón para inicializar DB si es necesario - solo mostrar si no hay citas y está autenticado */}
-            {appointments.length === 0 && pendingAppointments.length === 0 && confirmedAppointments.length === 0 && (
+            {/* Botón para inicializar DB si es necesario - solo mostrar si no está inicializada y no hay citas */}
+            {!dbInitialized && appointments.length === 0 && pendingAppointments.length === 0 && confirmedAppointments.length === 0 && (
               <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="flex-1">
@@ -348,28 +358,40 @@ export default function DashboardPage() {
                   </div>
                   <Button
                     onClick={async () => {
+                      setIsInitializingDb(true)
                       try {
                         const response = await fetch("/api/db/init", { method: "POST" })
                         const data = await response.json()
                         if (data.success) {
-                          alert("✅ Base de datos inicializada correctamente. Recargando citas...")
+                          setDbInitialized(true) // Marcar como inicializada
                           // Esperar un momento antes de recargar
                           setTimeout(async () => {
                             await appointmentsStore.init(true)
                             setTimeUpdate((t) => t + 1)
+                            setIsInitializingDb(false)
                           }, 500)
                         } else {
                           alert(`Error: ${data.error || data.details || "Error desconocido"}\n\n${data.hint || ""}`)
+                          setIsInitializingDb(false)
                         }
                       } catch (error) {
                         console.error("Error:", error)
                         const errorMessage = error instanceof Error ? error.message : "Error desconocido"
                         alert(`Error al inicializar la base de datos: ${errorMessage}\n\nRevisa la consola para más detalles.`)
+                        setIsInitializingDb(false)
                       }
                     }}
+                    disabled={isInitializingDb}
                     className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
                   >
-                    Inicializar Base de Datos
+                    {isInitializingDb ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2 inline-block"></div>
+                        Inicializando...
+                      </>
+                    ) : (
+                      "Inicializar Base de Datos"
+                    )}
                   </Button>
                 </div>
               </div>
