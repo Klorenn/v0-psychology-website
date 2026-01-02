@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { appointmentsStore, type Appointment } from "@/lib/appointments-store"
 import { authStore } from "@/lib/auth-store"
-import { Check, X, Clock, LogOut, Calendar, FileText, ExternalLink, Settings, Mail, Video, Copy, CheckCircle } from "lucide-react"
+import { Check, X, Clock, LogOut, Calendar, FileText, ExternalLink, Settings, Mail, Video, Copy, CheckCircle, Bell, BellOff } from "lucide-react"
+import { requestNotificationPermission, canSendNotifications, notifyAppointmentApproved, notifyAppointmentRejected } from "@/lib/notifications"
 import { VisualPageEditor } from "@/components/visual-page-editor"
 import { GoogleCalendarSettings } from "@/components/google-calendar-settings"
 import { ThemeSelectorExtended } from "@/components/theme-selector-extended"
@@ -268,6 +269,24 @@ export default function DashboardPage() {
     }
   }
 
+  const handleToggleNotifications = async () => {
+    if (notificationsEnabled) {
+      // Ya están habilitadas, no podemos deshabilitarlas (es configuración del navegador)
+      alert("Para deshabilitar notificaciones, ve a la configuración de tu navegador y bloquea las notificaciones para este sitio.")
+      return
+    }
+
+    // Solicitar permisos
+    const granted = await requestNotificationPermission()
+    if (granted) {
+      setNotificationsEnabled(true)
+      notifyAppointmentApproved("Sistema", "ahora", "ahora")
+      alert("✅ Notificaciones activadas. Recibirás alertas cuando aceptes o rechaces citas.")
+    } else {
+      alert("❌ Permisos de notificación denegados. Puedes activarlos más tarde desde la configuración de tu navegador.")
+    }
+  }
+
   const pendingAppointments = appointments.filter((a) => a.status === "pending")
   const confirmedAppointments = appointments.filter((a) => a.status === "confirmed")
   const expiredAppointments = appointments.filter((a) => a.status === "expired" || a.status === "cancelled")
@@ -512,6 +531,12 @@ export default function DashboardPage() {
                       // Actualizar en el store local
                       await appointmentsStore.approve(appointment.id)
                       
+                      // Enviar notificación si está habilitada
+                      if (notificationsEnabled) {
+                        const dateStr = `${appointment.date.getDate()} de ${monthNames[appointment.date.getMonth()]}`
+                        notifyAppointmentApproved(appointment.patientName, dateStr, appointment.time)
+                      }
+                      
                       // Mostrar feedback
                       alert(`✅ Cita de ${appointment.patientName} confirmada correctamente`)
                     } catch (error) {
@@ -541,6 +566,11 @@ export default function DashboardPage() {
                       
                       // Actualizar en el store local
                       await appointmentsStore.reject(appointment.id)
+                      
+                      // Enviar notificación si está habilitada
+                      if (notificationsEnabled) {
+                        notifyAppointmentRejected(appointment.patientName)
+                      }
                       
                       // Mostrar feedback
                       alert(`✅ Cita de ${appointment.patientName} rechazada correctamente`)
