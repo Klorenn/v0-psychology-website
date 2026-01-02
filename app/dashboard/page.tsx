@@ -82,6 +82,14 @@ export default function DashboardPage() {
     return unsubscribe
   }, [])
 
+  // Si hay parámetros de Google Calendar en la URL, cambiar a la pestaña de settings
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get("calendar_connected") || urlParams.get("calendar_error")) {
+      setActiveTab("settings")
+    }
+  }, [])
+
   const handleConfigChange = (newConfig: typeof siteConfig) => {
     setSiteConfig(newConfig)
     siteConfigStore.set(newConfig)

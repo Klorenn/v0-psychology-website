@@ -13,12 +13,6 @@ export function GoogleCalendarSettings() {
   const [success, setSuccess] = useState<string>("")
 
   const checkConnectionStatus = useCallback(async () => {
-    // No verificar si ya hay un mensaje de éxito o error en la URL
-    const urlParams = new URLSearchParams(window.location.search)
-    if (urlParams.get("calendar_connected") || urlParams.get("calendar_error")) {
-      return
-    }
-    
     setIsLoading(true)
     setError("")
     
@@ -32,14 +26,21 @@ export function GoogleCalendarSettings() {
       }
       
       const data = await response.json()
-      setIsConnected(data.connected === true)
+      const connected = data.connected === true
+      setIsConnected(connected)
+      
+      // Si se conectó exitosamente, limpiar cualquier error previo
+      if (connected) {
+        setError("")
+      }
     } catch (err) {
       console.error("Error verificando estado:", err)
       setIsConnected(false)
       
       // Solo mostrar errores reales, no timeouts
       if (err instanceof Error && !err.name.includes("Abort") && !err.name.includes("Timeout")) {
-        setError(`Error al verificar el estado: ${err.message}`)
+        // No mostrar error si es solo un problema de verificación
+        // setError(`Error al verificar el estado: ${err.message}`)
       }
     } finally {
       setIsLoading(false)
@@ -47,7 +48,7 @@ export function GoogleCalendarSettings() {
   }, [])
 
   useEffect(() => {
-    // Verificar mensajes de URL primero (solo una vez)
+    // Verificar mensajes de URL primero
     const urlParams = new URLSearchParams(window.location.search)
     const calendarConnected = urlParams.get("calendar_connected")
     const calendarError = urlParams.get("calendar_error")
@@ -56,19 +57,27 @@ export function GoogleCalendarSettings() {
       setSuccess("Google Calendar vinculado correctamente")
       setIsConnected(true)
       setIsLoading(false)
+      // Verificar el estado real después de un momento para asegurar que se guardó
+      setTimeout(() => {
+        checkConnectionStatus()
+      }, 1000)
       // Limpiar URL
       window.history.replaceState({}, "", window.location.pathname)
       return
     }
     
     if (calendarError) {
-      const errorMsg = calendarError
+      const errorMsg = decodeURIComponent(calendarError)
       if (errorMsg === "not_configured") {
         setError("Google Calendar no está configurado. Configure GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en las variables de entorno.")
       } else if (errorMsg === "no_code") {
         setError("No se recibió el código de autorización de Google.")
       } else if (errorMsg === "token_exchange_failed") {
         setError("Error al intercambiar el código de autorización. Por favor, intente nuevamente.")
+      } else if (errorMsg === "server_error") {
+        setError("Error del servidor al procesar la autorización. Por favor, intente nuevamente.")
+      } else if (errorMsg === "access_denied") {
+        setError("Acceso denegado. Asegúrese de que su email esté agregado como usuario de prueba en Google Cloud Console.")
       } else {
         setError(`Error: ${errorMsg}`)
       }
@@ -80,7 +89,7 @@ export function GoogleCalendarSettings() {
     
     // Si no hay mensajes de URL, verificar el estado de conexión
     checkConnectionStatus()
-  }, []) // Ejecutar solo una vez al montar
+  }, [checkConnectionStatus]) // Incluir checkConnectionStatus en las dependencias
 
   const handleConnect = async () => {
     setIsConnecting(true)
@@ -150,11 +159,14 @@ export function GoogleCalendarSettings() {
       )}
 
       {success && (
-        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 flex items-start gap-3">
+        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
           <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-sm font-medium text-green-600">Éxito</p>
             <p className="text-sm text-green-600/80 mt-1">{success}</p>
+            <p className="text-xs text-green-600/60 mt-2">
+              La conexión se ha establecido correctamente. Puede cerrar esta ventana si se abrió en una nueva pestaña.
+            </p>
           </div>
         </div>
       )}
