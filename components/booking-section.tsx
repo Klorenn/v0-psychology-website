@@ -333,15 +333,32 @@ export function BookingSection() {
           })
 
           if (!uploadResponse.ok) {
-            const errorData = await uploadResponse.json().catch(() => ({}))
-            throw new Error(errorData.error || "Error al procesar el comprobante. Por favor, intente nuevamente.")
+            let errorMessage = "Error al procesar el comprobante. Por favor, intente nuevamente."
+            try {
+              const errorData = await uploadResponse.json()
+              errorMessage = errorData.error || errorData.details || errorMessage
+              console.error("Error del servidor:", errorData)
+            } catch (parseError) {
+              const textError = await uploadResponse.text().catch(() => "")
+              console.error("Error parseando respuesta:", textError)
+              errorMessage = textError || errorMessage
+            }
+            throw new Error(errorMessage)
           }
 
           const uploadData = await uploadResponse.json()
+          if (!uploadData.success) {
+            throw new Error(uploadData.error || "Error al procesar el comprobante")
+          }
+          
           receiptUrl = uploadData.url || ""
           receiptData = uploadData.receiptData || ""
           receiptFilename = uploadData.receiptFilename || ""
           receiptMimetype = uploadData.receiptMimetype || ""
+          
+          if (!receiptData) {
+            throw new Error("No se recibieron los datos del comprobante")
+          }
         } catch (uploadError) {
           setIsUploading(false)
           const errorMessage = uploadError instanceof Error ? uploadError.message : "Error al procesar el comprobante. Por favor, intente nuevamente."

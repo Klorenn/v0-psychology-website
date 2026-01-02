@@ -89,10 +89,18 @@ export async function saveAppointment(appointment: any) {
   const sql = getDatabaseConnection()
   
   if (!sql) {
+    console.warn("No hay conexión a base de datos, guardando en memoria")
     return false
   }
   
   try {
+    // Limitar tamaño de receipt_data si es muy grande (PostgreSQL TEXT puede ser muy grande, pero mejor prevenir)
+    let receiptData = appointment.receiptData || null
+    if (receiptData && receiptData.length > 10485760) { // 10MB en caracteres base64
+      console.warn(`Receipt data muy grande (${(receiptData.length / 1024 / 1024).toFixed(2)}MB), truncando`)
+      receiptData = receiptData.substring(0, 10485760)
+    }
+
     await sql`
       INSERT INTO appointments (
         id, patient_name, patient_email, patient_phone, consultation_reason,
@@ -112,7 +120,7 @@ export async function saveAppointment(appointment: any) {
         ${appointment.createdAt.toISOString()},
         ${appointment.expiresAt.toISOString()},
         ${appointment.receiptUrl || null},
-        ${appointment.receiptData || null},
+        ${receiptData},
         ${appointment.receiptFilename || null},
         ${appointment.receiptMimetype || null},
         ${appointment.paymentMethod || null},
@@ -139,7 +147,11 @@ export async function saveAppointment(appointment: any) {
     return true
   } catch (error) {
     console.error("Error guardando cita:", error)
-    return false
+    if (error instanceof Error) {
+      console.error("Error details:", error.message)
+      console.error("Error stack:", error.stack)
+    }
+    throw error // Lanzar el error para que se maneje arriba
   }
 }
 
