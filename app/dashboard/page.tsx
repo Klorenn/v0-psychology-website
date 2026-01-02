@@ -113,13 +113,26 @@ export default function DashboardPage() {
 
   // Initialize store and check auth on mount
   useEffect(() => {
-    if (!isAuth) {
-      router.push("/dashboard/login")
-    } else {
-      // Inicializar el store cuando el usuario está autenticado
-      appointmentsStore.init()
+    // Verificar autenticación inmediatamente
+    const checkAuth = () => {
+      const authenticated = authStore.isAuthenticated()
+      if (!authenticated) {
+        router.push("/dashboard/login")
+      } else {
+        // Inicializar el store cuando el usuario está autenticado
+        appointmentsStore.init()
+      }
     }
-  }, [isAuth, router])
+    
+    checkAuth()
+    
+    // También verificar cuando cambie el estado
+    const unsubscribe = authStore.subscribe(() => {
+      checkAuth()
+    })
+    
+    return unsubscribe
+  }, [router])
 
   // Update timer every second and check for expired appointments
   useEffect(() => {
