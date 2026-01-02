@@ -68,6 +68,7 @@ export function TermsAndConditions({ open, onOpenChange }: TermsAndConditionsPro
               <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2">
                 <li>El monto debe transferirse antes de la confirmación de la cita.</li>
                 <li>El comprobante de transferencia debe enviarse por correo electrónico.</li>
+                <li><strong>Política de Devoluciones:</strong> En caso de solicitar la devolución del dinero después de haber realizado el pago, solo se devolverá el 50% del monto pagado. Esto se debe a que se reserva el tiempo de la psicóloga y se arrienda un espacio físico para la atención, recursos que no pueden ser recuperados.</li>
                 <li>Los reembolsos solo se aplican en casos excepcionales y a consideración del terapeuta.</li>
                 <li>No se realizan reembolsos por sesiones ya confirmadas y no asistidas.</li>
               </ul>
