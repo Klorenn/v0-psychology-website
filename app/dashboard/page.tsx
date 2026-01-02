@@ -555,8 +555,14 @@ export default function DashboardPage() {
                         throw new Error(errorData.error || "Error al confirmar la cita")
                       }
                       
-                      // Actualizar en el store local
-                      await appointmentsStore.approve(appointment.id)
+                      // Esperar un momento para que se propague el cambio en la BD
+                      await new Promise(resolve => setTimeout(resolve, 500))
+                      
+                      // Recargar desde la BD para asegurar sincronización
+                      await appointmentsStore.init(true)
+                      
+                      // Forzar actualización de la UI
+                      setTimeUpdate((t) => t + 1)
                       
                       // Enviar notificación si está habilitada
                       if (notificationsEnabled) {
@@ -591,8 +597,14 @@ export default function DashboardPage() {
                         throw new Error(errorData.error || "Error al rechazar la cita")
                       }
                       
-                      // Actualizar en el store local
-                      await appointmentsStore.reject(appointment.id)
+                      // Esperar un momento para que se propague el cambio en la BD
+                      await new Promise(resolve => setTimeout(resolve, 500))
+                      
+                      // Recargar desde la BD para asegurar sincronización
+                      await appointmentsStore.init(true)
+                      
+                      // Forzar actualización de la UI
+                      setTimeUpdate((t) => t + 1)
                       
                       // Enviar notificación si está habilitada
                       if (notificationsEnabled) {

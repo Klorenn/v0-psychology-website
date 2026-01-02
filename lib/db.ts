@@ -266,19 +266,28 @@ export async function updateAppointmentStatus(id: string, status: string) {
   }
   
   try {
-    const { error } = await supabase
+    console.log(`🔄 Actualizando estado de cita ${id} a "${status}"...`)
+    const { data, error } = await supabase
       .from("appointments")
       .update({ status })
       .eq("id", id)
+      .select()
     
     if (error) {
-      console.error("Error actualizando estado:", error)
+      console.error("❌ Error actualizando estado:", error)
+      return false
+    }
+    
+    if (data && data.length > 0) {
+      console.log(`✅ Estado actualizado correctamente: ${data[0].id} → ${data[0].status}`)
+    } else {
+      console.warn(`⚠️ No se encontró la cita ${id} para actualizar`)
       return false
     }
     
     return true
   } catch (error) {
-    console.error("Error actualizando estado:", error)
+    console.error("❌ Error actualizando estado:", error)
     return false
   }
 }
