@@ -3,7 +3,7 @@ import { appointmentsStore } from "@/lib/appointments-store"
 import { saveAppointment } from "@/lib/db"
 
 /**
- * Endpoint de prueba para crear una cita de prueba
+ * Endpoint de prueba para crear citas de prueba
  * GET /api/test/create-appointment
  */
 export async function GET(request: NextRequest) {
@@ -55,6 +55,20 @@ export async function GET(request: NextRequest) {
       }
 
       console.log("🧪 Creando cita de prueba...", testAppointment.id)
+      
+      // Guardar directamente en la BD primero
+      try {
+        const dbSuccess = await saveAppointment({
+          ...testAppointment,
+          createdAt: testAppointment.createdAt,
+          expiresAt: testAppointment.expiresAt,
+        })
+        console.log(`💾 Guardado en BD: ${dbSuccess ? "✅" : "❌"}`, testAppointment.id)
+      } catch (dbError) {
+        console.error(`❌ Error guardando en BD:`, dbError)
+      }
+      
+      // También agregar al store para que esté en memoria
       const appointment = await appointmentsStore.add(testAppointment)
       console.log("✅ Cita de prueba creada:", appointment.id)
       createdAppointments.push({
@@ -65,10 +79,6 @@ export async function GET(request: NextRequest) {
         status: appointment.status,
       })
     }
-
-    console.log("🧪 Creando cita de prueba...", testAppointment.id)
-    const appointment = await appointmentsStore.add(testAppointment)
-    console.log("✅ Cita de prueba creada:", appointment.id)
 
     return NextResponse.json({
       success: true,
@@ -88,4 +98,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
