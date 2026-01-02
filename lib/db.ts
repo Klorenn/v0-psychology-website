@@ -1,7 +1,13 @@
-import { createClient } from "@supabase/supabase-js"
+// Importación dinámica de Supabase para evitar problemas en el cliente
+// Solo se carga cuando se ejecuta en el servidor (API routes)
 
 // Obtener cliente de Supabase usando REST API (más confiable que SQL directo en Vercel)
 export function getSupabaseClient() {
+  // Solo ejecutar en el servidor
+  if (typeof window !== "undefined") {
+    return null
+  }
+  
   const supabaseUrl = 
     process.env.NEXT_PUBLIC_SUPABASE_URL || 
     process.env.SUPABASE_URL ||
@@ -22,6 +28,8 @@ export function getSupabaseClient() {
   }
   
   try {
+    // Importación dinámica para evitar problemas en el cliente
+    const { createClient } = require("@supabase/supabase-js")
     return createClient(supabaseUrl, supabaseKey, {
       auth: {
         persistSession: false,

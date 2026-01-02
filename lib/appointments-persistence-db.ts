@@ -1,10 +1,18 @@
 import type { Appointment } from "./appointments-store"
-import { getAllAppointments, saveAppointment } from "./db"
+// Importación dinámica para evitar problemas en el cliente
 
 export const appointmentsPersistence = {
   async load(): Promise<Appointment[]> {
     try {
+      // Solo ejecutar en el servidor
+      if (typeof window !== "undefined") {
+        return []
+      }
+      
       console.log("🔄 Cargando citas desde Supabase...")
+      
+      // Importación dinámica solo en el servidor
+      const { getAllAppointments } = await import("./db")
       
       // Intentar cargar citas (esto inicializará automáticamente si las tablas no existen)
       const appointments = await getAllAppointments()
@@ -27,7 +35,7 @@ export const appointmentsPersistence = {
       if (error instanceof Error && (error.message.includes("does not exist") || error.message.includes("relation") || error.message.includes("42P01"))) {
         console.log("⚠️ Tablas no existen, inicializando automáticamente...")
         try {
-          const { initializeDatabase } = await import("@/lib/db")
+          const { initializeDatabase } = await import("./db")
           await initializeDatabase()
           console.log("✅ Base de datos inicializada, reintentando carga...")
           // Reintentar cargar
@@ -42,6 +50,14 @@ export const appointmentsPersistence = {
 
   async save(appointments: Appointment[]): Promise<void> {
     try {
+      // Solo ejecutar en el servidor
+      if (typeof window !== "undefined") {
+        return
+      }
+      
+      // Importación dinámica solo en el servidor
+      const { saveAppointment } = await import("./db")
+      
       // Guardar todas las citas
       for (const appointment of appointments) {
         try {
