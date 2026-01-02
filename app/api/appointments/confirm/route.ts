@@ -46,11 +46,13 @@ export async function GET(request: NextRequest) {
       await appointmentsStore.approve(appointmentId)
       
       // Crear evento en Google Calendar si está conectado
+      let meetLink: string | null = null
       try {
         const { createCalendarEvent } = await import("@/lib/google-calendar")
-        const eventId = await createCalendarEvent(appointment)
-        if (eventId) {
-          console.log(`Evento creado en Google Calendar: ${eventId}`)
+        const eventResult = await createCalendarEvent(appointment)
+        if (eventResult) {
+          console.log(`Evento creado en Google Calendar: ${eventResult.eventId}`)
+          meetLink = eventResult.meetLink
         }
       } catch (error) {
         console.error("Error creando evento en Google Calendar:", error)
@@ -80,8 +82,8 @@ export async function GET(request: NextRequest) {
     const price = appointment.appointmentType === "online" ? "20.000" : "27.000"
 
     const emailSubject = action === "accept" 
-      ? `Cita Confirmada - ${formattedDate}`
-      : `Cita Rechazada - ${formattedDate}`
+      ? `Sesión Confirmada - ${formattedDate}`
+      : `Sesión Rechazada - ${formattedDate}`
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -118,24 +120,35 @@ export async function GET(request: NextRequest) {
         <body>
           <div class="container">
             <div class="header">
-              <h2>${action === "accept" ? "✓ Cita Confirmada" : "✗ Cita Rechazada"}</h2>
+              <h2>${action === "accept" ? "✓ Sesión Confirmada" : "✗ Sesión Rechazada"}</h2>
             </div>
             
             <p>Estimado/a ${appointment.patientName},</p>
             
             ${action === "accept" 
               ? `
-                <p>Su cita ha sido <strong>confirmada</strong> para:</p>
+                <p>Su sesión ha sido <strong>confirmada</strong> para:</p>
                 <div class="info-section">
                   <p><strong>Fecha:</strong> ${formattedDate}</p>
                   <p><strong>Hora:</strong> ${appointment.time} hrs</p>
                   <p><strong>Modalidad:</strong> ${appointment.appointmentType === "online" ? "Online" : "Presencial"}</p>
                   <p><strong>Valor:</strong> $${price} CLP</p>
+                  ${appointment.appointmentType === "online" && meetLink ? `
+                    <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                      <strong>Enlace de Google Meet:</strong><br>
+                      <a href="${meetLink}" target="_blank" style="color: #4285F4; text-decoration: none; font-weight: bold;">
+                        ${meetLink}
+                      </a>
+                    </p>
+                    <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                      Puede hacer clic en el enlace para unirse a la sesión en el momento acordado.
+                    </p>
+                  ` : ""}
                 </div>
-                <p>Por favor, asegúrese de haber realizado el pago por transferencia antes de la cita.</p>
+                <p>Por favor, asegúrese de haber realizado el pago por transferencia antes de la sesión.</p>
               `
               : `
-                <p>Lamento informarle que su solicitud de cita para el ${formattedDate} a las ${appointment.time} hrs ha sido rechazada.</p>
+                <p>Lamento informarle que su solicitud de sesión para el ${formattedDate} a las ${appointment.time} hrs ha sido rechazada.</p>
                 <p>Por favor, intente agendar otra fecha y hora disponible.</p>
               `
             }
@@ -150,13 +163,14 @@ export async function GET(request: NextRequest) {
       ? `
 Estimado/a ${appointment.patientName},
 
-Su cita ha sido confirmada para:
+Su sesión ha sido confirmada para:
 - Fecha: ${formattedDate}
 - Hora: ${appointment.time} hrs
 - Modalidad: ${appointment.appointmentType === "online" ? "Online" : "Presencial"}
 - Valor: $${price} CLP
+${appointment.appointmentType === "online" && meetLink ? `- Enlace de Google Meet: ${meetLink}` : ""}
 
-Por favor, asegúrese de haber realizado el pago por transferencia antes de la cita.
+Por favor, asegúrese de haber realizado el pago por transferencia antes de la sesión.
 
 Saludos cordiales,
 María
@@ -164,7 +178,7 @@ María
       : `
 Estimado/a ${appointment.patientName},
 
-Lamento informarle que su solicitud de cita para el ${formattedDate} a las ${appointment.time} hrs ha sido rechazada.
+Lamento informarle que su solicitud de sesión para el ${formattedDate} a las ${appointment.time} hrs ha sido rechazada.
 
 Por favor, intente agendar otra fecha y hora disponible.
 

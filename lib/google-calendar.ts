@@ -1,7 +1,7 @@
 import { getGoogleCalendarTokens } from "./google-calendar-auth"
 import type { Appointment } from "./appointments-store"
 
-export async function createCalendarEvent(appointment: Appointment): Promise<string | null> {
+export async function createCalendarEvent(appointment: Appointment): Promise<{ eventId: string; meetLink: string | null } | null> {
   const tokens = await getGoogleCalendarTokens()
   
   if (!tokens || !tokens.accessToken) {
@@ -17,12 +17,13 @@ export async function createCalendarEvent(appointment: Appointment): Promise<str
     const endDate = new Date(startDate)
     endDate.setHours(hours + 1, minutes, 0, 0)
     
-    const event = {
-      summary: `Consulta - ${appointment.patientName}`,
-      description: `Consulta ${appointment.appointmentType === "online" ? "Online" : "Presencial"} con ${appointment.patientName}\n\n` +
+    // Crear evento con Google Meet si es online
+    const event: any = {
+      summary: `Sesión - ${appointment.patientName}`,
+      description: `Sesión ${appointment.appointmentType === "online" ? "Online" : "Presencial"} con ${appointment.patientName}\n\n` +
         `Email: ${appointment.patientEmail}\n` +
         `Teléfono: ${appointment.patientPhone}\n` +
-        (appointment.consultationReason ? `Motivo: ${appointment.consultationReason}\n` : "") +
+        (appointment.consultationReason ? `Motivo de consulta: ${appointment.consultationReason}\n` : "") +
         `Valor: $${appointment.appointmentType === "online" ? "20.000" : "27.000"} CLP`,
       start: {
         dateTime: startDate.toISOString(),
@@ -39,10 +40,30 @@ export async function createCalendarEvent(appointment: Appointment): Promise<str
           { method: "popup", minutes: 60 }, // 1 hora antes
         ],
       },
+      attendees: [
+        { email: appointment.patientEmail },
+      ],
+    }
+
+    // Agregar Google Meet si es online
+    if (appointment.appointmentType === "online") {
+      event.conferenceData = {
+        createRequest: {
+          requestId: `meet-${appointment.id}-${Date.now()}`,
+          conferenceSolutionKey: {
+            type: "hangoutsMeet",
+          },
+        },
+      }
     }
     
     const calendarId = tokens.calendarId || "primary"
-    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`, {
+    // Agregar conferenceDataVersion=1 si hay conferenceData
+    const url = appointment.appointmentType === "online"
+      ? `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?conferenceDataVersion=1`
+      : `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`
+    
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${tokens.accessToken}`,
@@ -58,7 +79,19 @@ export async function createCalendarEvent(appointment: Appointment): Promise<str
     }
     
     const createdEvent = await response.json()
-    return createdEvent.id || null
+    
+    // Retornar el ID del evento y el enlace de Google Meet si existe
+    if (createdEvent.conferenceData?.entryPoints?.[0]?.uri) {
+      return {
+        eventId: createdEvent.id,
+        meetLink: createdEvent.conferenceData.entryPoints[0].uri,
+      }
+    }
+    
+    return {
+      eventId: createdEvent.id,
+      meetLink: null,
+    }
   } catch (error) {
     console.error("Error creando evento en Google Calendar:", error)
     return null

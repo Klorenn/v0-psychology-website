@@ -58,6 +58,12 @@ export interface SiteConfig {
     darkThemeId: string // ID del tema para modo oscuro (dark-lavender, dark-ocean, etc.)
     darkMode: boolean // Modo oscuro activado
   }
+
+  // Email Template
+  emailTemplate: {
+    subject: string // Asunto del email cuando se confirma una cita
+    body: string // Cuerpo del email (puede incluir variables como {{patientName}}, {{date}}, {{time}}, {{meetLink}})
+  }
 }
 
 const defaultConfig: SiteConfig = {
@@ -123,6 +129,24 @@ const defaultConfig: SiteConfig = {
     themeId: "lavender",
     darkThemeId: "dark-lavender",
     darkMode: false,
+  },
+  emailTemplate: {
+    subject: "Sesión Confirmada - {{date}}",
+    body: `Estimado/a {{patientName}},
+
+Su sesión ha sido confirmada para:
+- Fecha: {{date}}
+- Hora: {{time}} hrs
+- Modalidad: {{appointmentType}}
+- Valor: {{price}} CLP
+{{#if meetLink}}
+- Enlace de Google Meet: {{meetLink}}
+{{/if}}
+
+Por favor, asegúrese de haber realizado el pago por transferencia antes de la sesión.
+
+Saludos cordiales,
+María`,
   },
 }
 
