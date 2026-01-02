@@ -38,24 +38,7 @@ function formatTimeRemaining(expiresAt: Date): string {
 }
 
 // Funciones de snapshot en caché para evitar loops infinitos
-const getServerSnapshotForAuth = () => {
-  // En el servidor siempre false, pero en el cliente verificar localStorage
-  if (typeof window !== "undefined") {
-    try {
-      const stored = localStorage.getItem("psychology_dashboard_auth")
-      if (stored) {
-        const { email, timestamp } = JSON.parse(stored)
-        const isExpired = Date.now() - timestamp > 24 * 60 * 60 * 1000
-        if (email === "ps.msanluis@gmail.com" && !isExpired) {
-          return true
-        }
-      }
-    } catch {
-      // Si hay error, retornar false
-    }
-  }
-  return false
-}
+const getServerSnapshotForAuth = () => false // En el servidor siempre false
 const getServerSnapshotForAppointments = () => []
 
 export default function DashboardPage() {
@@ -64,6 +47,31 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<"appointments" | "settings">("appointments")
   const [siteConfig, setSiteConfig] = useState(siteConfigStore.get())
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [initialAuthCheck, setInitialAuthCheck] = useState(false)
+
+  // Verificar autenticación desde localStorage al montar
+  useEffect(() => {
+    if (typeof window !== "undefined" && !initialAuthCheck) {
+      // Verificar localStorage directamente
+      try {
+        const stored = localStorage.getItem("psychology_dashboard_auth")
+        if (stored) {
+          const { email, timestamp } = JSON.parse(stored)
+          const isExpired = Date.now() - timestamp > 24 * 60 * 60 * 1000
+          if (email === "ps.msanluis@gmail.com" && !isExpired) {
+            // Restaurar sesión si es válida
+            authStore.login("ps.msanluis@gmail.com", "misakki12_")
+          } else {
+            localStorage.removeItem("psychology_dashboard_auth")
+          }
+        }
+      } catch {
+        // Si hay error, continuar
+      }
+      setInitialAuthCheck(true)
+      setIsCheckingAuth(false)
+    }
+  }, [initialAuthCheck])
 
   const isAuth = useSyncExternalStore(authStore.subscribe, authStore.isAuthenticated, getServerSnapshotForAuth)
 
@@ -131,11 +139,11 @@ export default function DashboardPage() {
 
   // Initialize store and check auth on mount
   useEffect(() => {
-    // Verificar autenticación desde localStorage primero
+    // Esperar a que se complete la verificación inicial
+    if (!initialAuthCheck) return
+    
     const checkAuth = () => {
-      // Forzar verificación de localStorage
       const authenticated = authStore.isAuthenticated()
-      setIsCheckingAuth(false)
       
       if (!authenticated) {
         // Solo redirigir si realmente no está autenticado
@@ -146,26 +154,16 @@ export default function DashboardPage() {
       }
     }
     
-    // Dar tiempo para que localStorage esté disponible y verificar
-    if (typeof window !== "undefined") {
-      // Pequeño delay para asegurar que localStorage esté disponible
-      const timer = setTimeout(() => {
-        checkAuth()
-      }, 50)
-      
-      // También verificar cuando cambie el estado
-      const unsubscribe = authStore.subscribe(() => {
-        checkAuth()
-      })
-      
-      return () => {
-        clearTimeout(timer)
-        unsubscribe()
-      }
-    } else {
-      setIsCheckingAuth(false)
-    }
-  }, [router])
+    // Verificar después de que se complete la verificación inicial
+    checkAuth()
+    
+    // También verificar cuando cambie el estado
+    const unsubscribe = authStore.subscribe(() => {
+      checkAuth()
+    })
+    
+    return unsubscribe
+  }, [router, initialAuthCheck])
 
   // Update timer every second and check for expired appointments
   useEffect(() => {
