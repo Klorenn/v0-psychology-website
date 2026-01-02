@@ -330,54 +330,39 @@ export function BookingSection() {
           })
 
           if (!uploadResponse.ok) {
-            let errorMessage = "Error al procesar el comprobante. Por favor, intente nuevamente."
+            let errorMessage = "Advertencia: No se pudo procesar el comprobante completamente."
             try {
               const errorData = await uploadResponse.json()
               errorMessage = errorData.error || errorData.details || errorMessage
-              console.error("Error del servidor:", errorData)
+              console.warn("Advertencia del servidor:", errorData)
             } catch (parseError) {
-              const textError = await uploadResponse.text().catch(() => "")
-              console.error("Error parseando respuesta:", textError)
-              errorMessage = textError || errorMessage
+              console.warn("Error parseando respuesta:", parseError)
             }
-            // No lanzar error - solo mostrar mensaje y permitir continuar
+            // Mostrar advertencia pero permitir continuar
             setUploadError(errorMessage)
-            setIsUploading(false)
-            return // Salir del bloque de upload pero permitir que el usuario reintente
-          }
-
-          const uploadData = await uploadResponse.json()
-          if (!uploadData.success) {
-            // No lanzar error - solo mostrar mensaje
-            const errorMsg = uploadData.error || "Error al procesar el comprobante"
-            setUploadError(errorMsg)
-            setIsUploading(false)
-            return // Salir pero permitir reintentar
-          }
-          
-          receiptUrl = uploadData.url || ""
-          receiptData = uploadData.receiptData || ""
-          receiptFilename = uploadData.receiptFilename || ""
-          receiptMimetype = uploadData.receiptMimetype || ""
-          
-          // Si no hay datos pero el upload fue exitoso, intentar continuar de todas formas
-          if (!receiptData) {
-            console.warn("No se recibieron datos del comprobante, pero el upload fue exitoso")
-            // Permitir continuar sin bloquear - el servidor puede manejar esto
+            // Continuar sin bloquear - el usuario puede subir el comprobante después
+          } else {
+            const uploadData = await uploadResponse.json()
+            if (uploadData.success) {
+              receiptUrl = uploadData.url || ""
+              receiptData = uploadData.receiptData || ""
+              receiptFilename = uploadData.receiptFilename || ""
+              receiptMimetype = uploadData.receiptMimetype || ""
+              // Limpiar errores si fue exitoso
+              setUploadError("")
+            } else {
+              // Mostrar advertencia pero continuar
+              const errorMsg = uploadData.error || "Advertencia al procesar el comprobante"
+              setUploadError(errorMsg)
+              console.warn("Advertencia en upload:", errorMsg)
+            }
           }
         } catch (uploadError) {
-          setIsUploading(false)
-          const errorMessage = uploadError instanceof Error ? uploadError.message : "Error al procesar el comprobante. Por favor, intente nuevamente."
-          setUploadError(errorMessage)
-          console.error("Error en upload:", uploadError)
-          // No lanzar el error - solo mostrar mensaje y permitir reintentar
-          // Limpiar estado si es error de tipo de archivo
-          if (errorMessage.includes("Tipo de archivo") || errorMessage.includes("no permitido")) {
-            setReceiptFile(null)
-            setReceiptUploaded(false)
-          }
-          // Salir del bloque pero no bloquear el proceso completo
-          return
+          // No bloquear - solo mostrar advertencia
+          const errorMessage = uploadError instanceof Error ? uploadError.message : "Advertencia al procesar el comprobante"
+          setUploadError(`Advertencia: ${errorMessage}. Puede continuar de todas formas.`)
+          console.warn("Advertencia en upload:", uploadError)
+          // No limpiar el archivo - permitir que el usuario continúe
         } finally {
           setIsUploading(false)
         }
