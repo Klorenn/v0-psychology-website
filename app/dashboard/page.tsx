@@ -46,6 +46,7 @@ export default function DashboardPage() {
   const [timeUpdate, setTimeUpdate] = useState(0)
   const [activeTab, setActiveTab] = useState<"appointments" | "settings">("appointments")
   const [siteConfig, setSiteConfig] = useState(siteConfigStore.get())
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
 
   const isAuth = useSyncExternalStore(authStore.subscribe, authStore.isAuthenticated, getServerSnapshotForAuth)
 
@@ -113,9 +114,11 @@ export default function DashboardPage() {
 
   // Initialize store and check auth on mount
   useEffect(() => {
-    // Verificar autenticación inmediatamente
+    // Verificar autenticación desde localStorage primero
     const checkAuth = () => {
       const authenticated = authStore.isAuthenticated()
+      setIsCheckingAuth(false)
+      
       if (!authenticated) {
         router.push("/dashboard/login")
       } else {
@@ -124,14 +127,20 @@ export default function DashboardPage() {
       }
     }
     
-    checkAuth()
-    
-    // También verificar cuando cambie el estado
-    const unsubscribe = authStore.subscribe(() => {
+    // Dar tiempo para que localStorage esté disponible
+    if (typeof window !== "undefined") {
+      // Verificar inmediatamente
       checkAuth()
-    })
-    
-    return unsubscribe
+      
+      // También verificar cuando cambie el estado
+      const unsubscribe = authStore.subscribe(() => {
+        checkAuth()
+      })
+      
+      return unsubscribe
+    } else {
+      setIsCheckingAuth(false)
+    }
   }, [router])
 
   // Update timer every second and check for expired appointments
@@ -151,6 +160,18 @@ export default function DashboardPage() {
   const pendingAppointments = appointments.filter((a) => a.status === "pending")
   const confirmedAppointments = appointments.filter((a) => a.status === "confirmed")
   const expiredAppointments = appointments.filter((a) => a.status === "expired" || a.status === "cancelled")
+
+  // Mostrar loading mientras se verifica la autenticación
+  if (isCheckingAuth) {
+    return (
+      <main className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Verificando autenticación...</p>
+        </div>
+      </main>
+    )
+  }
 
   if (!isAuth) {
     return null
