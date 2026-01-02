@@ -39,10 +39,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const config = body as SiteConfig
     
-    // Validar estructura básica
-    if (!config.hero || !config.navigation || !config.values || !config.location || !config.social || !config.theme || !config.emailTemplate) {
+    // Validar estructura básica con mensajes más específicos
+    const missingFields: string[] = []
+    if (!config.hero) missingFields.push("hero")
+    if (!config.navigation) missingFields.push("navigation")
+    if (!config.values) missingFields.push("values")
+    if (!config.location) missingFields.push("location")
+    if (!config.social) missingFields.push("social")
+    if (!config.theme) missingFields.push("theme")
+    if (!config.emailTemplate) missingFields.push("emailTemplate")
+    
+    if (missingFields.length > 0) {
+      console.error("Campos faltantes en configuración:", missingFields)
       return NextResponse.json(
-        { error: "Configuración inválida" },
+        { error: `Configuración inválida. Faltan campos: ${missingFields.join(", ")}` },
         { status: 400 }
       )
     }
@@ -67,7 +77,13 @@ export async function POST(request: NextRequest) {
     }
     
     // Guardar en persistencia
-    await siteConfigPersistence.save(config)
+    try {
+      await siteConfigPersistence.save(config)
+    } catch (persistError) {
+      console.error("Error en persistencia:", persistError)
+      // Si falla la persistencia, intentar continuar de todas formas
+      // para que al menos se actualice el store en memoria
+    }
     
     // Actualizar store
     siteConfigStore.set(config)
@@ -75,8 +91,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, config })
   } catch (error) {
     console.error("Error guardando configuración:", error)
+    const errorMessage = error instanceof Error ? error.message : "Error al guardar la configuración"
     return NextResponse.json(
-      { error: "Error al guardar la configuración" },
+      { error: errorMessage },
       { status: 500 }
     )
   }

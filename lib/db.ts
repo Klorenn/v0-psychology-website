@@ -1,11 +1,13 @@
 import { neon } from "@neondatabase/serverless"
 
-// Obtener la conexión SQL solo si DATABASE_URL está disponible
+// Obtener la conexión SQL solo si POSTGRES_URL está disponible (Supabase)
 const getDatabaseConnection = () => {
-  if (!process.env.DATABASE_URL) {
+  // Usar POSTGRES_URL (Supabase) o POSTGRES_URL_NON_POOLING como fallback
+  const dbUrl = process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING
+  if (!dbUrl) {
     return null
   }
-  return neon(process.env.DATABASE_URL)
+  return neon(dbUrl)
 }
 
 /**
@@ -15,7 +17,7 @@ export async function initializeDatabase() {
   const sql = getDatabaseConnection()
   
   if (!sql) {
-    throw new Error("DATABASE_URL no está configurado")
+    throw new Error("POSTGRES_URL no está configurado")
   }
   
   try {
@@ -235,51 +237,83 @@ export async function getAllAppointments() {
   const sql = getDatabaseConnection()
   
   if (!sql) {
+    console.warn("⚠️ No hay conexión a base de datos (POSTGRES_URL no configurado)")
     return []
   }
   
   try {
+    console.log("🔍 Consultando citas en Supabase...")
     const result = await sql`
       SELECT * FROM appointments 
       ORDER BY created_at DESC
     `
     
-    return result.map((row: any) => ({
-      id: row.id,
-      patientName: row.patient_name,
-      patientEmail: row.patient_email,
-      patientPhone: row.patient_phone,
-      consultationReason: row.consultation_reason,
-      emergencyContactRelation: row.emergency_contact_relation,
-      emergencyContactName: row.emergency_contact_name,
-      emergencyContactPhone: row.emergency_contact_phone,
-      appointmentType: row.appointment_type,
-      date: new Date(row.date),
-      time: row.time,
-      status: row.status,
-      createdAt: new Date(row.created_at),
-      expiresAt: new Date(row.expires_at),
-      receiptUrl: row.receipt_url,
-      receiptData: row.receipt_data,
-      receiptFilename: row.receipt_filename,
-      receiptMimetype: row.receipt_mimetype,
-      paymentMethod: row.payment_method,
-      mercadoPagoPaymentId: row.payment_id,
-    }))
+    console.log(`📊 Resultado de consulta: ${result.length} filas encontradas`)
+    
+    if (result.length === 0) {
+      console.log("ℹ️ No hay citas en la base de datos")
+      return []
+    }
+    
+    const mappedAppointments = result.map((row: any) => {
+      try {
+        return {
+          id: row.id,
+          patientName: row.patient_name,
+          patientEmail: row.patient_email,
+          patientPhone: row.patient_phone,
+          consultationReason: row.consultation_reason || undefined,
+          emergencyContactRelation: row.emergency_contact_relation || undefined,
+          emergencyContactName: row.emergency_contact_name || undefined,
+          emergencyContactPhone: row.emergency_contact_phone || undefined,
+          appointmentType: row.appointment_type,
+          date: row.date instanceof Date ? row.date : new Date(row.date),
+          time: row.time,
+          status: row.status,
+          createdAt: row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
+          expiresAt: row.expires_at instanceof Date ? row.expires_at : new Date(row.expires_at),
+          receiptUrl: row.receipt_url || undefined,
+          receiptData: row.receipt_data || undefined,
+          receiptFilename: row.receipt_filename || undefined,
+          receiptMimetype: row.receipt_mimetype || undefined,
+          paymentMethod: row.payment_method || undefined,
+          mercadoPagoPaymentId: row.payment_id || undefined,
+        }
+      } catch (mapError) {
+        console.error(`Error mapeando cita ${row.id}:`, mapError)
+        return null
+      }
+    }).filter((apt: any): apt is NonNullable<typeof apt> => apt !== null)
+    
+    console.log(`✅ Mapeadas ${mappedAppointments.length} citas correctamente`)
+    if (mappedAppointments.length > 0) {
+      console.log("📋 Ejemplo de cita mapeada:", {
+        id: mappedAppointments[0].id,
+        name: mappedAppointments[0].patientName,
+        status: mappedAppointments[0].status,
+        date: mappedAppointments[0].date
+      })
+    }
+    return mappedAppointments
   } catch (error: any) {
     // Si el error es porque la tabla no existe, inicializar y retornar vacío
     if (error?.message?.includes("does not exist") || error?.message?.includes("relation") || error?.code === "42P01") {
-      console.log("Tablas no existen, inicializando automáticamente...")
+      console.log("⚠️ Tablas no existen, inicializando automáticamente...")
       try {
         await initializeDatabase()
         console.log("✅ Base de datos inicializada automáticamente")
         return [] // Retornar vacío después de inicializar
       } catch (initError) {
-        console.error("Error inicializando base de datos:", initError)
+        console.error("❌ Error inicializando base de datos:", initError)
         return []
       }
     }
-    console.error("Error obteniendo citas:", error)
+    console.error("❌ Error obteniendo citas:", error)
+    console.error("Detalles del error:", {
+      message: error?.message,
+      code: error?.code,
+      stack: error?.stack
+    })
     return []
   }
 }

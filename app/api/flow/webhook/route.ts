@@ -122,15 +122,7 @@ export async function POST(request: NextRequest) {
         console.error("Error creando evento en Google Calendar:", error)
       }
 
-      // Enviar email de confirmación
-      try {
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-        await fetch(`${baseUrl}/api/appointments/confirm?id=${appointmentId}&action=accept`, {
-          method: "GET",
-        })
-      } catch (error) {
-        console.error("Error enviando email de confirmación:", error)
-      }
+      // El correo ahora se envía manualmente desde el dashboard
     } else if (paymentStatus === "4" || paymentStatus === "5") {
       // 4 = Rechazado, 5 = Anulado
       await appointmentsStore.reject(appointmentId)

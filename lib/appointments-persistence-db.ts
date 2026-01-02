@@ -4,10 +4,19 @@ import { getAllAppointments, saveAppointment } from "./db"
 export const appointmentsPersistence = {
   async load(): Promise<Appointment[]> {
     try {
+      console.log("🔄 Cargando citas desde Supabase...")
       const appointments = await getAllAppointments()
+      console.log(`✅ Cargadas ${appointments.length} citas desde Supabase`)
+      if (appointments.length > 0) {
+        console.log("📋 Primeras citas cargadas:", appointments.slice(0, 3).map(a => ({
+          id: a.id,
+          name: a.patientName,
+          status: a.status
+        })))
+      }
       return appointments
     } catch (error) {
-      console.error("Error cargando citas desde DB:", error)
+      console.error("❌ Error cargando citas desde DB:", error)
       return []
     }
   },

@@ -8,6 +8,27 @@ Crea un archivo `.env.local` en la raíz del proyecto con las siguientes variabl
 
 ```env
 # ===================================
+# 🗄️ Supabase Database (PostgreSQL)
+# ===================================
+# Estas variables se obtienen automáticamente cuando conectas Supabase en Vercel
+# O puedes obtenerlas desde: https://supabase.com/dashboard/project/[tu-proyecto]/settings/api
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+NEXT_PUBLIC_SUPABASE_URL=https://[tu-proyecto].supabase.co
+POSTGRES_DATABASE=postgres
+POSTGRES_HOST=db.[tu-proyecto].supabase.co
+POSTGRES_PASSWORD=tu_password
+POSTGRES_PRISMA_URL=postgres://postgres.[proyecto]:[password]@aws-1-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true
+POSTGRES_URL=postgres://postgres.[proyecto]:[password]@aws-1-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require&supa=base-pooler.x
+POSTGRES_URL_NON_POOLING=postgres://postgres.[proyecto]:[password]@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
+POSTGRES_USER=postgres
+SUPABASE_JWT_SECRET=...
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+SUPABASE_SECRET_KEY=sb_secret_...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_URL=https://[tu-proyecto].supabase.co
+
+# ===================================
 # 📧 SMTP Configuration (Nodemailer)
 # ===================================
 # Para enviar correos electrónicos de confirmación
@@ -37,6 +58,12 @@ FLOW_API_KEY=tu_flow_api_key
 FLOW_SECRET_KEY=tu_flow_secret_key
 FLOW_ENVIRONMENT=sandbox
 
+# 💳 Transbank Webpay Plus (Chile)
+# ===================================
+TRANSBANK_COMMERCE_CODE=tu_commerce_code
+TRANSBANK_API_KEY=tu_api_key
+TRANSBANK_ENVIRONMENT=integration
+
 # ===================================
 # 🔐 Dashboard Admin
 # ===================================
@@ -52,7 +79,59 @@ NEXT_PUBLIC_CONTACT_EMAIL=tu-email@ejemplo.com
 
 ---
 
-## 📧 1. Configuración de SMTP (Gmail)
+## 🗄️ 1. Configuración de Supabase (Base de Datos)
+
+### Opción A: Conectar Supabase desde Vercel (Recomendado)
+
+1. Ve a tu proyecto en [Vercel Dashboard](https://vercel.com/)
+2. Ve a **Settings** → **Storage**
+3. Haz clic en **"Create Database"** o **"Connect Database"**
+4. Selecciona **Supabase**
+5. Sigue las instrucciones para crear o conectar tu proyecto de Supabase
+6. Vercel automáticamente agregará todas las variables de entorno necesarias
+
+### Opción B: Configuración Manual
+
+1. Ve a [Supabase Dashboard](https://supabase.com/dashboard)
+2. Crea un nuevo proyecto o selecciona uno existente
+3. Ve a **Settings** → **API**
+4. Copia las siguientes variables:
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+5. Ve a **Settings** → **Database** → **Connection string**
+6. Copia la **Connection string** (URI) y úsala para:
+   - `POSTGRES_URL` (usar la versión con pooler)
+   - `POSTGRES_URL_NON_POOLING` (usar la versión sin pooler)
+
+### Inicializar las Tablas
+
+Después de configurar Supabase, necesitas crear las tablas:
+
+**Opción 1: Automática (Recomendada)**
+1. Ve al dashboard de tu aplicación: `https://tu-dominio.vercel.app/dashboard`
+2. Si no hay citas, verás un botón **"Inicializar Base de Datos"**
+3. Haz clic en el botón para crear las tablas automáticamente
+
+**Opción 2: Manual (SQL Editor)**
+1. Ve a tu proyecto en Supabase Dashboard
+2. Ve a **SQL Editor**
+3. Ejecuta el script de inicialización (ver `lib/db.ts` función `initializeDatabase()`)
+
+**Opción 3: Endpoint API**
+```bash
+# Visita en tu navegador o con curl:
+https://tu-dominio.vercel.app/api/db/init
+```
+
+### Variables Importantes:
+- `POSTGRES_URL`: Usada para conexiones con pooler (recomendada para producción)
+- `POSTGRES_URL_NON_POOLING`: Usada para operaciones que requieren conexión directa
+- El código automáticamente usa `POSTGRES_URL` si está disponible, o `POSTGRES_URL_NON_POOLING` como fallback
+
+---
+
+## 📧 2. Configuración de SMTP (Gmail)
 
 ### Paso 1: Habilitar autenticación de 2 pasos
 1. Ve a [myaccount.google.com](https://myaccount.google.com/)
@@ -75,7 +154,7 @@ SMTP_PASS=xxxx xxxx xxxx xxxx  # Contraseña de aplicación (sin espacios)
 
 ---
 
-## 📅 2. Configuración de Google Calendar
+## 📅 3. Configuración de Google Calendar
 
 ### Paso 1: Crear proyecto en Google Cloud Console
 1. Ve a [console.cloud.google.com](https://console.cloud.google.com/)
@@ -117,7 +196,7 @@ GOOGLE_REDIRECT_URI=https://tu-dominio.vercel.app/api/google-calendar/callback
 
 ---
 
-## 💳 3. Configuración de Flow (Pagos)
+## 💳 4. Configuración de Flow (Pagos)
 
 ### Paso 1: Crear cuenta en Flow
 1. **Sandbox (Pruebas):** [sandbox.flow.cl](https://sandbox.flow.cl/)
@@ -148,7 +227,40 @@ FLOW_ENVIRONMENT=production
 
 ---
 
-## 🚀 4. Configurar en Vercel
+## 💳 5. Configuración de Transbank Webpay Plus (Pagos)
+
+### Paso 1: Contratar Webpay Plus
+1. Si ya eres cliente: [Portal de Clientes Transbank](https://www.transbank.cl/)
+2. Si no eres cliente: [Contratar Webpay Plus](https://publico.transbank.cl/productos-y-servicios/soluciones-para-ventas-internet/webpay-plus)
+
+### Paso 2: Obtener credenciales
+1. Una vez contratado, recibirás un **Código de Comercio** único
+2. Para el ambiente de integración (pruebas):
+   - **Commerce Code:** `597055555532`
+   - **API Key:** `579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C`
+3. Para producción, recibirás tus credenciales después de validar la integración
+
+### Paso 3: Tarjetas de prueba
+Para probar en ambiente de integración:
+- **Tarjeta aprobada:** VISA `4051 8856 0044 6623`, CVV `123`, fecha futura
+- **RUT autenticación:** `11.111.111-1`, clave `123`
+
+### Variables:
+```env
+# Para pruebas (integration)
+TRANSBANK_COMMERCE_CODE=597055555532
+TRANSBANK_API_KEY=579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C
+TRANSBANK_ENVIRONMENT=integration
+
+# Para producción (después de validación)
+TRANSBANK_COMMERCE_CODE=tu_commerce_code_produccion
+TRANSBANK_API_KEY=tu_api_key_produccion
+TRANSBANK_ENVIRONMENT=production
+```
+
+---
+
+## 🚀 6. Configurar en Vercel
 
 ### Paso 1: Ir a configuración del proyecto
 1. Ve a [vercel.com](https://vercel.com/)
@@ -171,29 +283,50 @@ Después de agregar todas las variables:
 
 ## ✅ Verificación
 
-### 1. Verificar SMTP
+### 1. Verificar Supabase
+```bash
+# Visita el dashboard y verifica que las citas se carguen correctamente
+# O visita directamente:
+https://tu-dominio.vercel.app/api/db/init
+# Deberías ver: {"success": true, "message": "Base de datos inicializada correctamente"}
+```
+
+### 2. Verificar SMTP
 ```bash
 # En el dashboard, intenta confirmar una cita
 # Deberías recibir un email
 ```
 
-### 2. Verificar Google Calendar
+### 3. Verificar Google Calendar
 ```bash
 # En el dashboard → Configuración del Sitio
 # Haz clic en "Vincular con Google"
 # Deberías poder conectar sin errores
 ```
 
-### 3. Verificar Flow
+### 4. Verificar Flow
 ```bash
 # En la página principal, intenta hacer una reserva
 # Selecciona "Flow" como método de pago
 # Deberías ser redirigido al checkout de Flow
 ```
 
+### 5. Verificar Transbank Webpay Plus
+```bash
+# En la página principal, intenta hacer una reserva
+# Selecciona "Webpay Plus" como método de pago
+# Deberías ser redirigido al checkout de Transbank
+```
+
 ---
 
 ## 🔍 Troubleshooting
+
+### Error: "POSTGRES_URL no está configurado" o "No hay conexión a base de datos"
+- Verifica que `POSTGRES_URL` o `POSTGRES_URL_NON_POOLING` estén configuradas en Vercel
+- Si conectaste Supabase desde Vercel, las variables deberían agregarse automáticamente
+- Asegúrate de que la URL de conexión sea correcta (debe incluir `sslmode=require`)
+- Visita `/api/db/init` para inicializar las tablas si no existen
 
 ### Error: "SMTP no configurado"
 - Verifica que `SMTP_PASS` sea la contraseña de aplicación (16 caracteres)
@@ -206,6 +339,10 @@ Después de agregar todas las variables:
 ### Error: "Flow no configurado"
 - Verifica que `FLOW_API_KEY` y `FLOW_SECRET_KEY` estén correctamente configuradas
 - Asegúrate de usar las credenciales correctas (sandbox o producción)
+
+### Error: "Transbank no configurado"
+- Verifica que `TRANSBANK_COMMERCE_CODE` y `TRANSBANK_API_KEY` estén correctamente configuradas
+- Asegúrate de usar las credenciales correctas (integration o production)
 
 ### Error: "access_denied" (Google Calendar)
 - Agrega tu email como usuario de prueba en Google Cloud Console

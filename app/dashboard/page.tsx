@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState, useSyncExternalStore } from "react"
+import { useEffect, useState, useSyncExternalStore, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { appointmentsStore, type Appointment } from "@/lib/appointments-store"
 import { authStore } from "@/lib/auth-store"
-import { Check, X, Clock, LogOut, Calendar, FileText, ExternalLink, Settings } from "lucide-react"
+import { Check, X, Clock, LogOut, Calendar, FileText, ExternalLink, Settings, Mail, Video, Copy, CheckCircle } from "lucide-react"
 import { VisualPageEditor } from "@/components/visual-page-editor"
 import { GoogleCalendarSettings } from "@/components/google-calendar-settings"
 import { ThemeSelectorExtended } from "@/components/theme-selector-extended"
@@ -39,8 +39,9 @@ function formatTimeRemaining(expiresAt: Date): string {
 }
 
 // Funciones de snapshot en caché para evitar loops infinitos
+// Estas funciones deben estar fuera del componente y ser estables (misma referencia)
 const getServerSnapshotForAuth = () => false // En el servidor siempre false
-const getServerSnapshotForAppointments = () => []
+const getServerSnapshotForAppointments = () => [] // En el servidor siempre array vacío
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -73,14 +74,22 @@ export default function DashboardPage() {
     }
   }, [authRestored, router])
 
+  // Cachear las funciones de snapshot para evitar recrearlas en cada render
+  const serverSnapshotForAuth = useMemo(() => getServerSnapshotForAuth, [])
+  const serverSnapshotForAppointments = useMemo(() => getServerSnapshotForAppointments, [])
+
   // useSyncExternalStore siempre se ejecuta, pero el estado interno ya fue restaurado
   const isAuth = useSyncExternalStore(
     authStore.subscribe, 
     authStore.isAuthenticated, 
-    getServerSnapshotForAuth
+    serverSnapshotForAuth
   )
 
-  const appointments = useSyncExternalStore(appointmentsStore.subscribe, appointmentsStore.getAll, getServerSnapshotForAppointments)
+  const appointments = useSyncExternalStore(
+    appointmentsStore.subscribe, 
+    appointmentsStore.getAll, 
+    serverSnapshotForAppointments
+  )
 
   // Load site config on mount
   useEffect(() => {
@@ -133,37 +142,93 @@ export default function DashboardPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(siteConfig),
       })
+      
       if (!response.ok) {
-        throw new Error("Error al guardar")
+        const errorData = await response.json().catch(() => ({ error: "Error desconocido" }))
+        console.error("Error del servidor:", errorData)
+        throw new Error(errorData.error || "Error al guardar la configuración")
       }
+      
+      const result = await response.json()
+      return result
     } catch (error) {
       console.error("Error guardando configuración:", error)
-      throw error
+      const errorMessage = error instanceof Error ? error.message : "Error al guardar la configuración"
+      throw new Error(errorMessage)
     }
   }
 
-  // Initialize store when authenticated
+  // Initialize store when authenticated and force refresh
   useEffect(() => {
     // Solo inicializar si la sesión fue restaurada y está autenticado
     if (!authRestored) return
     
     if (isAuth) {
       // Inicializar el store cuando el usuario está autenticado
-      appointmentsStore.init()
+      const initStore = async () => {
+        try {
+          console.log("🔄 Inicializando store de citas...")
+          await appointmentsStore.init(true) // Forzar recarga
+          console.log("✅ Store inicializado")
+          // Forzar actualización después de inicializar
+          setTimeUpdate((t) => t + 1)
+        } catch (error) {
+          console.error("❌ Error inicializando store:", error)
+          // Intentar inicializar la base de datos si hay error
+          try {
+            const initResponse = await fetch("/api/db/init")
+            const initData = await initResponse.json()
+            if (initData.success) {
+              console.log("✅ Base de datos inicializada, reintentando carga...")
+              await appointmentsStore.init(true)
+              setTimeUpdate((t) => t + 1)
+            }
+          } catch (initError) {
+            console.error("❌ Error inicializando base de datos:", initError)
+          }
+        }
+      }
+      initStore()
     } else if (!isCheckingAuth) {
       // Solo redirigir si realmente no está autenticado y ya terminamos de verificar
       router.push("/dashboard/login")
     }
   }, [authRestored, isAuth, isCheckingAuth, router])
 
-  // Update timer every second and check for expired appointments
+  // Recargar citas periódicamente para asegurar sincronización
   useEffect(() => {
+    if (!isAuth || !authRestored) return
+    
+    const refreshInterval = setInterval(async () => {
+      try {
+        await appointmentsStore.init(true) // Forzar recarga
+        setTimeUpdate((t) => t + 1)
+      } catch (error) {
+        console.error("Error en refresh periódico:", error)
+      }
+    }, 5000) // Recargar cada 5 segundos
+
+    return () => clearInterval(refreshInterval)
+  }, [isAuth, authRestored])
+
+  // Update timer every second and check for expired appointments, also refresh appointments
+  useEffect(() => {
+    if (!isAuth || !authRestored) return
+    
     const interval = setInterval(async () => {
-      await appointmentsStore.checkExpired()
-      setTimeUpdate((t) => t + 1)
+      try {
+        await appointmentsStore.checkExpired()
+        // Recargar citas cada 3 segundos para asegurar sincronización
+        if (timeUpdate % 3 === 0) {
+          await appointmentsStore.init(true) // Forzar recarga
+        }
+        setTimeUpdate((t) => t + 1)
+      } catch (error) {
+        console.error("Error en timer:", error)
+      }
     }, 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [isAuth, authRestored, timeUpdate])
 
   const handleLogout = () => {
     authStore.logout()
@@ -173,6 +238,24 @@ export default function DashboardPage() {
   const pendingAppointments = appointments.filter((a) => a.status === "pending")
   const confirmedAppointments = appointments.filter((a) => a.status === "confirmed")
   const expiredAppointments = appointments.filter((a) => a.status === "expired" || a.status === "cancelled")
+
+  // Debug: Log appointments cuando cambian
+  useEffect(() => {
+    if (isAuth && authRestored) {
+      console.log(`📊 Dashboard - Total citas: ${appointments.length}`)
+      console.log(`⏳ Pendientes: ${pendingAppointments.length}`)
+      console.log(`✅ Confirmadas: ${confirmedAppointments.length}`)
+      console.log(`❌ Canceladas/Expiradas: ${expiredAppointments.length}`)
+      if (appointments.length > 0) {
+        console.log("📋 Primeras citas:", appointments.slice(0, 3).map(a => ({
+          id: a.id,
+          name: a.patientName,
+          status: a.status,
+          date: a.date
+        })))
+      }
+    }
+  }, [appointments.length, isAuth, authRestored])
 
   // Mostrar loading mientras se verifica la autenticación
   if (isCheckingAuth || !authRestored) {
@@ -251,6 +334,47 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
+            {/* Botón para inicializar DB si es necesario - solo mostrar si no hay citas y está autenticado */}
+            {appointments.length === 0 && pendingAppointments.length === 0 && confirmedAppointments.length === 0 && (
+              <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex-1">
+                    <p className="font-medium text-amber-900 dark:text-amber-100 mb-1">
+                      ⚠️ Base de datos puede no estar inicializada
+                    </p>
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                      Si acabas de configurar Supabase, haz clic en el botón para crear las tablas necesarias.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const response = await fetch("/api/db/init", { method: "POST" })
+                        const data = await response.json()
+                        if (data.success) {
+                          alert("✅ Base de datos inicializada correctamente. Recargando citas...")
+                          // Esperar un momento antes de recargar
+                          setTimeout(async () => {
+                            await appointmentsStore.init(true)
+                            setTimeUpdate((t) => t + 1)
+                          }, 500)
+                        } else {
+                          alert(`Error: ${data.error || data.details || "Error desconocido"}\n\n${data.hint || ""}`)
+                        }
+                      } catch (error) {
+                        console.error("Error:", error)
+                        const errorMessage = error instanceof Error ? error.message : "Error desconocido"
+                        alert(`Error al inicializar la base de datos: ${errorMessage}\n\nRevisa la consola para más detalles.`)
+                      }
+                    }}
+                    className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+                  >
+                    Inicializar Base de Datos
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-card rounded-xl p-6 shadow-sm">
@@ -331,58 +455,10 @@ export default function DashboardPage() {
           ) : (
             <div className="space-y-3">
               {confirmedAppointments.map((appointment) => (
-                <div
+                <ConfirmedAppointmentCard
                   key={appointment.id}
-                  className="bg-card rounded-xl p-4 shadow-sm flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                      <Check className="w-5 h-5 text-green-600" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="space-y-2">
-                        <div>
-                          <p className="font-medium text-foreground">{appointment.patientName}</p>
-                          <p className="text-sm text-muted-foreground">{appointment.patientEmail}</p>
-                          <p className="text-sm text-muted-foreground">{appointment.patientPhone}</p>
-                        </div>
-                        {appointment.consultationReason && (
-                          <div className="mt-2 p-2 bg-muted/50 rounded-lg">
-                            <p className="text-xs text-muted-foreground mb-1">Motivo de consulta:</p>
-                            <p className="text-xs text-foreground italic">{appointment.consultationReason}</p>
-                          </div>
-                        )}
-                        {appointment.emergencyContactName && (
-                          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                            <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1">Contacto de emergencia:</p>
-                            {appointment.emergencyContactRelation && (
-                              <p className="text-xs text-blue-800 dark:text-blue-200">
-                                <span className="font-medium">Relación:</span> {appointment.emergencyContactRelation.charAt(0).toUpperCase() + appointment.emergencyContactRelation.slice(1)}
-                              </p>
-                            )}
-                            <p className="text-xs text-blue-800 dark:text-blue-200">
-                              <span className="font-medium">Nombre:</span> {appointment.emergencyContactName}
-                            </p>
-                            {appointment.emergencyContactPhone && (
-                              <p className="text-xs text-blue-800 dark:text-blue-200">
-                                <span className="font-medium">Teléfono:</span> {appointment.emergencyContactPhone}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-foreground">
-                      {appointment.date.getDate()} de {monthNames[appointment.date.getMonth()]}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{appointment.time} hrs</p>
-                    <Badge variant="outline" className="mt-1 capitalize">
-                      {appointment.appointmentType}
-                    </Badge>
-                  </div>
-                </div>
+                  appointment={appointment}
+                />
               ))}
             </div>
           )}
@@ -530,6 +606,234 @@ function AppointmentCard({
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function ConfirmedAppointmentCard({ appointment }: { appointment: Appointment }) {
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
+  const [isCreatingMeet, setIsCreatingMeet] = useState(false)
+  const [showEmailPreset, setShowEmailPreset] = useState(false)
+  const [emailPreset, setEmailPreset] = useState<{ subject: string; body: string } | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [meetLink, setMeetLink] = useState<string | null>(null)
+
+  const handleSendEmail = async (createMeet: boolean = false) => {
+    setIsSendingEmail(true)
+    try {
+      const response = await fetch("/api/appointments/send-confirmation-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ appointmentId: appointment.id, createMeet }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Error al enviar el correo")
+      }
+
+      const data = await response.json()
+      if (data.meetLink) {
+        setMeetLink(data.meetLink)
+      }
+      alert("Correo enviado correctamente")
+    } catch (error) {
+      console.error("Error:", error)
+      alert("Error al enviar el correo")
+    } finally {
+      setIsSendingEmail(false)
+    }
+  }
+
+  const handleCreateMeet = async () => {
+    setIsCreatingMeet(true)
+    try {
+      const response = await fetch("/api/appointments/send-confirmation-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ appointmentId: appointment.id, createMeet: true }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Error al crear Google Meet")
+      }
+
+      const data = await response.json()
+      if (data.meetLink) {
+        setMeetLink(data.meetLink)
+        alert(`Google Meet creado: ${data.meetLink}`)
+      }
+    } catch (error) {
+      console.error("Error:", error)
+      alert("Error al crear Google Meet")
+    } finally {
+      setIsCreatingMeet(false)
+    }
+  }
+
+  const handleShowEmailPreset = async () => {
+    try {
+      const response = await fetch(`/api/appointments/send-confirmation-email?appointmentId=${appointment.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setEmailPreset({ subject: data.emailSubject, body: data.emailBody })
+        setShowEmailPreset(true)
+      }
+    } catch (error) {
+      console.error("Error:", error)
+    }
+  }
+
+  const handleCopyPreset = () => {
+    if (emailPreset) {
+      const text = `Asunto: ${emailPreset.subject}\n\n${emailPreset.body}`
+      navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  return (
+    <div className="bg-card rounded-xl p-4 shadow-sm border-l-4 border-green-400">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4 flex-1">
+          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+            <Check className="w-5 h-5 text-green-600" />
+          </div>
+          <div className="flex-1">
+            <div className="space-y-2">
+              <div>
+                <p className="font-medium text-foreground">{appointment.patientName}</p>
+                <p className="text-sm text-muted-foreground">{appointment.patientEmail}</p>
+                <p className="text-sm text-muted-foreground">{appointment.patientPhone}</p>
+              </div>
+              {appointment.consultationReason && (
+                <div className="mt-2 p-2 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Motivo de consulta:</p>
+                  <p className="text-xs text-foreground italic">{appointment.consultationReason}</p>
+                </div>
+              )}
+              {appointment.emergencyContactName && (
+                <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-1">Contacto de emergencia:</p>
+                  {appointment.emergencyContactRelation && (
+                    <p className="text-xs text-blue-800 dark:text-blue-200">
+                      <span className="font-medium">Relación:</span> {appointment.emergencyContactRelation.charAt(0).toUpperCase() + appointment.emergencyContactRelation.slice(1)}
+                    </p>
+                  )}
+                  <p className="text-xs text-blue-800 dark:text-blue-200">
+                    <span className="font-medium">Nombre:</span> {appointment.emergencyContactName}
+                  </p>
+                  {appointment.emergencyContactPhone && (
+                    <p className="text-xs text-blue-800 dark:text-blue-200">
+                      <span className="font-medium">Teléfono:</span> {appointment.emergencyContactPhone}
+                    </p>
+                  )}
+                </div>
+              )}
+              {meetLink && (
+                <div className="mt-2 p-2 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <p className="text-xs font-medium text-green-900 dark:text-green-100 mb-1">Google Meet:</p>
+                  <a href={meetLink} target="_blank" rel="noopener noreferrer" className="text-xs text-green-800 dark:text-green-200 hover:underline">
+                    {meetLink}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+          <div className="text-right">
+            <p className="font-medium text-foreground">
+              {appointment.date.getDate()} de {monthNames[appointment.date.getMonth()]}
+            </p>
+            <p className="text-sm text-muted-foreground">{appointment.time} hrs</p>
+            <Badge variant="outline" className="mt-1 capitalize">
+              {appointment.appointmentType}
+            </Badge>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {appointment.appointmentType === "online" && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleCreateMeet}
+                disabled={isCreatingMeet || !!meetLink}
+                className="text-xs"
+              >
+                <Video className="w-3.5 h-3.5 mr-1" />
+                {meetLink ? "Meet Creado" : "Crear Meet"}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleShowEmailPreset}
+              className="text-xs"
+            >
+              <FileText className="w-3.5 h-3.5 mr-1" />
+              Ver Preset
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => handleSendEmail(false)}
+              disabled={isSendingEmail}
+              className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Mail className="w-3.5 h-3.5 mr-1" />
+              {isSendingEmail ? "Enviando..." : "Enviar Correo"}
+            </Button>
+            {appointment.appointmentType === "online" && (
+              <Button
+                size="sm"
+                onClick={() => handleSendEmail(true)}
+                disabled={isSendingEmail}
+                className="text-xs bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                <Mail className="w-3.5 h-3.5 mr-1" />
+                {isSendingEmail ? "Enviando..." : "Correo + Meet"}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {showEmailPreset && emailPreset && (
+        <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-foreground">Preset de Correo:</p>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={handleCopyPreset} className="text-xs">
+                {copied ? (
+                  <>
+                    <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                    Copiado
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 mr-1" />
+                    Copiar
+                  </>
+                )}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setShowEmailPreset(false)} className="text-xs">
+                Cerrar
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2 text-xs">
+            <div>
+              <p className="font-medium text-muted-foreground mb-1">Asunto:</p>
+              <p className="text-foreground bg-background p-2 rounded border">{emailPreset.subject}</p>
+            </div>
+            <div>
+              <p className="font-medium text-muted-foreground mb-1">Cuerpo:</p>
+              <p className="text-foreground bg-background p-2 rounded border whitespace-pre-wrap">{emailPreset.body}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

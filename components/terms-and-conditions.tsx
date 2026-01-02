@@ -25,12 +25,12 @@ export function TermsAndConditions({ open, onOpenChange }: TermsAndConditionsPro
               <h3 className="font-semibold text-base mb-2">1. Confidencialidad y Privacidad</h3>
               <p className="text-muted-foreground mb-3">
                 Toda la información compartida durante las sesiones de terapia es estrictamente confidencial. 
-                Nos comprometemos a proteger su privacidad y mantener la confidencialidad de acuerdo con 
+                Me Compromento a proteger su privacidad y mantener la confidencialidad de acuerdo con 
                 las leyes y códigos éticos profesionales vigentes.
               </p>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2">
                 <li>La información personal y clínica será utilizada únicamente para fines terapéuticos.</li>
-                <li>No compartiremos su información con terceros sin su consentimiento explícito, excepto en casos legales requeridos.</li>
+                <li>No comparto su información con terceros sin su consentimiento explícito, excepto en casos legales requeridos.</li>
                 <li>Los registros de sesiones se mantendrán de forma segura y confidencial.</li>
               </ul>
             </section>

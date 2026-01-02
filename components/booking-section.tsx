@@ -11,6 +11,7 @@ import { appointmentsStore } from "@/lib/appointments-store"
 import { BankTransferDetails } from "@/components/bank-transfer-details"
 import { TermsAndConditions } from "@/components/terms-and-conditions"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
 import { validateEmail, validatePhone, validateName, sanitizeName, sanitizePhone, sanitizeString } from "@/lib/validation"
 import { countryCodes, defaultCountryCode, type CountryCode } from "@/lib/country-codes"
 import { ChevronDown } from "lucide-react"
@@ -47,6 +48,7 @@ export function BookingSection() {
   const [emergencyContactCountry, setEmergencyContactCountry] = useState<CountryCode>(defaultCountryCode)
   const [showEmergencyContactCountryDropdown, setShowEmergencyContactCountryDropdown] = useState(false)
   const [consultationReason, setConsultationReason] = useState("")
+  const [includeEmergencyContact, setIncludeEmergencyContact] = useState(false)
   const [emergencyContactRelation, setEmergencyContactRelation] = useState("")
   const [emergencyContactName, setEmergencyContactName] = useState("")
   const [emergencyContactPhone, setEmergencyContactPhone] = useState("")
@@ -57,7 +59,7 @@ export function BookingSection() {
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [showBankDetails, setShowBankDetails] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<"transfer" | "flow" | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<"transfer" | null>(null)
   const [showPaymentMethod, setShowPaymentMethod] = useState(false)
   const [isCreatingPayment, setIsCreatingPayment] = useState(false)
   const [hasMadeTransfer, setHasMadeTransfer] = useState(false)
@@ -147,15 +149,12 @@ export function BookingSection() {
     }, 100)
   }
 
-  const handlePaymentMethodSelect = async (method: "transfer" | "flow") => {
+  const handlePaymentMethodSelect = async (method: "transfer") => {
     setPaymentMethod(method)
     
     if (method === "transfer") {
       setShowPaymentMethod(false)
       setShowBankDetails(true)
-    } else {
-      // Crear pago con Flow
-      await handleFlowPayment()
     }
   }
 
@@ -234,6 +233,91 @@ export function BookingSection() {
     }
   }
 
+  const handleWebpayPayment = async () => {
+    if (!selectedDate || !selectedTime) return
+    
+    setIsCreatingPayment(true)
+    
+    try {
+      const appointmentId = crypto.randomUUID()
+      const amount = appointmentType === "online" ? 20000 : 27000
+      const description = `Sesión ${appointmentType === "online" ? "Online" : "Presencial"} - ${selectedDate.getDate()} de ${monthNames[selectedDate.getMonth()]} a las ${selectedTime} hrs`
+      
+      // Formatear teléfono con código de país si es online
+      let formattedPhone = patientPhone
+      if (appointmentType === "online" && selectedCountry) {
+        if (!patientPhone.startsWith("+") && !patientPhone.startsWith(selectedCountry.dialCode)) {
+          formattedPhone = `${selectedCountry.dialCode} ${patientPhone.trim()}`
+        } else if (patientPhone.startsWith(selectedCountry.dialCode)) {
+          formattedPhone = patientPhone
+        }
+      }
+
+      // Crear la cita primero (pendiente de pago)
+      await appointmentsStore.add({
+        id: appointmentId,
+        patientName: sanitizeName(patientName),
+        patientEmail: sanitizeString(patientEmail).toLowerCase(),
+        patientPhone: sanitizePhone(formattedPhone),
+        consultationReason: sanitizeString(consultationReason) || undefined,
+        emergencyContactRelation: sanitizeString(emergencyContactRelation) || undefined,
+        emergencyContactName: sanitizeName(emergencyContactName) || undefined,
+        emergencyContactPhone: sanitizePhone(emergencyContactPhone) || undefined,
+        appointmentType,
+        date: selectedDate,
+        time: selectedTime,
+        status: "pending",
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutos para pagar
+        paymentMethod: "webpay",
+      })
+
+      // Crear transacción en Transbank Webpay Plus
+      const paymentResponse = await fetch("/api/transbank/create-transaction", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          appointmentId,
+          amount,
+          description,
+          patientEmail: sanitizeString(patientEmail).toLowerCase(),
+          patientName: sanitizeName(patientName),
+        }),
+      })
+
+      if (!paymentResponse.ok) {
+        const errorData = await paymentResponse.json().catch(() => ({}))
+        throw new Error(errorData.error || "Error al crear la transacción. Por favor, intente nuevamente.")
+      }
+
+      const paymentData = await paymentResponse.json()
+      
+      // Redirigir al checkout de Webpay Plus
+      if (paymentData.url && paymentData.token) {
+        // Crear un formulario para redirigir a Webpay
+        const form = document.createElement("form")
+        form.method = "POST"
+        form.action = paymentData.url
+        const tokenInput = document.createElement("input")
+        tokenInput.type = "hidden"
+        tokenInput.name = "token_ws"
+        tokenInput.value = paymentData.token
+        form.appendChild(tokenInput)
+        document.body.appendChild(form)
+        form.submit()
+      } else {
+        throw new Error("No se pudo obtener la URL de pago")
+      }
+    } catch (error) {
+      console.error("Error creando pago con Webpay Plus:", error)
+      const errorMessage = error instanceof Error ? error.message : "Error al procesar el pago. Por favor, intente nuevamente."
+      alert(errorMessage)
+      setIsCreatingPayment(false)
+    }
+  }
+
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {}
 
@@ -266,24 +350,27 @@ export function BookingSection() {
       }
     }
 
-    if (!emergencyContactRelation.trim()) {
-      errors.emergencyContactRelation = "Debe seleccionar la relación del contacto de emergencia"
-    }
+    // Validar contacto de emergencia solo si el checkbox está marcado
+    if (includeEmergencyContact) {
+      if (!emergencyContactRelation.trim()) {
+        errors.emergencyContactRelation = "Debe seleccionar la relación del contacto de emergencia"
+      }
 
-    if (!emergencyContactName.trim()) {
-      errors.emergencyContactName = "El nombre del contacto de emergencia es requerido"
-    } else if (!validateName(emergencyContactName)) {
-      errors.emergencyContactName = "El nombre debe contener solo letras y espacios"
-    }
+      if (!emergencyContactName.trim()) {
+        errors.emergencyContactName = "El nombre del contacto de emergencia es requerido"
+      } else if (!validateName(emergencyContactName)) {
+        errors.emergencyContactName = "El nombre debe contener solo letras y espacios"
+      }
 
-    if (!emergencyContactPhone.trim()) {
-      errors.emergencyContactPhone = "El teléfono del contacto de emergencia es requerido"
-    } else {
-      const emergencyPhoneToValidate = emergencyContactCountry
-        ? `${emergencyContactCountry.dialCode} ${emergencyContactPhone.trim()}`
-        : emergencyContactPhone
-      if (!validatePhone(emergencyPhoneToValidate, false)) {
-        errors.emergencyContactPhone = "Ingrese un número de teléfono válido"
+      if (!emergencyContactPhone.trim()) {
+        errors.emergencyContactPhone = "El teléfono del contacto de emergencia es requerido"
+      } else {
+        const emergencyPhoneToValidate = emergencyContactCountry
+          ? `${emergencyContactCountry.dialCode} ${emergencyContactPhone.trim()}`
+          : emergencyContactPhone
+        if (!validatePhone(emergencyPhoneToValidate, false)) {
+          errors.emergencyContactPhone = "Ingrese un número de teléfono válido"
+        }
       }
     }
 
@@ -346,9 +433,9 @@ export function BookingSection() {
         patientEmail: sanitizeString(patientEmail).toLowerCase(),
         patientPhone: sanitizePhone(formattedPhone),
         consultationReason: sanitizeString(consultationReason),
-        emergencyContactRelation: sanitizeString(emergencyContactRelation),
-        emergencyContactName: sanitizeName(emergencyContactName),
-        emergencyContactPhone: sanitizePhone(formattedEmergencyPhone),
+        emergencyContactRelation: includeEmergencyContact ? sanitizeString(emergencyContactRelation) : undefined,
+        emergencyContactName: includeEmergencyContact ? sanitizeName(emergencyContactName) : undefined,
+        emergencyContactPhone: includeEmergencyContact ? sanitizePhone(formattedEmergencyPhone) : undefined,
         appointmentType,
         date: selectedDate.toISOString(),
         time: selectedTime,
@@ -389,6 +476,7 @@ export function BookingSection() {
       setShowBankDetails(false)
       setSelectedCountry(defaultCountryCode)
       setEmergencyContactCountry(defaultCountryCode)
+      setIncludeEmergencyContact(false)
       setConsultationReason("")
       setEmergencyContactRelation("")
       setEmergencyContactName("")
@@ -418,6 +506,7 @@ export function BookingSection() {
     setPatientPhone("")
     setSelectedCountry(defaultCountryCode)
     setEmergencyContactCountry(defaultCountryCode)
+    setIncludeEmergencyContact(false)
     setConsultationReason("")
     setEmergencyContactRelation("")
     setEmergencyContactName("")
@@ -643,32 +732,18 @@ export function BookingSection() {
             <div className="space-y-3">
               <p className="text-sm font-medium text-foreground">Seleccione su método de pago:</p>
               <div className="grid grid-cols-1 gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setPaymentMethod("flow")}
-                  disabled={isCreatingPayment}
-                  className={`h-auto p-4 rounded-xl border-2 transition-all text-left justify-start ${
-                    paymentMethod === "flow"
-                      ? "border-accent bg-accent/10 hover:bg-accent/15"
-                      : "hover:border-accent hover:bg-accent/5"
-                  }`}
-                >
+                <div className="h-auto p-4 rounded-xl border-2 border-border/30 bg-muted/30 opacity-75 cursor-not-allowed">
                   <div className="flex items-center gap-3 w-full">
-                    <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                    <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-900/30 flex items-center justify-center shrink-0">
                       <span className="text-2xl">💳</span>
                     </div>
-                    <div className="flex-1 text-left">
-                      <p className="font-semibold text-foreground text-base">Pago con Tarjeta</p>
-                      <p className="text-xs text-muted-foreground">Tarjeta de crédito, débito o cuenta corriente (Flow)</p>
+                    <div className="flex-1 text-left min-w-0">
+                      <p className="font-semibold text-foreground text-base break-words">Pago con Tarjeta</p>
+                      <p className="text-xs text-muted-foreground break-words">Próximamente</p>
                     </div>
-                    {paymentMethod === "flow" && (
-                      <div className="w-5 h-5 rounded-full bg-accent flex items-center justify-center shrink-0">
-                        <span className="text-white text-xs">✓</span>
-                      </div>
-                    )}
+                    <Badge variant="outline" className="text-xs shrink-0">Próximamente</Badge>
                   </div>
-                </Button>
+                </div>
 
                 <Button
                   type="button"
@@ -681,13 +756,13 @@ export function BookingSection() {
                       : "hover:border-accent hover:bg-accent/5"
                   }`}
                 >
-                  <div className="flex items-center gap-3 w-full">
-                    <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-3 w-full min-w-0">
+                    <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0 flex-shrink-0">
                       <span className="text-2xl">🏦</span>
                     </div>
-                    <div className="flex-1 text-left">
-                      <p className="font-semibold text-foreground text-base">Pago con Transferencia Bancaria</p>
-                      <p className="text-xs text-muted-foreground">Transferencia directa y envíe el comprobante por correo</p>
+                    <div className="flex-1 text-left min-w-0 overflow-hidden">
+                      <p className="font-semibold text-foreground text-base truncate">Pago con Transferencia Bancaria</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">Transferencia directa y envíe el comprobante</p>
                     </div>
                   </div>
                 </Button>
@@ -700,8 +775,6 @@ export function BookingSection() {
                   if (paymentMethod === "transfer") {
                     setShowPaymentMethod(false)
                     setShowBankDetails(true)
-                  } else {
-                    await handleFlowPayment()
                   }
                 }}
                 disabled={isCreatingPayment}
@@ -816,7 +889,11 @@ export function BookingSection() {
                   checked={hasMadeTransfer}
                   onCheckedChange={(checked) => {
                     setHasMadeTransfer(checked === true)
-                    setValidationErrors((prev) => ({ ...prev, transfer: undefined }))
+                    setValidationErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors.transfer
+        return newErrors
+      })
                   }}
                   className="mt-1"
                 />
@@ -839,7 +916,11 @@ export function BookingSection() {
                   checked={acceptedTerms}
                   onCheckedChange={(checked) => {
                     setAcceptedTerms(checked === true)
-                    setValidationErrors((prev) => ({ ...prev, terms: undefined }))
+                    setValidationErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors.terms
+        return newErrors
+      })
                   }}
                   className="mt-1"
                 />
@@ -1003,113 +1084,149 @@ export function BookingSection() {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="emergencyContactRelation">Contacto de emergencia - Relación</Label>
-              <select
-                id="emergencyContactRelation"
-                value={emergencyContactRelation}
-                onChange={(e) => {
-                  setEmergencyContactRelation(e.target.value)
-                  if (validationErrors.emergencyContactRelation) {
-                    setValidationErrors((prev) => ({ ...prev, emergencyContactRelation: "" }))
+            {/* Checkbox para contacto de emergencia opcional */}
+            <div className="flex items-center space-x-2 p-3 bg-muted/30 rounded-xl border border-border/50">
+              <Checkbox
+                id="includeEmergencyContact"
+                checked={includeEmergencyContact}
+                onCheckedChange={(checked) => {
+                  setIncludeEmergencyContact(checked as boolean)
+                  if (!checked) {
+                    // Limpiar campos si se desmarca
+                    setEmergencyContactRelation("")
+                    setEmergencyContactName("")
+                    setEmergencyContactPhone("")
+                    setEmergencyContactCountry(defaultCountryCode)
+                    // Limpiar errores
+                    setValidationErrors((prev) => ({
+                      ...prev,
+                      emergencyContactRelation: "",
+                      emergencyContactName: "",
+                      emergencyContactPhone: "",
+                    }))
                   }
                 }}
-                className={`w-full rounded-xl border border-border/50 bg-background px-3 py-2 text-sm ${
-                  validationErrors.emergencyContactRelation ? "border-destructive" : ""
-                }`}
-                required
-              >
-                <option value="">Seleccione una opción</option>
-                <option value="madre">Madre</option>
-                <option value="padre">Padre</option>
-                <option value="pareja">Pareja</option>
-                <option value="otro">Otro</option>
-              </select>
-              {validationErrors.emergencyContactRelation && (
-                <p className="text-sm text-destructive">{validationErrors.emergencyContactRelation}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="emergencyContactName">Contacto de emergencia - Nombre</Label>
-              <Input
-                id="emergencyContactName"
-                value={emergencyContactName}
-                onChange={(e) => {
-                  setEmergencyContactName(e.target.value)
-                  if (validationErrors.emergencyContactName) {
-                    setValidationErrors((prev) => ({ ...prev, emergencyContactName: "" }))
-                  }
-                }}
-                placeholder="Nombre completo del contacto"
-                className={`rounded-xl border-border/50 ${validationErrors.emergencyContactName ? "border-destructive" : ""}`}
-                required
               />
-              {validationErrors.emergencyContactName && (
-                <p className="text-sm text-destructive">{validationErrors.emergencyContactName}</p>
-              )}
+              <Label
+                htmlFor="includeEmergencyContact"
+                className="text-sm font-medium text-foreground cursor-pointer"
+              >
+                Agregar contacto de emergencia (opcional)
+              </Label>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="emergencyContactPhone">Contacto de emergencia - Teléfono</Label>
-              <div className="flex gap-2">
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowEmergencyContactCountryDropdown(!showEmergencyContactCountryDropdown)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border/50 bg-background hover:bg-muted/50 transition-colors min-w-[140px]"
+            {/* Campos de contacto de emergencia - solo se muestran si el checkbox está marcado */}
+            {includeEmergencyContact && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="emergencyContactRelation">Contacto de emergencia - Relación</Label>
+                  <select
+                    id="emergencyContactRelation"
+                    value={emergencyContactRelation}
+                    onChange={(e) => {
+                      setEmergencyContactRelation(e.target.value)
+                      if (validationErrors.emergencyContactRelation) {
+                        setValidationErrors((prev) => ({ ...prev, emergencyContactRelation: "" }))
+                      }
+                    }}
+                    className={`w-full rounded-xl border border-border/50 bg-background px-3 py-2 text-sm ${
+                      validationErrors.emergencyContactRelation ? "border-destructive" : ""
+                    }`}
+                    required={includeEmergencyContact}
                   >
-                    <span className="text-lg">{emergencyContactCountry.flag}</span>
-                    <span className="text-sm font-medium">{emergencyContactCountry.dialCode}</span>
-                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                  {showEmergencyContactCountryDropdown && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setShowEmergencyContactCountryDropdown(false)}
-                      />
-                      <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-20 max-h-64 overflow-y-auto w-64">
-                        {countryCodes.map((country) => (
-                          <button
-                            key={country.code}
-                            type="button"
-                            onClick={() => {
-                              setEmergencyContactCountry(country)
-                              setShowEmergencyContactCountryDropdown(false)
-                            }}
-                            className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-muted/50 transition-colors ${
-                              emergencyContactCountry.code === country.code ? "bg-accent/10" : ""
-                            }`}
-                          >
-                            <span className="text-lg">{country.flag}</span>
-                            <span className="text-sm flex-1 text-left">{country.name}</span>
-                            <span className="text-sm text-muted-foreground">{country.dialCode}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </>
+                    <option value="">Seleccione una opción</option>
+                    <option value="madre">Madre</option>
+                    <option value="padre">Padre</option>
+                    <option value="pareja">Pareja</option>
+                    <option value="otro">Otro</option>
+                  </select>
+                  {validationErrors.emergencyContactRelation && (
+                    <p className="text-sm text-destructive">{validationErrors.emergencyContactRelation}</p>
                   )}
                 </div>
-                <Input
-                  id="emergencyContactPhone"
-                  type="tel"
-                  value={emergencyContactPhone}
-                  onChange={(e) => {
-                    setEmergencyContactPhone(e.target.value)
-                    if (validationErrors.emergencyContactPhone) {
-                      setValidationErrors((prev) => ({ ...prev, emergencyContactPhone: "" }))
-                    }
-                  }}
-                  placeholder="9 1234 5678"
-                  className={`flex-1 rounded-xl border-border/50 ${validationErrors.emergencyContactPhone ? "border-destructive" : ""}`}
-                  required
-                />
-              </div>
-              {validationErrors.emergencyContactPhone && (
-                <p className="text-sm text-destructive">{validationErrors.emergencyContactPhone}</p>
-              )}
-            </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="emergencyContactName">Contacto de emergencia - Nombre</Label>
+                  <Input
+                    id="emergencyContactName"
+                    value={emergencyContactName}
+                    onChange={(e) => {
+                      setEmergencyContactName(e.target.value)
+                      if (validationErrors.emergencyContactName) {
+                        setValidationErrors((prev) => ({ ...prev, emergencyContactName: "" }))
+                      }
+                    }}
+                    placeholder="Nombre completo del contacto"
+                    className={`rounded-xl border-border/50 ${validationErrors.emergencyContactName ? "border-destructive" : ""}`}
+                    required={includeEmergencyContact}
+                  />
+                  {validationErrors.emergencyContactName && (
+                    <p className="text-sm text-destructive">{validationErrors.emergencyContactName}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="emergencyContactPhone">Contacto de emergencia - Teléfono</Label>
+                  <div className="flex gap-2">
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowEmergencyContactCountryDropdown(!showEmergencyContactCountryDropdown)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border/50 bg-background hover:bg-muted/50 transition-colors min-w-[140px]"
+                      >
+                        <span className="text-lg">{emergencyContactCountry.flag}</span>
+                        <span className="text-sm font-medium">{emergencyContactCountry.dialCode}</span>
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                      </button>
+                      {showEmergencyContactCountryDropdown && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setShowEmergencyContactCountryDropdown(false)}
+                          />
+                          <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-20 max-h-64 overflow-y-auto w-64">
+                            {countryCodes.map((country) => (
+                              <button
+                                key={country.code}
+                                type="button"
+                                onClick={() => {
+                                  setEmergencyContactCountry(country)
+                                  setShowEmergencyContactCountryDropdown(false)
+                                }}
+                                className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-muted/50 transition-colors ${
+                                  emergencyContactCountry.code === country.code ? "bg-accent/10" : ""
+                                }`}
+                              >
+                                <span className="text-lg">{country.flag}</span>
+                                <span className="text-sm flex-1 text-left">{country.name}</span>
+                                <span className="text-sm text-muted-foreground">{country.dialCode}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    <Input
+                      id="emergencyContactPhone"
+                      type="tel"
+                      value={emergencyContactPhone}
+                      onChange={(e) => {
+                        setEmergencyContactPhone(e.target.value)
+                        if (validationErrors.emergencyContactPhone) {
+                          setValidationErrors((prev) => ({ ...prev, emergencyContactPhone: "" }))
+                        }
+                      }}
+                      placeholder="9 1234 5678"
+                      className={`flex-1 rounded-xl border-border/50 ${validationErrors.emergencyContactPhone ? "border-destructive" : ""}`}
+                      required={includeEmergencyContact}
+                    />
+                  </div>
+                  {validationErrors.emergencyContactPhone && (
+                    <p className="text-sm text-destructive">{validationErrors.emergencyContactPhone}</p>
+                  )}
+                </div>
+              </>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="consultationReason">Motivo de consulta</Label>

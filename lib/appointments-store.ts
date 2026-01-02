@@ -33,8 +33,8 @@ export interface Appointment {
   receiptData?: string // Base64 del comprobante
   receiptFilename?: string // Nombre original del archivo
   receiptMimetype?: string // Tipo MIME del archivo
-  paymentMethod?: "transfer" | "flow"
-  mercadoPagoPaymentId?: string // Reutilizado para Flow payment ID
+  paymentMethod?: "transfer" | "flow" | "webpay"
+  mercadoPagoPaymentId?: string // Reutilizado para Flow payment ID y Transbank buy_order
   mercadoPagoPreferenceId?: string
 }
 
@@ -44,15 +44,41 @@ let listeners: (() => void)[] = []
 let isInitialized = false
 
 // Inicializar desde persistencia
-async function initialize() {
-  if (isInitialized) return
+async function initialize(force = false) {
+  if (isInitialized && !force) {
+    return
+  }
+  
+  // Si se fuerza, resetear el estado de inicialización
+  if (force) {
+    isInitialized = false
+  }
+  
   try {
-    appointments = await appointmentsPersistence.load()
+    console.log("🔄 Cargando citas desde persistencia...")
+    const loadedAppointments = await appointmentsPersistence.load()
+    console.log(`✅ Cargadas ${loadedAppointments.length} citas desde persistencia`)
+    
+    // Convertir fechas de string a Date si es necesario
+    const processedAppointments = loadedAppointments.map((apt: any) => ({
+      ...apt,
+      date: apt.date instanceof Date ? apt.date : new Date(apt.date),
+      createdAt: apt.createdAt instanceof Date ? apt.createdAt : new Date(apt.createdAt),
+      expiresAt: apt.expiresAt instanceof Date ? apt.expiresAt : new Date(apt.expiresAt),
+    }))
+    
+    appointments = processedAppointments
     isInitialized = true
+    console.log(`📊 Store actualizado con ${appointments.length} citas`)
+    notifyListeners() // Notificar después de cargar
   } catch (error) {
-    console.error("Error cargando citas:", error)
+    console.error("❌ Error cargando citas:", error)
+    if (error instanceof Error) {
+      console.error("Error details:", error.message, error.stack)
+    }
     appointments = []
     isInitialized = true
+    notifyListeners() // Notificar incluso si hay error
   }
 }
 
@@ -66,8 +92,8 @@ async function persist() {
 }
 
 export const appointmentsStore = {
-  async init() {
-    await initialize()
+  async init(force = false) {
+    await initialize(force)
   },
 
   getAll: () => appointments,
@@ -86,9 +112,12 @@ export const appointmentsStore = {
       createdAt: "createdAt" in appointment ? appointment.createdAt : now,
       expiresAt: "expiresAt" in appointment ? appointment.expiresAt : new Date(now.getTime() + 5 * 60 * 1000), // 5 minutes
     }
+    console.log("➕ Agregando cita:", newAppointment.id, newAppointment.patientName)
     appointments = [...appointments, newAppointment]
+    console.log(`📊 Total de citas después de agregar: ${appointments.length}`)
     await persist()
     notifyListeners()
+    console.log("✅ Cita agregada y notificada")
     return newAppointment
   },
 
