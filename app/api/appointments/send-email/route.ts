@@ -28,7 +28,7 @@ function isValidUUID(uuid: string): boolean {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    let { appointmentId, patientName, patientEmail, patientPhone, consultationReason, appointmentType, date, time, receiptUrl } = body
+    let { appointmentId, patientName, patientEmail, patientPhone, consultationReason, appointmentType, date, time } = body
 
     if (!appointmentId || !patientName || !patientEmail || !patientPhone || !appointmentType || !date || !time) {
       return NextResponse.json({ error: "Faltan campos requeridos" }, { status: 400 })
@@ -64,9 +64,6 @@ export async function POST(request: NextRequest) {
     patientPhone = sanitizePhone(patientPhone)
     if (consultationReason) {
       consultationReason = sanitizeString(consultationReason)
-    }
-    if (receiptUrl) {
-      receiptUrl = sanitizeString(receiptUrl)
     }
     const monthNames = [
       "Enero",
@@ -213,22 +210,18 @@ export async function POST(request: NextRequest) {
             </div>
 
             <div class="warning">
-              <strong>⚠️ Importante:</strong> El paciente debe cancelar el monto de $${price} CLP por transferencia antes de que se confirme la cita.
+              <strong>⚠️ Importante:</strong> El paciente debe cancelar el monto de $${price} CLP por transferencia y enviar el comprobante por correo antes de que se confirme la cita.
             </div>
-            ${
-              receiptUrl
-                ? `
-            <div class="info-section" style="background-color: #d1fae5; border-left: 4px solid #22c55e;">
-              <p><strong>✓ Comprobante recibido</strong></p>
-              <p style="font-size: 12px; margin-top: 8px;">
-                <a href="${baseUrl}${receiptUrl}" target="_blank" style="color: #16a34a; text-decoration: underline;">
-                  Ver comprobante
-                </a>
+            
+            <div class="info-section" style="background-color: #dbeafe; border-left: 4px solid #3b82f6;">
+              <p><strong>📧 Envío de comprobante</strong></p>
+              <p style="font-size: 13px; margin-top: 8px; color: #1e40af;">
+                El paciente debe enviar el comprobante de transferencia por correo a: <strong>${RECIPIENT_EMAIL}</strong>
+              </p>
+              <p style="font-size: 12px; margin-top: 8px; color: #1e40af;">
+                El comprobante debe mostrar claramente: banco emisor, monto transferido, número de cuenta destino y fecha.
               </p>
             </div>
-            `
-                : ""
-            }
 
             <div class="buttons">
               <a href="${acceptUrl}" class="button button-accept">✓ Aceptar Cita</a>
@@ -260,8 +253,9 @@ Detalles de la Cita:
 - Modalidad: ${appointmentType === "online" ? "Online" : "Presencial"}
 - Valor de la consulta: $${price} CLP
 
-⚠️ Importante: El paciente debe cancelar el monto de $${price} CLP por transferencia antes de que se confirme la cita.
-${receiptUrl ? `\n✓ Comprobante recibido: ${baseUrl}${receiptUrl}` : "\n⚠️ Comprobante pendiente"}
+⚠️ Importante: El paciente debe cancelar el monto de $${price} CLP por transferencia y enviar el comprobante por correo a ${RECIPIENT_EMAIL} antes de que se confirme la cita.
+
+⚠️ Comprobante pendiente - El paciente debe enviar el comprobante por correo.
 
 Para aceptar la cita, visita: ${acceptUrl}
 Para rechazar la cita, visita: ${rejectUrl}

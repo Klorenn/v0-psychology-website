@@ -9,14 +9,13 @@ import { ChevronLeft, ChevronRight, Clock, Loader2, CalendarDays, Shield } from 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { appointmentsStore } from "@/lib/appointments-store"
 import { BankTransferDetails } from "@/components/bank-transfer-details"
-import { FileUpload } from "@/components/file-upload"
+import { TermsAndConditions } from "@/components/terms-and-conditions"
+import { Checkbox } from "@/components/ui/checkbox"
 import { validateEmail, validatePhone, validateName, sanitizeName, sanitizePhone, sanitizeString } from "@/lib/validation"
 import { countryCodes, defaultCountryCode, type CountryCode } from "@/lib/country-codes"
 import { ChevronDown } from "lucide-react"
 
 const DEFAULT_SLOTS = ["09:00", "10:00", "11:00", "12:00", "15:00", "16:00", "17:00", "18:00"]
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
-const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "application/pdf"]
 
 const monthNames = [
   "Enero",
@@ -51,15 +50,14 @@ export function BookingSection() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
-  const [receiptFile, setReceiptFile] = useState<File | null>(null)
-  const [uploadError, setUploadError] = useState<string>("")
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [showBankDetails, setShowBankDetails] = useState(false)
-  const [receiptUploaded, setReceiptUploaded] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<"transfer" | "flow" | null>(null)
   const [showPaymentMethod, setShowPaymentMethod] = useState(false)
   const [isCreatingPayment, setIsCreatingPayment] = useState(false)
+  const [hasMadeTransfer, setHasMadeTransfer] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [showTerms, setShowTerms] = useState(false)
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -266,22 +264,6 @@ export function BookingSection() {
     return Object.keys(errors).length === 0
   }
 
-  const validateReceipt = (file: File): string | null => {
-    // Validación mínima - solo verificar que sea un archivo válido
-    if (!file || file.size === 0) {
-      return "Por favor, seleccione un archivo válido."
-    }
-
-    // Validar tamaño máximo (muy grande puede causar problemas)
-    const MAX_SIZE = 10 * 1024 * 1024 // 10MB máximo
-    if (file.size > MAX_SIZE) {
-      return `El archivo es demasiado grande. Tamaño máximo: ${MAX_SIZE / 1024 / 1024}MB`
-    }
-
-    // No validar tipo específico - aceptar cualquier imagen o PDF
-    // El servidor validará si es necesario
-    return null
-  }
 
   const handleSubmitBooking = async () => {
     if (isSubmitting) return
@@ -293,80 +275,22 @@ export function BookingSection() {
       return
     }
 
-    // Validar comprobante
-    if (!receiptFile) {
-      setValidationErrors((prev) => ({ ...prev, receipt: "El comprobante de transferencia es requerido" }))
-      return
-    }
-
-    const receiptValidation = validateReceipt(receiptFile)
-    if (receiptValidation) {
-      setUploadError(receiptValidation)
-      return
+    // Validar checkboxes para transferencia bancaria
+    if (paymentMethod === "transfer") {
+      if (!hasMadeTransfer) {
+        setValidationErrors((prev) => ({ ...prev, transfer: "Debe confirmar que ha realizado la transferencia" }))
+        return
+      }
+      if (!acceptedTerms) {
+        setValidationErrors((prev) => ({ ...prev, terms: "Debe aceptar los términos y condiciones" }))
+        return
+      }
     }
 
     setIsSubmitting(true)
-    setUploadError("")
 
     try {
       const appointmentId = crypto.randomUUID()
-
-      let receiptUrl = ""
-      let receiptData = ""
-      let receiptFilename = ""
-      let receiptMimetype = ""
-      
-      if (receiptFile) {
-        setIsUploading(true)
-        setUploadError("")
-        try {
-          const formData = new FormData()
-          formData.append("file", receiptFile)
-          formData.append("appointmentId", appointmentId)
-
-          const uploadResponse = await fetch("/api/appointments/upload-receipt", {
-            method: "POST",
-            body: formData,
-          })
-
-          if (!uploadResponse.ok) {
-            let errorMessage = "Advertencia: No se pudo procesar el comprobante completamente."
-            try {
-              const errorData = await uploadResponse.json()
-              errorMessage = errorData.error || errorData.details || errorMessage
-              console.warn("Advertencia del servidor:", errorData)
-            } catch (parseError) {
-              console.warn("Error parseando respuesta:", parseError)
-            }
-            // Mostrar advertencia pero permitir continuar
-            setUploadError(errorMessage)
-            // Continuar sin bloquear - el usuario puede subir el comprobante después
-          } else {
-            const uploadData = await uploadResponse.json()
-            if (uploadData.success) {
-              receiptUrl = uploadData.url || ""
-              receiptData = uploadData.receiptData || ""
-              receiptFilename = uploadData.receiptFilename || ""
-              receiptMimetype = uploadData.receiptMimetype || ""
-              // Limpiar errores si fue exitoso
-              setUploadError("")
-            } else {
-              // Mostrar advertencia pero continuar
-              const errorMsg = uploadData.error || "Advertencia al procesar el comprobante"
-              setUploadError(errorMsg)
-              console.warn("Advertencia en upload:", errorMsg)
-            }
-          }
-        } catch (uploadError) {
-          // No bloquear - solo mostrar advertencia
-          const errorMessage = uploadError instanceof Error ? uploadError.message : "Advertencia al procesar el comprobante"
-          setUploadError(`Advertencia: ${errorMessage}. Puede continuar de todas formas.`)
-          console.warn("Advertencia en upload:", uploadError)
-          // No limpiar el archivo - permitir que el usuario continúe
-        } finally {
-          setIsUploading(false)
-        }
-      }
 
       // Formatear teléfono con código de país si es online
       let formattedPhone = patientPhone
@@ -388,7 +312,6 @@ export function BookingSection() {
         appointmentType,
         date: selectedDate.toISOString(),
         time: selectedTime,
-        receiptUrl,
       }
 
       const response = await fetch("/api/appointments/send-email", {
@@ -416,18 +339,14 @@ export function BookingSection() {
         status: "pending",
         createdAt: new Date(),
         expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-        receiptUrl: receiptUrl || undefined,
-        receiptData: receiptData || undefined,
-        receiptFilename: receiptFilename || undefined,
-        receiptMimetype: receiptMimetype || undefined,
       })
 
     setShowForm(false)
       setShowBankDetails(false)
-      setReceiptUploaded(false)
-      setReceiptFile(null)
       setSelectedCountry(defaultCountryCode)
       setConsultationReason("")
+      setHasMadeTransfer(false)
+      setAcceptedTerms(false)
     setShowConfirmation(true)
     } catch (error) {
       console.error("Error al procesar solicitud")
@@ -459,11 +378,10 @@ export function BookingSection() {
     setSelectedCountry(defaultCountryCode)
     setConsultationReason("")
     setAppointmentType("online")
-    setReceiptFile(null)
     setValidationErrors({})
-    setUploadError("")
-    setReceiptUploaded(false)
     setShowBankDetails(false)
+    setHasMadeTransfer(false)
+    setAcceptedTerms(false)
   }
 
   const getPrice = () => {
@@ -714,7 +632,7 @@ export function BookingSection() {
                     </div>
                     <div className="flex-1 text-left">
                       <p className="font-semibold text-foreground text-base">Pago con Transferencia Bancaria</p>
-                      <p className="text-xs text-muted-foreground">Transferencia directa y suba su comprobante</p>
+                      <p className="text-xs text-muted-foreground">Transferencia directa y envíe el comprobante por correo</p>
                     </div>
                   </div>
                 </Button>
@@ -730,78 +648,103 @@ export function BookingSection() {
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl">Datos para transferencia</DialogTitle>
             <DialogDescription>
-              Realice la transferencia bancaria y suba el comprobante para confirmar su reserva
+              Realice la transferencia bancaria y envíe el comprobante por correo para confirmar su reserva
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 mt-4">
             <BankTransferDetails amount={getPrice()} />
 
-            <div className="space-y-3">
-              <Label className="text-base font-medium">Comprobante de transferencia</Label>
-              <p className="text-sm text-muted-foreground">
-                Suba una foto o PDF del comprobante de transferencia. El archivo debe ser legible y mostrar claramente los datos de la transferencia.
-              </p>
-              
-              <FileUpload
-                value={receiptFile}
-                onChange={(file) => {
-                  if (file) {
-                    // Validación mínima - solo verificar tamaño muy grande
-                    const validationError = validateReceipt(file)
-                    if (validationError) {
-                      setUploadError(validationError)
-                      setReceiptFile(null)
-                      setReceiptUploaded(false)
-                      return
-                    }
-                    // Limpiar errores previos y aceptar el archivo
-                    setUploadError("")
-                    setReceiptFile(file)
-                    setReceiptUploaded(true)
-                    // Limpiar errores de validación también
-                    setValidationErrors((prev) => ({ ...prev, receipt: undefined }))
-                  } else {
-                    setReceiptFile(null)
-                    setReceiptUploaded(false)
-                    setUploadError("")
-                  }
-                }}
-                error={validationErrors.receipt || uploadError}
-                required
-                isUploading={isUploading}
-              />
-
-              {receiptUploaded && !uploadError && (
-                <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-xl p-3 text-sm">
-                  <p className="text-green-900 dark:text-green-100 flex items-center gap-2">
-                    <span className="text-green-600">✓</span>
-                    Comprobante cargado correctamente. Verifique que sea legible antes de continuar.
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">📧</span>
+                <div className="flex-1">
+                  <p className="font-medium text-blue-900 dark:text-blue-100 mb-2">
+                    Envíe el comprobante por correo
                   </p>
+                  <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+                    Después de realizar la transferencia, envíe una foto o PDF del comprobante al correo que aparece arriba. 
+                    El comprobante debe ser legible y mostrar claramente:
+                  </p>
+                  <ul className="text-sm text-blue-800 dark:text-blue-200 list-disc list-inside space-y-1">
+                    <li>Banco emisor</li>
+                    <li>Monto transferido</li>
+                    <li>Número de cuenta destino</li>
+                    <li>Fecha de la transferencia</li>
+                  </ul>
                 </div>
-              )}
+              </div>
+            </div>
 
-              {uploadError && (
-                <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl p-3 text-sm">
-                  <p className="text-red-900 dark:text-red-100">{uploadError}</p>
-                </div>
-              )}
+            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-sm">
+              <p className="text-amber-900 dark:text-amber-100 font-medium mb-1">⚠️ Importante</p>
+              <p className="text-amber-800 dark:text-amber-200 text-xs">
+                Su reserva quedará pendiente hasta que recibamos el comprobante. 
+                Recibirá un correo de confirmación una vez que validemos el pago.
+              </p>
+            </div>
 
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-sm">
-                <p className="text-amber-900 dark:text-amber-100 font-medium mb-1">⚠️ Importante</p>
-                <p className="text-amber-800 dark:text-amber-200 text-xs">
-                  El comprobante debe mostrar claramente: banco emisor, monto transferido, número de cuenta destino y fecha. 
-                  Los comprobantes ilegibles o falsos serán rechazados.
-                </p>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="transfer-confirmation"
+                  checked={hasMadeTransfer}
+                  onCheckedChange={(checked) => {
+                    setHasMadeTransfer(checked === true)
+                    setValidationErrors((prev) => ({ ...prev, transfer: undefined }))
+                  }}
+                  className="mt-1"
+                />
+                <label
+                  htmlFor="transfer-confirmation"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                >
+                  <span className="text-foreground">
+                    He realizado la transferencia bancaria por el monto de ${getPrice()} CLP
+                  </span>
+                  {validationErrors.transfer && (
+                    <p className="text-sm text-destructive mt-1">{validationErrors.transfer}</p>
+                  )}
+                </label>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="terms-acceptance"
+                  checked={acceptedTerms}
+                  onCheckedChange={(checked) => {
+                    setAcceptedTerms(checked === true)
+                    setValidationErrors((prev) => ({ ...prev, terms: undefined }))
+                  }}
+                  className="mt-1"
+                />
+                <label
+                  htmlFor="terms-acceptance"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                >
+                  <span className="text-foreground">
+                    He leído y acepto los{" "}
+                    <button
+                      type="button"
+                      onClick={() => setShowTerms(true)}
+                      className="text-accent underline hover:text-accent/80"
+                    >
+                      términos y condiciones
+                    </button>
+                  </span>
+                  {validationErrors.terms && (
+                    <p className="text-sm text-destructive mt-1">{validationErrors.terms}</p>
+                  )}
+                </label>
               </div>
             </div>
 
             <Button
               onClick={handleSubmitBooking}
-              disabled={isSubmitting || isUploading || !receiptFile}
+              disabled={isSubmitting || !hasMadeTransfer || !acceptedTerms}
               className="w-full rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
             >
-              {isUploading ? "Subiendo comprobante..." : isSubmitting ? "Enviando solicitud..." : "Confirmar y enviar solicitud"}
+              {isSubmitting ? "Enviando solicitud..." : "Confirmar y enviar solicitud"}
             </Button>
           </div>
         </DialogContent>
@@ -1072,6 +1015,9 @@ export function BookingSection() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Terms and Conditions Dialog */}
+      <TermsAndConditions open={showTerms} onOpenChange={setShowTerms} />
     </section>
   )
 }
