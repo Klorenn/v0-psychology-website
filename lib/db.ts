@@ -1,300 +1,207 @@
-import { neon } from "@neondatabase/serverless"
+import { createClient } from "@supabase/supabase-js"
 
-// Obtener la conexión SQL solo si POSTGRES_URL está disponible (Supabase)
-export function getDatabaseConnection() {
-  // Vercel agrega variables con prefijo "storage_" cuando conectas Supabase desde el dashboard
-  // Priorizar NON_POOLING porque puede tener mejor compatibilidad con Vercel
-  const dbUrl = 
-    process.env.POSTGRES_URL_NON_POOLING || 
-    process.env.storage_POSTGRES_URL_NON_POOLING ||
-    process.env.POSTGRES_URL || 
-    process.env.storage_POSTGRES_URL
+// Obtener cliente de Supabase usando REST API (más confiable que SQL directo en Vercel)
+export function getSupabaseClient() {
+  const supabaseUrl = 
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 
+    process.env.SUPABASE_URL ||
+    process.env.storage_SUPABASE_URL
   
-  if (!dbUrl) {
+  const supabaseKey = 
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.storage_SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.storage_NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  if (!supabaseUrl || !supabaseKey) {
+    console.warn("⚠️ Variables de Supabase no configuradas:", {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseKey,
+    })
     return null
   }
   
-  // Configurar neon para mejor compatibilidad en Vercel
   try {
-    return neon(dbUrl)
+    return createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+      },
+    })
   } catch (error) {
-    console.error("Error creando conexión neon:", error)
+    console.error("Error creando cliente Supabase:", error)
     return null
   }
 }
 
+// Mantener compatibilidad con código existente
+export function getDatabaseConnection() {
+  return getSupabaseClient()
+}
+
 /**
  * Inicializar tablas de la base de datos
+ * Nota: Las tablas deben crearse manualmente en Supabase SQL Editor
+ * Este método solo verifica que existan
  */
 export async function initializeDatabase() {
-  const sql = getDatabaseConnection()
+  const supabase = getSupabaseClient()
   
-  if (!sql) {
-    const dbUrl = 
-      process.env.POSTGRES_URL || 
-      process.env.storage_POSTGRES_URL ||
-      process.env.POSTGRES_URL_NON_POOLING || 
-      process.env.storage_POSTGRES_URL_NON_POOLING
-    const errorMsg = !dbUrl 
-      ? "POSTGRES_URL o storage_POSTGRES_URL no están configurados. Si conectaste Supabase desde Vercel, las variables deberían tener el prefijo 'storage_'. Verifica en Vercel Settings → Environment Variables."
-      : "No se pudo establecer conexión con la base de datos. Verifica que las credenciales sean correctas."
+  if (!supabase) {
+    const supabaseUrl = 
+      process.env.NEXT_PUBLIC_SUPABASE_URL || 
+      process.env.SUPABASE_URL
+    const errorMsg = !supabaseUrl 
+      ? "NEXT_PUBLIC_SUPABASE_URL o SUPABASE_URL no están configurados. Verifica en Vercel Settings → Environment Variables."
+      : "No se pudo establecer conexión con Supabase. Verifica que las credenciales sean correctas."
     throw new Error(errorMsg)
   }
   
   try {
-    // Crear tabla de citas
-    await sql`
-      CREATE TABLE IF NOT EXISTS appointments (
-        id TEXT PRIMARY KEY,
-        patient_name TEXT NOT NULL,
-        patient_email TEXT NOT NULL,
-        patient_phone TEXT NOT NULL,
-        consultation_reason TEXT,
-        emergency_contact_relation TEXT,
-        emergency_contact_name TEXT,
-        emergency_contact_phone TEXT,
-        appointment_type TEXT NOT NULL,
-        date TIMESTAMP NOT NULL,
-        time TEXT NOT NULL,
-        status TEXT NOT NULL,
-        created_at TIMESTAMP NOT NULL,
-        expires_at TIMESTAMP NOT NULL,
-        receipt_url TEXT,
-        receipt_data TEXT,
-        receipt_filename TEXT,
-        receipt_mimetype TEXT,
-        payment_method TEXT,
-        payment_id TEXT
-      )
-    `
-
-    // Crear índice por fecha para búsquedas rápidas
-    await sql`
-      CREATE INDEX IF NOT EXISTS idx_appointments_date 
-      ON appointments(date)
-    `
-
-    // Crear índice por estado
-    await sql`
-      CREATE INDEX IF NOT EXISTS idx_appointments_status 
-      ON appointments(status)
-    `
-
-    // Crear tabla de configuración del sitio
-    await sql`
-      CREATE TABLE IF NOT EXISTS site_config (
-        id INTEGER PRIMARY KEY DEFAULT 1,
-        config JSONB NOT NULL,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `
-
-    // Crear tabla de tokens de Google Calendar
-    await sql`
-      CREATE TABLE IF NOT EXISTS google_calendar_tokens (
-        id INTEGER PRIMARY KEY DEFAULT 1,
-        access_token TEXT NOT NULL,
-        refresh_token TEXT NOT NULL,
-        expiry_date BIGINT NOT NULL,
-        calendar_id TEXT,
-        user_email TEXT,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `
+    // Verificar que las tablas existan haciendo una consulta simple
+    const { error: appointmentsError } = await supabase
+      .from("appointments")
+      .select("id")
+      .limit(1)
     
-    // Agregar columna user_email si no existe (para migraciones)
-    try {
-      await sql`
-        ALTER TABLE google_calendar_tokens 
-        ADD COLUMN IF NOT EXISTS user_email TEXT
-      `
-    } catch (error) {
-      // Ignorar si la columna ya existe
-      console.log("Columna user_email ya existe o no se pudo agregar")
-    }
-
-    // Agregar columnas de contacto de emergencia si no existen (para migraciones)
-    try {
-      await sql`
-        ALTER TABLE appointments 
-        ADD COLUMN IF NOT EXISTS emergency_contact_relation TEXT
-      `
-    } catch (error) {
-      console.log("Columna emergency_contact_relation ya existe o no se pudo agregar")
+    if (appointmentsError && appointmentsError.code === "42P01") {
+      throw new Error("La tabla 'appointments' no existe. Por favor, ejecuta el script SQL en Supabase SQL Editor (ver init-supabase-tables.sql)")
     }
     
-    try {
-      await sql`
-        ALTER TABLE appointments 
-        ADD COLUMN IF NOT EXISTS emergency_contact_name TEXT
-      `
-    } catch (error) {
-      console.log("Columna emergency_contact_name ya existe o no se pudo agregar")
+    const { error: configError } = await supabase
+      .from("site_config")
+      .select("id")
+      .limit(1)
+    
+    if (configError && configError.code === "42P01") {
+      throw new Error("La tabla 'site_config' no existe. Por favor, ejecuta el script SQL en Supabase SQL Editor")
     }
     
-    try {
-      await sql`
-        ALTER TABLE appointments 
-        ADD COLUMN IF NOT EXISTS emergency_contact_phone TEXT
-      `
-    } catch (error) {
-      console.log("Columna emergency_contact_phone ya existe o no se pudo agregar")
+    console.log("✅ Base de datos verificada correctamente")
+  } catch (error: any) {
+    console.error("Error verificando base de datos:", error)
+    if (error?.message?.includes("no existe")) {
+      throw error
     }
-
-    console.log("✅ Base de datos inicializada correctamente")
-  } catch (error) {
-    console.error("Error inicializando base de datos:", error)
-    throw error
+    // Si es otro error, asumir que las tablas existen
+    console.log("⚠️ No se pudo verificar, pero continuando...")
   }
 }
 
 /**
  * Guardar una cita en la base de datos
- * Inicializa automáticamente las tablas si no existen
  */
 export async function saveAppointment(appointment: any) {
-  const sql = getDatabaseConnection()
+  const supabase = getSupabaseClient()
   
-  if (!sql) {
-    console.warn("⚠️ No hay conexión a base de datos (POSTGRES_URL no configurado)")
+  if (!supabase) {
+    console.warn("⚠️ No hay conexión a Supabase")
     console.warn("Variables disponibles:", {
-      hasPostgresUrl: !!process.env.POSTGRES_URL,
-      hasStoragePostgresUrl: !!process.env.storage_POSTGRES_URL,
-      hasPostgresUrlNonPooling: !!process.env.POSTGRES_URL_NON_POOLING,
-      hasStoragePostgresUrlNonPooling: !!process.env.storage_POSTGRES_URL_NON_POOLING,
+      hasSupabaseUrl: !!(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL),
+      hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     })
     return false
   }
   
   try {
-    console.log(`💾 Intentando guardar cita ${appointment.id} en BD...`)
-    // Intentar guardar primero
-    const result = await trySaveAppointment(sql, appointment)
-    console.log(`✅ Cita ${appointment.id} guardada exitosamente en BD`)
-    return result
+    console.log(`💾 Intentando guardar cita ${appointment.id} en Supabase...`)
+    
+    // Limitar tamaño de receipt_data si es muy grande
+    let receiptData = appointment.receiptData || null
+    if (receiptData && receiptData.length > 10485760) { // 10MB en caracteres base64
+      console.warn(`Receipt data muy grande (${(receiptData.length / 1024 / 1024).toFixed(2)}MB), truncando`)
+      receiptData = receiptData.substring(0, 10485760)
+    }
+    
+    const { data, error } = await supabase
+      .from("appointments")
+      .upsert({
+        id: appointment.id,
+        patient_name: appointment.patientName,
+        patient_email: appointment.patientEmail,
+        patient_phone: appointment.patientPhone,
+        consultation_reason: appointment.consultationReason || null,
+        emergency_contact_relation: appointment.emergencyContactRelation || null,
+        emergency_contact_name: appointment.emergencyContactName || null,
+        emergency_contact_phone: appointment.emergencyContactPhone || null,
+        appointment_type: appointment.appointmentType,
+        date: appointment.date.toISOString(),
+        time: appointment.time,
+        status: appointment.status,
+        created_at: appointment.createdAt.toISOString(),
+        expires_at: appointment.expiresAt.toISOString(),
+        receipt_url: appointment.receiptUrl || null,
+        receipt_data: receiptData,
+        receipt_filename: appointment.receiptFilename || null,
+        receipt_mimetype: appointment.receiptMimetype || null,
+        payment_method: appointment.paymentMethod || null,
+        payment_id: appointment.mercadoPagoPaymentId || null,
+      }, {
+        onConflict: "id",
+      })
+    
+    if (error) {
+      console.error(`❌ Error guardando cita ${appointment.id}:`, error)
+      throw error
+    }
+    
+    console.log(`✅ Cita ${appointment.id} guardada exitosamente en Supabase`)
+    return true
   } catch (error: any) {
     console.error(`❌ Error guardando cita ${appointment.id}:`, error)
     
-    // Si el error es porque la tabla no existe, inicializar y reintentar
-    if (error?.message?.includes("does not exist") || error?.message?.includes("relation") || error?.code === "42P01") {
-      console.log("⚠️ Tablas no existen, inicializando automáticamente...")
-      try {
-        await initializeDatabase()
-        console.log("✅ Base de datos inicializada automáticamente")
-        // Reintentar guardar
-        const result = await trySaveAppointment(sql, appointment)
-        console.log(`✅ Cita ${appointment.id} guardada después de inicializar`)
-        return result
-      } catch (initError) {
-        console.error("❌ Error inicializando base de datos:", initError)
-        throw initError
-      }
+    // Si es error de tabla no existe
+    if (error?.code === "42P01" || error?.message?.includes("does not exist") || error?.message?.includes("relation")) {
+      throw new Error("La tabla 'appointments' no existe. Por favor, ejecuta el script SQL en Supabase SQL Editor (ver init-supabase-tables.sql)")
     }
     
     // Si es error de conexión
     if (error?.message?.includes("fetch failed") || error?.message?.includes("connection") || error?.message?.includes("ECONNREFUSED")) {
-      console.error("❌ Error de conexión a la base de datos")
-      console.error("Verifica que POSTGRES_URL esté configurado correctamente en Vercel")
       throw new Error("Error de conexión a la base de datos. Verifica las variables de entorno.")
     }
     
-    // Si es otro error, lanzarlo
-    console.error("Error details:", error?.message, error?.code, error?.stack)
     throw error
   }
 }
 
-/**
- * Intentar guardar una cita (sin inicialización)
- */
-async function trySaveAppointment(sql: any, appointment: any): Promise<boolean> {
-  // Limitar tamaño de receipt_data si es muy grande
-  let receiptData = appointment.receiptData || null
-  if (receiptData && receiptData.length > 10485760) { // 10MB en caracteres base64
-    console.warn(`Receipt data muy grande (${(receiptData.length / 1024 / 1024).toFixed(2)}MB), truncando`)
-    receiptData = receiptData.substring(0, 10485760)
-  }
-
-  await sql`
-    INSERT INTO appointments (
-      id, patient_name, patient_email, patient_phone, consultation_reason,
-      emergency_contact_relation, emergency_contact_name, emergency_contact_phone,
-      appointment_type, date, time, status, created_at, expires_at,
-      receipt_url, receipt_data, receipt_filename, receipt_mimetype,
-      payment_method, payment_id
-    ) VALUES (
-      ${appointment.id},
-      ${appointment.patientName},
-      ${appointment.patientEmail},
-      ${appointment.patientPhone},
-      ${appointment.consultationReason || null},
-      ${appointment.emergencyContactRelation || null},
-      ${appointment.emergencyContactName || null},
-      ${appointment.emergencyContactPhone || null},
-      ${appointment.appointmentType},
-      ${appointment.date.toISOString()},
-      ${appointment.time},
-      ${appointment.status},
-      ${appointment.createdAt.toISOString()},
-      ${appointment.expiresAt.toISOString()},
-      ${appointment.receiptUrl || null},
-      ${receiptData},
-      ${appointment.receiptFilename || null},
-      ${appointment.receiptMimetype || null},
-      ${appointment.paymentMethod || null},
-      ${appointment.mercadoPagoPaymentId || null}
-    )
-    ON CONFLICT (id) 
-    DO UPDATE SET
-      patient_name = EXCLUDED.patient_name,
-      patient_email = EXCLUDED.patient_email,
-      patient_phone = EXCLUDED.patient_phone,
-      consultation_reason = EXCLUDED.consultation_reason,
-      emergency_contact_relation = EXCLUDED.emergency_contact_relation,
-      emergency_contact_name = EXCLUDED.emergency_contact_name,
-      emergency_contact_phone = EXCLUDED.emergency_contact_phone,
-      appointment_type = EXCLUDED.appointment_type,
-      date = EXCLUDED.date,
-      time = EXCLUDED.time,
-      status = EXCLUDED.status,
-      expires_at = EXCLUDED.expires_at,
-      receipt_url = EXCLUDED.receipt_url,
-      receipt_data = EXCLUDED.receipt_data,
-      receipt_filename = EXCLUDED.receipt_filename,
-      receipt_mimetype = EXCLUDED.receipt_mimetype,
-      payment_method = EXCLUDED.payment_method,
-      payment_id = EXCLUDED.payment_id
-  `
-  return true
-}
 
 /**
  * Obtener todas las citas
- * Inicializa automáticamente las tablas si no existen
  */
 export async function getAllAppointments() {
-  const sql = getDatabaseConnection()
+  const supabase = getSupabaseClient()
   
-  if (!sql) {
-    console.warn("⚠️ No hay conexión a base de datos (POSTGRES_URL no configurado)")
+  if (!supabase) {
+    console.warn("⚠️ No hay conexión a Supabase")
     return []
   }
   
   try {
     console.log("🔍 Consultando citas en Supabase...")
-    const result = await sql`
-      SELECT * FROM appointments 
-      ORDER BY created_at DESC
-    `
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("*")
+      .order("created_at", { ascending: false })
     
-    console.log(`📊 Resultado de consulta: ${result.length} filas encontradas`)
+    if (error) {
+      console.error("❌ Error consultando citas:", error)
+      
+      // Si es error de tabla no existe
+      if (error.code === "42P01" || error.message?.includes("does not exist") || error.message?.includes("relation")) {
+        console.log("⚠️ Tabla 'appointments' no existe")
+        return []
+      }
+      
+      throw error
+    }
     
-    if (result.length === 0) {
+    console.log(`📊 Resultado de consulta: ${data?.length || 0} filas encontradas`)
+    
+    if (!data || data.length === 0) {
       console.log("ℹ️ No hay citas en la base de datos")
       return []
     }
     
-    const mappedAppointments = result.map((row: any) => {
+    const mappedAppointments = data.map((row: any) => {
       try {
         return {
           id: row.id,
@@ -335,31 +242,7 @@ export async function getAllAppointments() {
     }
     return mappedAppointments
   } catch (error: any) {
-    // Si el error es porque la tabla no existe, inicializar y retornar vacío
-    if (error?.message?.includes("does not exist") || error?.message?.includes("relation") || error?.code === "42P01") {
-      console.log("⚠️ Tablas no existen, inicializando automáticamente...")
-      try {
-        await initializeDatabase()
-        console.log("✅ Base de datos inicializada automáticamente")
-        return [] // Retornar vacío después de inicializar
-      } catch (initError) {
-        console.error("❌ Error inicializando base de datos:", initError)
-        return []
-      }
-    }
     console.error("❌ Error obteniendo citas:", error)
-    
-    // Si es error de conexión
-    if (error?.message?.includes("fetch failed") || error?.message?.includes("connection") || error?.message?.includes("ECONNREFUSED")) {
-      console.error("❌ Error de conexión a la base de datos")
-      console.error("Verifica que POSTGRES_URL esté configurado correctamente en Vercel")
-    }
-    
-    console.error("Detalles del error:", {
-      message: error?.message,
-      code: error?.code,
-      stack: error?.stack
-    })
     return []
   }
 }
@@ -368,18 +251,23 @@ export async function getAllAppointments() {
  * Actualizar estado de una cita
  */
 export async function updateAppointmentStatus(id: string, status: string) {
-  const sql = getDatabaseConnection()
+  const supabase = getSupabaseClient()
   
-  if (!sql) {
+  if (!supabase) {
     return false
   }
   
   try {
-    await sql`
-      UPDATE appointments 
-      SET status = ${status}
-      WHERE id = ${id}
-    `
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status })
+      .eq("id", id)
+    
+    if (error) {
+      console.error("Error actualizando estado:", error)
+      return false
+    }
+    
     return true
   } catch (error) {
     console.error("Error actualizando estado:", error)
@@ -391,21 +279,29 @@ export async function updateAppointmentStatus(id: string, status: string) {
  * Obtener configuración del sitio
  */
 export async function getSiteConfig() {
-  const sql = getDatabaseConnection()
+  const supabase = getSupabaseClient()
   
-  if (!sql) {
+  if (!supabase) {
     return null
   }
   
   try {
-    const result = await sql`
-      SELECT config FROM site_config WHERE id = 1
-    `
+    const { data, error } = await supabase
+      .from("site_config")
+      .select("config")
+      .eq("id", 1)
+      .single()
     
-    if (result.length > 0) {
-      return result[0].config
+    if (error) {
+      if (error.code === "PGRST116") {
+        // No hay fila
+        return null
+      }
+      console.error("Error obteniendo configuración:", error)
+      return null
     }
-    return null
+    
+    return data?.config || null
   } catch (error) {
     console.error("Error obteniendo configuración:", error)
     return null
@@ -416,21 +312,28 @@ export async function getSiteConfig() {
  * Guardar configuración del sitio
  */
 export async function saveSiteConfig(config: any) {
-  const sql = getDatabaseConnection()
+  const supabase = getSupabaseClient()
   
-  if (!sql) {
+  if (!supabase) {
     return false
   }
   
   try {
-    await sql`
-      INSERT INTO site_config (id, config, updated_at)
-      VALUES (1, ${JSON.stringify(config)}, CURRENT_TIMESTAMP)
-      ON CONFLICT (id)
-      DO UPDATE SET 
-        config = EXCLUDED.config,
-        updated_at = CURRENT_TIMESTAMP
-    `
+    const { error } = await supabase
+      .from("site_config")
+      .upsert({
+        id: 1,
+        config,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: "id",
+      })
+    
+    if (error) {
+      console.error("Error guardando configuración:", error)
+      return false
+    }
+    
     return true
   } catch (error) {
     console.error("Error guardando configuración:", error)
@@ -442,35 +345,32 @@ export async function saveSiteConfig(config: any) {
  * Guardar tokens de Google Calendar
  */
 export async function saveGoogleTokens(tokens: any) {
-  const sql = getDatabaseConnection()
+  const supabase = getSupabaseClient()
   
-  if (!sql) {
+  if (!supabase) {
     return false
   }
   
   try {
-    await sql`
-      INSERT INTO google_calendar_tokens (
-        id, access_token, refresh_token, expiry_date, calendar_id, user_email, updated_at
-      )
-      VALUES (
-        1, 
-        ${tokens.accessToken},
-        ${tokens.refreshToken},
-        ${tokens.expiryDate},
-        ${tokens.calendarId || null},
-        ${tokens.userEmail || null},
-        CURRENT_TIMESTAMP
-      )
-      ON CONFLICT (id)
-      DO UPDATE SET
-        access_token = EXCLUDED.access_token,
-        refresh_token = EXCLUDED.refresh_token,
-        expiry_date = EXCLUDED.expiry_date,
-        calendar_id = EXCLUDED.calendar_id,
-        user_email = EXCLUDED.user_email,
-        updated_at = CURRENT_TIMESTAMP
-    `
+    const { error } = await supabase
+      .from("google_calendar_tokens")
+      .upsert({
+        id: 1,
+        access_token: tokens.accessToken,
+        refresh_token: tokens.refreshToken,
+        expiry_date: tokens.expiryDate,
+        calendar_id: tokens.calendarId || null,
+        user_email: tokens.userEmail || null,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: "id",
+      })
+    
+    if (error) {
+      console.error("Error guardando tokens de Google:", error)
+      return false
+    }
+    
     return true
   } catch (error) {
     console.error("Error guardando tokens de Google:", error)
@@ -482,27 +382,38 @@ export async function saveGoogleTokens(tokens: any) {
  * Obtener tokens de Google Calendar
  */
 export async function getGoogleTokens() {
-  const sql = getDatabaseConnection()
+  const supabase = getSupabaseClient()
   
-  if (!sql) {
+  if (!supabase) {
     return null
   }
   
   try {
-    const result = await sql`
-      SELECT * FROM google_calendar_tokens WHERE id = 1
-    `
+    const { data, error } = await supabase
+      .from("google_calendar_tokens")
+      .select("*")
+      .eq("id", 1)
+      .single()
     
-    if (result.length > 0) {
-      const row = result[0]
+    if (error) {
+      if (error.code === "PGRST116") {
+        // No hay fila
+        return null
+      }
+      console.error("Error obteniendo tokens de Google:", error)
+      return null
+    }
+    
+    if (data) {
       return {
-        accessToken: row.access_token,
-        refreshToken: row.refresh_token,
-        expiryDate: parseInt(row.expiry_date),
-        calendarId: row.calendar_id,
-        userEmail: row.user_email,
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiryDate: parseInt(data.expiry_date),
+        calendarId: data.calendar_id,
+        userEmail: data.user_email,
       }
     }
+    
     return null
   } catch (error) {
     console.error("Error obteniendo tokens de Google:", error)
@@ -514,16 +425,23 @@ export async function getGoogleTokens() {
  * Eliminar tokens de Google Calendar
  */
 export async function deleteGoogleTokens() {
-  const sql = getDatabaseConnection()
+  const supabase = getSupabaseClient()
   
-  if (!sql) {
+  if (!supabase) {
     return false
   }
   
   try {
-    await sql`
-      DELETE FROM google_calendar_tokens WHERE id = 1
-    `
+    const { error } = await supabase
+      .from("google_calendar_tokens")
+      .delete()
+      .eq("id", 1)
+    
+    if (error) {
+      console.error("Error eliminando tokens de Google:", error)
+      return false
+    }
+    
     return true
   } catch (error) {
     console.error("Error eliminando tokens de Google:", error)
