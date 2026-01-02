@@ -20,6 +20,9 @@ export interface Appointment {
   patientEmail: string
   patientPhone: string
   consultationReason?: string
+  emergencyContactRelation?: string
+  emergencyContactName?: string
+  emergencyContactPhone?: string
   appointmentType: AppointmentType
   date: Date
   time: string

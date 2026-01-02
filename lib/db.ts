@@ -27,6 +27,9 @@ export async function initializeDatabase() {
         patient_email TEXT NOT NULL,
         patient_phone TEXT NOT NULL,
         consultation_reason TEXT,
+        emergency_contact_relation TEXT,
+        emergency_contact_name TEXT,
+        emergency_contact_phone TEXT,
         appointment_type TEXT NOT NULL,
         date TIMESTAMP NOT NULL,
         time TEXT NOT NULL,
@@ -85,6 +88,34 @@ export async function initializeDatabase() {
     } catch (error) {
       // Ignorar si la columna ya existe
       console.log("Columna user_email ya existe o no se pudo agregar")
+    }
+
+    // Agregar columnas de contacto de emergencia si no existen (para migraciones)
+    try {
+      await sql`
+        ALTER TABLE appointments 
+        ADD COLUMN IF NOT EXISTS emergency_contact_relation TEXT
+      `
+    } catch (error) {
+      console.log("Columna emergency_contact_relation ya existe o no se pudo agregar")
+    }
+    
+    try {
+      await sql`
+        ALTER TABLE appointments 
+        ADD COLUMN IF NOT EXISTS emergency_contact_name TEXT
+      `
+    } catch (error) {
+      console.log("Columna emergency_contact_name ya existe o no se pudo agregar")
+    }
+    
+    try {
+      await sql`
+        ALTER TABLE appointments 
+        ADD COLUMN IF NOT EXISTS emergency_contact_phone TEXT
+      `
+    } catch (error) {
+      console.log("Columna emergency_contact_phone ya existe o no se pudo agregar")
     }
 
     console.log("✅ Base de datos inicializada correctamente")
@@ -146,6 +177,7 @@ async function trySaveAppointment(sql: any, appointment: any): Promise<boolean> 
   await sql`
     INSERT INTO appointments (
       id, patient_name, patient_email, patient_phone, consultation_reason,
+      emergency_contact_relation, emergency_contact_name, emergency_contact_phone,
       appointment_type, date, time, status, created_at, expires_at,
       receipt_url, receipt_data, receipt_filename, receipt_mimetype,
       payment_method, payment_id
@@ -155,6 +187,9 @@ async function trySaveAppointment(sql: any, appointment: any): Promise<boolean> 
       ${appointment.patientEmail},
       ${appointment.patientPhone},
       ${appointment.consultationReason || null},
+      ${appointment.emergencyContactRelation || null},
+      ${appointment.emergencyContactName || null},
+      ${appointment.emergencyContactPhone || null},
       ${appointment.appointmentType},
       ${appointment.date.toISOString()},
       ${appointment.time},
@@ -174,6 +209,9 @@ async function trySaveAppointment(sql: any, appointment: any): Promise<boolean> 
       patient_email = EXCLUDED.patient_email,
       patient_phone = EXCLUDED.patient_phone,
       consultation_reason = EXCLUDED.consultation_reason,
+      emergency_contact_relation = EXCLUDED.emergency_contact_relation,
+      emergency_contact_name = EXCLUDED.emergency_contact_name,
+      emergency_contact_phone = EXCLUDED.emergency_contact_phone,
       appointment_type = EXCLUDED.appointment_type,
       date = EXCLUDED.date,
       time = EXCLUDED.time,
@@ -212,6 +250,9 @@ export async function getAllAppointments() {
       patientEmail: row.patient_email,
       patientPhone: row.patient_phone,
       consultationReason: row.consultation_reason,
+      emergencyContactRelation: row.emergency_contact_relation,
+      emergencyContactName: row.emergency_contact_name,
+      emergencyContactPhone: row.emergency_contact_phone,
       appointmentType: row.appointment_type,
       date: new Date(row.date),
       time: row.time,

@@ -28,7 +28,7 @@ function isValidUUID(uuid: string): boolean {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    let { appointmentId, patientName, patientEmail, patientPhone, consultationReason, appointmentType, date, time } = body
+    let { appointmentId, patientName, patientEmail, patientPhone, consultationReason, emergencyContactRelation, emergencyContactName, emergencyContactPhone, appointmentType, date, time } = body
 
     if (!appointmentId || !patientName || !patientEmail || !patientPhone || !appointmentType || !date || !time) {
       return NextResponse.json({ error: "Faltan campos requeridos" }, { status: 400 })
@@ -64,6 +64,15 @@ export async function POST(request: NextRequest) {
     patientPhone = sanitizePhone(patientPhone)
     if (consultationReason) {
       consultationReason = sanitizeString(consultationReason)
+    }
+    if (emergencyContactRelation) {
+      emergencyContactRelation = sanitizeString(emergencyContactRelation)
+    }
+    if (emergencyContactName) {
+      emergencyContactName = sanitizeName(emergencyContactName)
+    }
+    if (emergencyContactPhone) {
+      emergencyContactPhone = sanitizePhone(emergencyContactPhone)
     }
     const monthNames = [
       "Enero",
@@ -189,6 +198,26 @@ export async function POST(request: NextRequest) {
               ` : ""}
             </div>
 
+            ${emergencyContactName && emergencyContactPhone ? `
+            <div class="info-section" style="background-color: #fef3c7; border-left: 4px solid #f59e0b;">
+              <h3>Contacto de Emergencia</h3>
+              ${emergencyContactRelation ? `
+              <div class="info-row">
+                <span class="label">Relación:</span>
+                <span class="value">${emergencyContactRelation.charAt(0).toUpperCase() + emergencyContactRelation.slice(1)}</span>
+              </div>
+              ` : ""}
+              <div class="info-row">
+                <span class="label">Nombre:</span>
+                <span class="value">${emergencyContactName}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Teléfono:</span>
+                <span class="value">${emergencyContactPhone}</span>
+              </div>
+            </div>
+            ` : ""}
+
             <div class="info-section">
               <h3>Detalles de la Cita</h3>
               <div class="info-row">
@@ -246,6 +275,12 @@ Información del Paciente:
 - Correo electrónico: ${patientEmail}
 - Número de teléfono: ${patientPhone}
 ${consultationReason ? `- Motivo de consulta: ${consultationReason}` : ""}
+${emergencyContactName && emergencyContactPhone ? `
+Contacto de Emergencia:
+${emergencyContactRelation ? `- Relación: ${emergencyContactRelation.charAt(0).toUpperCase() + emergencyContactRelation.slice(1)}` : ""}
+- Nombre: ${emergencyContactName}
+- Teléfono: ${emergencyContactPhone}
+` : ""}
 
 Detalles de la Cita:
 - Fecha: ${formattedDate}

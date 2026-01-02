@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS appointments (
   patient_email TEXT NOT NULL,
   patient_phone TEXT NOT NULL,
   consultation_reason TEXT,
+  emergency_contact_relation TEXT,
+  emergency_contact_name TEXT,
+  emergency_contact_phone TEXT,
   appointment_type TEXT NOT NULL,
   date TIMESTAMP NOT NULL,
   time TEXT NOT NULL,
@@ -56,6 +59,34 @@ BEGIN
     AND column_name = 'user_email'
   ) THEN
     ALTER TABLE google_calendar_tokens ADD COLUMN user_email TEXT;
+  END IF;
+END $$;
+
+-- Agregar columnas de contacto de emergencia si no existen (para migraciones)
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'appointments' 
+    AND column_name = 'emergency_contact_relation'
+  ) THEN
+    ALTER TABLE appointments ADD COLUMN emergency_contact_relation TEXT;
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'appointments' 
+    AND column_name = 'emergency_contact_name'
+  ) THEN
+    ALTER TABLE appointments ADD COLUMN emergency_contact_name TEXT;
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'appointments' 
+    AND column_name = 'emergency_contact_phone'
+  ) THEN
+    ALTER TABLE appointments ADD COLUMN emergency_contact_phone TEXT;
   END IF;
 END $$;
 
