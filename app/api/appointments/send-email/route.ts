@@ -42,8 +42,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Correo electrónico inválido" }, { status: 400 })
     }
 
-    if (!validatePhone(patientPhone)) {
+    // Validar teléfono según el tipo de atención
+    const isOnline = appointmentType === "online"
+    if (!validatePhone(patientPhone, isOnline)) {
       return NextResponse.json({ error: "Número de teléfono inválido" }, { status: 400 })
+    }
+
+    // Validar teléfono de contacto de emergencia si está presente (siempre como internacional)
+    if (emergencyContactPhone && !validatePhone(emergencyContactPhone, true)) {
+      return NextResponse.json({ error: "Número de teléfono de contacto de emergencia inválido" }, { status: 400 })
     }
 
     if (!validateName(patientName)) {
@@ -319,7 +326,23 @@ Para rechazar la cita, visita: ${rejectUrl}
       })
     }
 
-    await transporter.sendMail(mailOptions)
+    try {
+      await transporter.sendMail(mailOptions)
+    } catch (smtpError) {
+      console.error("Error SMTP:", smtpError)
+      // Si falla el envío SMTP pero tenemos los datos, guardar igual y retornar éxito
+      // El email se puede enviar manualmente después
+      console.log("=== EMAIL (falló SMTP, pero datos guardados) ===")
+      console.log("To:", RECIPIENT_EMAIL)
+      console.log("Subject:", mailOptions.subject)
+      console.log("Body:", emailText)
+      console.log("================================")
+      return NextResponse.json({ 
+        success: true, 
+        message: "Solicitud guardada (error al enviar email, pero los datos están guardados)",
+        appointmentId 
+      })
+    }
 
     return NextResponse.json({ 
       success: true, 
@@ -328,8 +351,10 @@ Para rechazar la cita, visita: ${rejectUrl}
     })
   } catch (error) {
     console.error("Error enviando correo:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    console.error("Error details:", errorMessage)
     return NextResponse.json(
-      { error: "Error al enviar el correo", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: errorMessage || "Error al enviar el correo", details: errorMessage },
       { status: 500 }
     )
   }
