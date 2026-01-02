@@ -454,23 +454,13 @@ export function BookingSection() {
         throw new Error(errorData.error || "Error al enviar la solicitud. Por favor, intente nuevamente.")
       }
 
-      await appointmentsStore.add({
-        id: appointmentId,
-        patientName: sanitizedData.patientName,
-        patientEmail: sanitizedData.patientEmail,
-        patientPhone: sanitizedData.patientPhone,
-        consultationReason: sanitizedData.consultationReason || undefined,
-        emergencyContactRelation: sanitizedData.emergencyContactRelation || undefined,
-        emergencyContactName: sanitizedData.emergencyContactName || undefined,
-        emergencyContactPhone: sanitizedData.emergencyContactPhone || undefined,
-        appointmentType,
-        date: selectedDate,
-        time: selectedTime,
-        status: "pending",
-        createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas para enviar el comprobante
-        paymentMethod: "transfer",
-      })
+      // La cita ya se guardó en el servidor, solo recargar el store local para sincronizar
+      // Esto asegura que si el usuario está en el dashboard, vea la nueva cita inmediatamente
+      try {
+        await appointmentsStore.init(true)
+      } catch (storeError) {
+        console.warn("No se pudo recargar el store local, pero la cita está guardada en el servidor:", storeError)
+      }
 
     setShowForm(false)
       setShowBankDetails(false)

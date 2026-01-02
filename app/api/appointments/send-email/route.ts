@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import nodemailer from "nodemailer"
 import { validateEmail, validatePhone, validateName, sanitizeName, sanitizePhone, sanitizeString } from "@/lib/validation"
+import { appointmentsStore } from "@/lib/appointments-store"
 
 const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || ""
 
@@ -312,6 +313,40 @@ Para rechazar la cita, visita: ${rejectUrl}
       html: emailHtml,
     }
 
+    // IMPORTANTE: Guardar la cita en la base de datos PRIMERO
+    try {
+      console.log("💾 Guardando cita en base de datos...", appointmentId)
+      await appointmentsStore.add({
+        id: appointmentId,
+        patientName,
+        patientEmail,
+        patientPhone,
+        consultationReason: consultationReason || undefined,
+        emergencyContactRelation: emergencyContactRelation || undefined,
+        emergencyContactName: emergencyContactName || undefined,
+        emergencyContactPhone: emergencyContactPhone || undefined,
+        appointmentType,
+        date: appointmentDate,
+        time,
+        status: "pending",
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas para enviar el comprobante
+        paymentMethod: "transfer",
+      })
+      console.log("✅ Cita guardada en base de datos:", appointmentId)
+    } catch (dbError) {
+      console.error("❌ Error guardando cita en base de datos:", dbError)
+      // Continuar aunque falle el guardado, para que al menos se intente enviar el email
+      // Pero retornar error para que el cliente sepa que algo falló
+      return NextResponse.json(
+        { 
+          error: "Error al guardar la cita en la base de datos", 
+          details: dbError instanceof Error ? dbError.message : "Unknown error" 
+        },
+        { status: 500 }
+      )
+    }
+
     // Si no hay configuración SMTP, solo loguear (para desarrollo)
     if (!process.env.SMTP_PASS) {
       console.log("=== EMAIL (SMTP no configurado) ===")
@@ -321,32 +356,34 @@ Para rechazar la cita, visita: ${rejectUrl}
       console.log("================================")
       return NextResponse.json({ 
         success: true, 
-        message: "Email logged (SMTP not configured)",
+        message: "Cita guardada. Email logged (SMTP not configured)",
         appointmentId 
       })
     }
 
     try {
       await transporter.sendMail(mailOptions)
+      console.log("✅ Email enviado correctamente para cita:", appointmentId)
     } catch (smtpError) {
-      console.error("Error SMTP:", smtpError)
-      // Si falla el envío SMTP pero tenemos los datos, guardar igual y retornar éxito
+      console.error("❌ Error SMTP:", smtpError)
+      // Si falla el envío SMTP pero la cita ya está guardada, retornar éxito parcial
       // El email se puede enviar manualmente después
-      console.log("=== EMAIL (falló SMTP, pero datos guardados) ===")
+      console.log("=== EMAIL (falló SMTP, pero cita guardada) ===")
       console.log("To:", RECIPIENT_EMAIL)
       console.log("Subject:", mailOptions.subject)
       console.log("Body:", emailText)
       console.log("================================")
       return NextResponse.json({ 
         success: true, 
-        message: "Solicitud guardada (error al enviar email, pero los datos están guardados)",
-        appointmentId 
+        message: "Cita guardada correctamente. Error al enviar email (puedes enviarlo manualmente desde el dashboard)",
+        appointmentId,
+        emailError: true
       })
     }
 
     return NextResponse.json({ 
       success: true, 
-      message: "Email enviado correctamente",
+      message: "Cita guardada y email enviado correctamente",
       appointmentId 
     })
   } catch (error) {
