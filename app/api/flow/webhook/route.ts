@@ -104,9 +104,11 @@ export async function POST(request: NextRequest) {
         // Guardar cambios usando persist directamente
         const { appointmentsPersistence } = await import("@/lib/appointments-persistence")
         await appointmentsPersistence.save(allAppointments)
-        // Notificar listeners
-        const { notifyListeners } = await import("@/lib/appointments-store")
-        notifyListeners()
+        // Notificar listeners - actualizar el store interno
+        const store = appointmentsStore as any
+        if (store._updateAppointments) {
+          store._updateAppointments(allAppointments)
+        }
       }
 
       // Crear evento en Google Calendar si está conectado

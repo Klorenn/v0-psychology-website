@@ -126,22 +126,13 @@ export function BookingSection() {
     setShowForm(true)
   }
 
-  const handleContinueAfterForm = () => {
+  const handleContinueAfterForm = (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault()
+    }
+    
     // Validar datos básicos antes de mostrar opciones de pago
-    if (!patientName.trim() || !validateName(patientName)) {
-      setValidationErrors({ name: "El nombre es requerido y debe ser válido" })
-      return
-    }
-    if (!patientEmail.trim() || !validateEmail(patientEmail)) {
-      setValidationErrors({ email: "El correo electrónico es requerido y debe ser válido" })
-      return
-    }
-    if (!patientPhone.trim() || !validatePhone(patientPhone)) {
-      setValidationErrors({ phone: "El teléfono es requerido y debe ser válido" })
-      return
-    }
-    if (!appointmentType) {
-      setValidationErrors({ appointmentType: "Seleccione el tipo de atención" })
+    if (!validateForm()) {
       return
     }
     
@@ -777,7 +768,7 @@ export function BookingSection() {
             <DialogDescription>Complete sus datos personales</DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={(e) => { e.preventDefault(); handleContinueAfterForm(); }} className="space-y-4 mt-4">
+          <form onSubmit={handleContinueAfterForm} className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre completo</Label>
               <Input
