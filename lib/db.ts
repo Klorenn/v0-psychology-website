@@ -1,9 +1,23 @@
-import { sql } from "@vercel/postgres"
+import { neon } from "@neondatabase/serverless"
+
+// Obtener la conexión SQL solo si DATABASE_URL está disponible
+const getDatabaseConnection = () => {
+  if (!process.env.DATABASE_URL) {
+    return null
+  }
+  return neon(process.env.DATABASE_URL)
+}
 
 /**
  * Inicializar tablas de la base de datos
  */
 export async function initializeDatabase() {
+  const sql = getDatabaseConnection()
+  
+  if (!sql) {
+    throw new Error("DATABASE_URL no está configurado")
+  }
+  
   try {
     // Crear tabla de citas
     await sql`
@@ -69,6 +83,12 @@ export async function initializeDatabase() {
  * Guardar una cita en la base de datos
  */
 export async function saveAppointment(appointment: any) {
+  const sql = getDatabaseConnection()
+  
+  if (!sql) {
+    return false
+  }
+  
   try {
     await sql`
       INSERT INTO appointments (
@@ -117,13 +137,19 @@ export async function saveAppointment(appointment: any) {
  * Obtener todas las citas
  */
 export async function getAllAppointments() {
+  const sql = getDatabaseConnection()
+  
+  if (!sql) {
+    return []
+  }
+  
   try {
     const result = await sql`
       SELECT * FROM appointments 
       ORDER BY created_at DESC
     `
     
-    return result.rows.map((row: any) => ({
+    return result.map((row: any) => ({
       id: row.id,
       patientName: row.patient_name,
       patientEmail: row.patient_email,
@@ -149,6 +175,12 @@ export async function getAllAppointments() {
  * Actualizar estado de una cita
  */
 export async function updateAppointmentStatus(id: string, status: string) {
+  const sql = getDatabaseConnection()
+  
+  if (!sql) {
+    return false
+  }
+  
   try {
     await sql`
       UPDATE appointments 
@@ -166,13 +198,19 @@ export async function updateAppointmentStatus(id: string, status: string) {
  * Obtener configuración del sitio
  */
 export async function getSiteConfig() {
+  const sql = getDatabaseConnection()
+  
+  if (!sql) {
+    return null
+  }
+  
   try {
     const result = await sql`
       SELECT config FROM site_config WHERE id = 1
     `
     
-    if (result.rows.length > 0) {
-      return result.rows[0].config
+    if (result.length > 0) {
+      return result[0].config
     }
     return null
   } catch (error) {
@@ -185,6 +223,12 @@ export async function getSiteConfig() {
  * Guardar configuración del sitio
  */
 export async function saveSiteConfig(config: any) {
+  const sql = getDatabaseConnection()
+  
+  if (!sql) {
+    return false
+  }
+  
   try {
     await sql`
       INSERT INTO site_config (id, config, updated_at)
@@ -205,6 +249,12 @@ export async function saveSiteConfig(config: any) {
  * Guardar tokens de Google Calendar
  */
 export async function saveGoogleTokens(tokens: any) {
+  const sql = getDatabaseConnection()
+  
+  if (!sql) {
+    return false
+  }
+  
   try {
     await sql`
       INSERT INTO google_calendar_tokens (
@@ -237,13 +287,19 @@ export async function saveGoogleTokens(tokens: any) {
  * Obtener tokens de Google Calendar
  */
 export async function getGoogleTokens() {
+  const sql = getDatabaseConnection()
+  
+  if (!sql) {
+    return null
+  }
+  
   try {
     const result = await sql`
       SELECT * FROM google_calendar_tokens WHERE id = 1
     `
     
-    if (result.rows.length > 0) {
-      const row = result.rows[0]
+    if (result.length > 0) {
+      const row = result[0]
       return {
         accessToken: row.access_token,
         refreshToken: row.refresh_token,
@@ -262,6 +318,12 @@ export async function getGoogleTokens() {
  * Eliminar tokens de Google Calendar
  */
 export async function deleteGoogleTokens() {
+  const sql = getDatabaseConnection()
+  
+  if (!sql) {
+    return false
+  }
+  
   try {
     await sql`
       DELETE FROM google_calendar_tokens WHERE id = 1
