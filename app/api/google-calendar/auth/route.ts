@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
     )
   }
   
-  const scope = "https://www.googleapis.com/auth/calendar"
+  // Incluir scope de email para obtener información del usuario
+  const scope = "https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email"
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,

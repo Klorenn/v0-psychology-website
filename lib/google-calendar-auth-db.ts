@@ -5,6 +5,7 @@ export interface GoogleCalendarTokens {
   refreshToken: string
   expiryDate: number
   calendarId?: string
+  userEmail?: string
 }
 
 export async function getGoogleCalendarTokens(): Promise<GoogleCalendarTokens | null> {

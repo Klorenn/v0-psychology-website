@@ -49,13 +49,29 @@ export async function GET(request: NextRequest) {
     
     const tokenData = await tokenResponse.json()
     
-    // Obtener información del calendario principal
-    const calendarResponse = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList", {
-      headers: {
-        Authorization: `Bearer ${tokenData.access_token}`,
-      },
-    })
+    // Obtener información del usuario y calendario principal
+    const [userInfoResponse, calendarResponse] = await Promise.all([
+      fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+      }),
+      fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList", {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+      }),
+    ])
     
+    // Obtener email del usuario
+    let userEmail: string | undefined
+    if (userInfoResponse.ok) {
+      const userInfo = await userInfoResponse.json()
+      userEmail = userInfo.email
+      console.log(`✅ Email de Google Calendar vinculado: ${userEmail}`)
+    }
+    
+    // Obtener calendario principal
     let calendarId = "primary"
     if (calendarResponse.ok) {
       const calendars = await calendarResponse.json()
@@ -65,12 +81,13 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // Guardar tokens
+    // Guardar tokens con email del usuario
     await saveGoogleCalendarTokens({
       accessToken: tokenData.access_token,
       refreshToken: tokenData.refresh_token,
       expiryDate: Date.now() + (tokenData.expires_in * 1000),
       calendarId: calendarId,
+      userEmail: userEmail,
     })
     
     return NextResponse.redirect(`${dashboardUrl}?calendar_connected=success`)

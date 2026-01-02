@@ -45,8 +45,9 @@ export async function createCalendarEvent(appointment: Appointment): Promise<{ e
       ],
     }
 
-    // Agregar Google Meet si es online
-    if (appointment.appointmentType === "online") {
+    // Agregar Google Meet SIEMPRE para sesiones online
+    const isOnline = appointment.appointmentType === "online"
+    if (isOnline) {
       event.conferenceData = {
         createRequest: {
           requestId: `meet-${appointment.id}-${Date.now()}`,
@@ -58,8 +59,8 @@ export async function createCalendarEvent(appointment: Appointment): Promise<{ e
     }
     
     const calendarId = tokens.calendarId || "primary"
-    // Agregar conferenceDataVersion=1 si hay conferenceData
-    const url = appointment.appointmentType === "online"
+    // Usar conferenceDataVersion=1 para crear Google Meet
+    const url = isOnline
       ? `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?conferenceDataVersion=1`
       : `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`
     

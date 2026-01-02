@@ -11,6 +11,7 @@ export function GoogleCalendarSettings() {
   const [isDisconnecting, setIsDisconnecting] = useState(false)
   const [error, setError] = useState<string>("")
   const [success, setSuccess] = useState<string>("")
+  const [userEmail, setUserEmail] = useState<string | null>(null)
 
   const checkConnectionStatus = useCallback(async () => {
     setIsLoading(true)
@@ -28,6 +29,7 @@ export function GoogleCalendarSettings() {
       const data = await response.json()
       const connected = data.connected === true
       setIsConnected(connected)
+      setUserEmail(data.userEmail || null)
       
       // Si se conectó exitosamente, limpiar cualquier error previo
       if (connected) {
@@ -177,8 +179,13 @@ export function GoogleCalendarSettings() {
             <CheckCircle className="w-5 h-5 text-green-600" />
             <div className="flex-1">
               <p className="font-medium text-foreground">Google Calendar vinculado</p>
-              <p className="text-sm text-muted-foreground">
-                Las citas aceptadas se crearán automáticamente en su calendario de Google.
+              {userEmail && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Cuenta: <span className="font-mono text-accent">{userEmail}</span>
+                </p>
+              )}
+              <p className="text-sm text-muted-foreground mt-2">
+                Las citas aceptadas se crearán automáticamente en su calendario de Google con Google Meet para sesiones online.
               </p>
             </div>
           </div>

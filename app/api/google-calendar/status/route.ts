@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         connected: true,
         calendarId: tokens.calendarId || "primary",
+        userEmail: tokens.userEmail || null,
       }, { status: 200 })
     } catch (error) {
       // Si hay error (incluyendo timeout), asumir que no está conectado

@@ -71,9 +71,21 @@ export async function initializeDatabase() {
         refresh_token TEXT NOT NULL,
         expiry_date BIGINT NOT NULL,
         calendar_id TEXT,
+        user_email TEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `
+    
+    // Agregar columna user_email si no existe (para migraciones)
+    try {
+      await sql`
+        ALTER TABLE google_calendar_tokens 
+        ADD COLUMN IF NOT EXISTS user_email TEXT
+      `
+    } catch (error) {
+      // Ignorar si la columna ya existe
+      console.log("Columna user_email ya existe o no se pudo agregar")
+    }
 
     console.log("✅ Base de datos inicializada correctamente")
   } catch (error) {
@@ -318,7 +330,7 @@ export async function saveGoogleTokens(tokens: any) {
   try {
     await sql`
       INSERT INTO google_calendar_tokens (
-        id, access_token, refresh_token, expiry_date, calendar_id, updated_at
+        id, access_token, refresh_token, expiry_date, calendar_id, user_email, updated_at
       )
       VALUES (
         1, 
@@ -326,6 +338,7 @@ export async function saveGoogleTokens(tokens: any) {
         ${tokens.refreshToken},
         ${tokens.expiryDate},
         ${tokens.calendarId || null},
+        ${tokens.userEmail || null},
         CURRENT_TIMESTAMP
       )
       ON CONFLICT (id)
@@ -334,6 +347,7 @@ export async function saveGoogleTokens(tokens: any) {
         refresh_token = EXCLUDED.refresh_token,
         expiry_date = EXCLUDED.expiry_date,
         calendar_id = EXCLUDED.calendar_id,
+        user_email = EXCLUDED.user_email,
         updated_at = CURRENT_TIMESTAMP
     `
     return true
@@ -365,6 +379,7 @@ export async function getGoogleTokens() {
         refreshToken: row.refresh_token,
         expiryDate: parseInt(row.expiry_date),
         calendarId: row.calendar_id,
+        userEmail: row.user_email,
       }
     }
     return null
