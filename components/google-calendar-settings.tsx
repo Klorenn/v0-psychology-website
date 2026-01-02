@@ -218,6 +218,7 @@ export function GoogleCalendarSettings() {
               <li>Crear eventos automáticamente cuando acepte citas</li>
               <li>Sincronizar horarios disponibles con su calendario</li>
               <li>Recibir recordatorios de citas</li>
+              <li>Agregar Google Meet para sesiones online</li>
             </ul>
           </div>
 
