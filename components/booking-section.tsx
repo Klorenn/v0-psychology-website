@@ -138,7 +138,10 @@ export function BookingSection() {
     
     setValidationErrors({})
     setShowForm(false)
-    setShowPaymentMethod(true)
+    // Pequeño delay para asegurar que el diálogo anterior se cierre
+    setTimeout(() => {
+      setShowPaymentMethod(true)
+    }, 100)
   }
 
   const handlePaymentMethodSelect = async (method: "transfer" | "flow") => {
@@ -617,8 +620,14 @@ export function BookingSection() {
       </div>
 
       {/* Payment Method Selection Dialog */}
-      <Dialog open={showPaymentMethod} onOpenChange={setShowPaymentMethod}>
-        <DialogContent className="sm:max-w-md bg-background border-border/50">
+      <Dialog open={showPaymentMethod} onOpenChange={(open) => {
+        setShowPaymentMethod(open)
+        if (!open && !isCreatingPayment) {
+          // Si se cierra el diálogo sin seleccionar, volver al formulario
+          setShowForm(true)
+        }
+      }}>
+        <DialogContent className="sm:max-w-md bg-background border-border/50 z-50">
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl">Método de pago</DialogTitle>
             <DialogDescription>
@@ -643,31 +652,33 @@ export function BookingSection() {
 
             <div className="grid grid-cols-1 gap-3">
               <button
+                type="button"
                 onClick={() => handlePaymentMethodSelect("flow")}
                 disabled={isCreatingPayment}
-                className="p-4 rounded-xl border-2 border-border/50 hover:border-accent/50 bg-background hover:bg-muted/50 transition-all text-left disabled:opacity-50"
+                className="p-4 rounded-xl border-2 border-border/50 hover:border-accent/50 bg-background hover:bg-muted/50 transition-all text-left disabled:opacity-50 cursor-pointer"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
                     <span className="text-xl font-bold text-blue-600 dark:text-blue-400">Flow</span>
                   </div>
                   <div className="flex-1">
                     <p className="font-medium text-foreground">Flow</p>
                     <p className="text-xs text-muted-foreground">Pago rápido y seguro con tarjeta, transferencia o efectivo</p>
                   </div>
-                  {isCreatingPayment && (
-                    <Loader2 className="w-5 h-5 animate-spin text-accent" />
+                  {isCreatingPayment && paymentMethod === "flow" && (
+                    <Loader2 className="w-5 h-5 animate-spin text-accent shrink-0" />
                   )}
                 </div>
               </button>
 
               <button
+                type="button"
                 onClick={() => handlePaymentMethodSelect("transfer")}
                 disabled={isCreatingPayment}
-                className="p-4 rounded-xl border-2 border-border/50 hover:border-accent/50 bg-background hover:bg-muted/50 transition-all text-left disabled:opacity-50"
+                className="p-4 rounded-xl border-2 border-border/50 hover:border-accent/50 bg-background hover:bg-muted/50 transition-all text-left disabled:opacity-50 cursor-pointer"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
                     <span className="text-xl">🏦</span>
                   </div>
                   <div className="flex-1">
