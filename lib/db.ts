@@ -149,32 +149,50 @@ export async function saveAppointment(appointment: any) {
   const sql = getDatabaseConnection()
   
   if (!sql) {
-    console.warn("No hay conexión a base de datos, guardando en memoria")
+    console.warn("⚠️ No hay conexión a base de datos (POSTGRES_URL no configurado)")
+    console.warn("Variables disponibles:", {
+      hasPostgresUrl: !!process.env.POSTGRES_URL,
+      hasStoragePostgresUrl: !!process.env.storage_POSTGRES_URL,
+      hasPostgresUrlNonPooling: !!process.env.POSTGRES_URL_NON_POOLING,
+      hasStoragePostgresUrlNonPooling: !!process.env.storage_POSTGRES_URL_NON_POOLING,
+    })
     return false
   }
   
   try {
+    console.log(`💾 Intentando guardar cita ${appointment.id} en BD...`)
     // Intentar guardar primero
-    return await trySaveAppointment(sql, appointment)
+    const result = await trySaveAppointment(sql, appointment)
+    console.log(`✅ Cita ${appointment.id} guardada exitosamente en BD`)
+    return result
   } catch (error: any) {
+    console.error(`❌ Error guardando cita ${appointment.id}:`, error)
+    
     // Si el error es porque la tabla no existe, inicializar y reintentar
     if (error?.message?.includes("does not exist") || error?.message?.includes("relation") || error?.code === "42P01") {
-      console.log("Tablas no existen, inicializando automáticamente...")
+      console.log("⚠️ Tablas no existen, inicializando automáticamente...")
       try {
         await initializeDatabase()
         console.log("✅ Base de datos inicializada automáticamente")
         // Reintentar guardar
-        return await trySaveAppointment(sql, appointment)
+        const result = await trySaveAppointment(sql, appointment)
+        console.log(`✅ Cita ${appointment.id} guardada después de inicializar`)
+        return result
       } catch (initError) {
-        console.error("Error inicializando base de datos:", initError)
+        console.error("❌ Error inicializando base de datos:", initError)
         throw initError
       }
     }
-    // Si es otro error, lanzarlo
-    console.error("Error guardando cita:", error)
-    if (error instanceof Error) {
-      console.error("Error details:", error.message)
+    
+    // Si es error de conexión
+    if (error?.message?.includes("fetch failed") || error?.message?.includes("connection") || error?.message?.includes("ECONNREFUSED")) {
+      console.error("❌ Error de conexión a la base de datos")
+      console.error("Verifica que POSTGRES_URL esté configurado correctamente en Vercel")
+      throw new Error("Error de conexión a la base de datos. Verifica las variables de entorno.")
     }
+    
+    // Si es otro error, lanzarlo
+    console.error("Error details:", error?.message, error?.code, error?.stack)
     throw error
   }
 }
@@ -323,6 +341,13 @@ export async function getAllAppointments() {
       }
     }
     console.error("❌ Error obteniendo citas:", error)
+    
+    // Si es error de conexión
+    if (error?.message?.includes("fetch failed") || error?.message?.includes("connection") || error?.message?.includes("ECONNREFUSED")) {
+      console.error("❌ Error de conexión a la base de datos")
+      console.error("Verifica que POSTGRES_URL esté configurado correctamente en Vercel")
+    }
+    
     console.error("Detalles del error:", {
       message: error?.message,
       code: error?.code,
