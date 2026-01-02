@@ -38,7 +38,24 @@ function formatTimeRemaining(expiresAt: Date): string {
 }
 
 // Funciones de snapshot en caché para evitar loops infinitos
-const getServerSnapshotForAuth = () => false
+const getServerSnapshotForAuth = () => {
+  // En el servidor siempre false, pero en el cliente verificar localStorage
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("psychology_dashboard_auth")
+      if (stored) {
+        const { email, timestamp } = JSON.parse(stored)
+        const isExpired = Date.now() - timestamp > 24 * 60 * 60 * 1000
+        if (email === "ps.msanluis@gmail.com" && !isExpired) {
+          return true
+        }
+      }
+    } catch {
+      // Si hay error, retornar false
+    }
+  }
+  return false
+}
 const getServerSnapshotForAppointments = () => []
 
 export default function DashboardPage() {
