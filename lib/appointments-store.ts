@@ -1,13 +1,13 @@
-// Usar DB en producción, JSON en desarrollo
-const useDatabase = process.env.POSTGRES_URL !== undefined
-
+// Siempre intentar usar DB primero (funciona tanto en cliente como servidor)
+// appointments-persistence-db usa API en cliente y BD directa en servidor
 let appointmentsPersistence: any
 
-if (useDatabase) {
-  // En producción (Vercel con Postgres)
+try {
+  // Intentar cargar la persistencia de BD (funciona en cliente vía API)
   appointmentsPersistence = require("./appointments-persistence-db").appointmentsPersistence
-} else {
-  // En desarrollo (archivos JSON)
+} catch (error) {
+  // Fallback a JSON solo si no se puede cargar la persistencia de BD
+  console.warn("No se pudo cargar appointments-persistence-db, usando JSON:", error)
   appointmentsPersistence = require("./appointments-persistence").appointmentsPersistence
 }
 
