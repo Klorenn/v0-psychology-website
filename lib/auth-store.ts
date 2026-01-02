@@ -1,6 +1,11 @@
+// ⚠️ IMPORTANTE: Configura estas variables en .env.local
+// NEXT_PUBLIC_ADMIN_EMAIL=tu-email@ejemplo.com
+// NEXT_PUBLIC_ADMIN_PASSWORD=tu-contraseña-segura
+// Nota: Estas variables son públicas (NEXT_PUBLIC_*) y se exponen al cliente.
+// Para mayor seguridad, considera implementar autenticación en el servidor.
 const ADMIN_CREDENTIALS = {
-  email: "ps.msanluis@gmail.com",
-  password: "misakki12_",
+  email: process.env.NEXT_PUBLIC_ADMIN_EMAIL || "",
+  password: process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "",
 }
 
 const AUTH_KEY = "psychology_dashboard_auth"

@@ -12,6 +12,7 @@ Website profesional para psicóloga clínica con sistema de reservas, pagos inte
 
 ## Instalación
 
+<<<<<<< Current (Your changes)
 \`\`\`bash
 npm install
 npm run dev
@@ -20,6 +21,16 @@ npm run dev
 ## Configuración
 
 Crea un archivo \`.env.local\` con las variables de entorno necesarias. Ver \`ENV_SETUP.md\` para más detalles.
+=======
+```bash
+npm install
+npm run dev
+```
+
+## Configuración
+
+Crea un archivo `.env.local` con las variables de entorno necesarias. Ver `ENV_SETUP.md` para más detalles.
+>>>>>>> Incoming (Background Agent changes)
 
 ## Stack Tecnológico
 

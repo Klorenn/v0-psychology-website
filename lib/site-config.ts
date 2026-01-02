@@ -122,7 +122,7 @@ const defaultConfig: SiteConfig = {
   social: {
     instagram: "https://www.instagram.com/ps.msanluis/",
     linkedin: "https://www.linkedin.com/in/maria-san-luis-03481b337/",
-    email: "ps.msanluis@gmail.com",
+    email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "",
   },
   sectionOrder: ["hero", "values", "location", "booking"],
   theme: {

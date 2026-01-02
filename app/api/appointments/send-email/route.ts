@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import nodemailer from "nodemailer"
 import { validateEmail, validatePhone, validateName, sanitizeName, sanitizePhone, sanitizeString } from "@/lib/validation"
 
-const RECIPIENT_EMAIL = "ps.msanluis@gmail.com"
+const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || ""
 
 // Configuración del transporter de nodemailer
 // Nota: En producción, configura estas variables de entorno:

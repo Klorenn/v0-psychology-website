@@ -35,7 +35,7 @@ Vercel → Deployments → Redeploy (botón con 3 puntos)
 ### 3️⃣ Vincular Google Calendar
 
 1. Ve a tu sitio → `/dashboard`
-2. Login: `ps.msanluis@gmail.com` / `misakki12_`
+2. Inicia sesión con tus credenciales (configuradas en variables de entorno)
 3. Configuración del Sitio → Google Calendar
 4. Click en "Vincular con Google"
 5. Autoriza el acceso
@@ -129,11 +129,7 @@ Usa variables: {{patientName}}, {{date}}, {{time}}, {{meetLink}}
 
 **URL:** `https://tu-dominio.vercel.app/dashboard`
 
-**Credenciales:**
-```
-Email: ps.msanluis@gmail.com
-Password: misakki12_
-```
+**Credenciales:** Configura `NEXT_PUBLIC_ADMIN_EMAIL` y `NEXT_PUBLIC_ADMIN_PASSWORD` en `.env.local`
 
 ---
 

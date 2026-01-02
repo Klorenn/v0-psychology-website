@@ -4,7 +4,7 @@ import { siteConfigStore } from "@/lib/site-config"
 import { siteConfigPersistence } from "@/lib/site-config-persistence"
 import nodemailer from "nodemailer"
 
-const RECIPIENT_EMAIL = "ps.msanluis@gmail.com"
+const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || ""
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",

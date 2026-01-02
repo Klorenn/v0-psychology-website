@@ -36,6 +36,18 @@ GOOGLE_REDIRECT_URI=https://tu-dominio.vercel.app/api/google-calendar/callback
 FLOW_API_KEY=tu_flow_api_key
 FLOW_SECRET_KEY=tu_flow_secret_key
 FLOW_ENVIRONMENT=sandbox
+
+# ===================================
+# 🔐 Dashboard Admin
+# ===================================
+NEXT_PUBLIC_ADMIN_EMAIL=tu-email@ejemplo.com
+NEXT_PUBLIC_ADMIN_PASSWORD=tu-contraseña-segura
+
+# ===================================
+# 📧 Email Configuration
+# ===================================
+RECIPIENT_EMAIL=tu-email@ejemplo.com
+NEXT_PUBLIC_CONTACT_EMAIL=tu-email@ejemplo.com
 ```
 
 ---
