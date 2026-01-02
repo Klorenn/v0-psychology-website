@@ -1,7 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
-const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "application/pdf"]
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB - aumentado para permitir archivos más grandes
+// Aceptar más tipos de archivos - ser más permisivo
+const ALLOWED_TYPES = [
+  "image/jpeg", 
+  "image/jpg", 
+  "image/png", 
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+  "image/*", // Aceptar cualquier imagen
+]
 
 function isValidUUID(uuid: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -26,8 +35,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "ID de cita inválido" }, { status: 400 })
     }
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: "Tipo de archivo no permitido. Solo se aceptan JPG, PNG o PDF." }, { status: 400 })
+    // Validación más permisiva - aceptar imágenes y PDFs
+    const isImage = file.type.startsWith("image/")
+    const isPDF = file.type === "application/pdf"
+    
+    if (!isImage && !isPDF) {
+      return NextResponse.json({ error: "Tipo de archivo no permitido. Solo se aceptan imágenes (JPG, PNG, etc.) o PDF." }, { status: 400 })
     }
 
     if (file.size > MAX_FILE_SIZE) {

