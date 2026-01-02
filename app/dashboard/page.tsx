@@ -49,7 +49,8 @@ export default function DashboardPage() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [authRestored, setAuthRestored] = useState(false)
 
-  // RESTAURAR SESIÓN DESDE LOCALSTORAGE INMEDIATAMENTE AL MONTAR (ANTES de useSyncExternalStore)
+  // RESTAURAR SESIÓN DESDE LOCALSTORAGE INMEDIATAMENTE AL MONTAR
+  // Esto debe ejecutarse ANTES de que useSyncExternalStore se evalúe
   useEffect(() => {
     if (typeof window !== "undefined" && !authRestored) {
       // Restaurar sesión desde localStorage si existe
@@ -71,7 +72,7 @@ export default function DashboardPage() {
     }
   }, [authRestored, router])
 
-  // Solo usar useSyncExternalStore DESPUÉS de restaurar la sesión
+  // useSyncExternalStore siempre se ejecuta, pero el estado interno ya fue restaurado
   const isAuth = useSyncExternalStore(
     authStore.subscribe, 
     authStore.isAuthenticated, 
