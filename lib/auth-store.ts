@@ -27,8 +27,14 @@ function getInitialAuthState(): boolean {
   return false
 }
 
-let isAuthenticated = getInitialAuthState()
+// Inicializar desde localStorage si está disponible
+let isAuthenticated = typeof window !== "undefined" ? getInitialAuthState() : false
 let authListeners: (() => void)[] = []
+
+// Inicializar inmediatamente si estamos en el cliente
+if (typeof window !== "undefined") {
+  isAuthenticated = getInitialAuthState()
+}
 
 export const authStore = {
   isAuthenticated: () => {
