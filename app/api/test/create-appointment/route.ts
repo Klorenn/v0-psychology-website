@@ -7,19 +7,62 @@ import { appointmentsStore } from "@/lib/appointments-store"
  */
 export async function GET(request: NextRequest) {
   try {
-    const testAppointment = {
-      id: `test-${Date.now()}`,
-      patientName: "Paciente de Prueba",
-      patientEmail: "test@ejemplo.com",
-      patientPhone: "+56912345678",
-      consultationReason: "Esta es una cita de prueba creada automáticamente",
-      appointmentType: "online" as const,
-      date: new Date(Date.now() + 24 * 60 * 60 * 1000), // Mañana
-      time: "10:00",
-      status: "pending" as const,
-      createdAt: new Date(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas
-      paymentMethod: "transfer" as const,
+    // Crear varias citas de prueba con datos más realistas
+    const testPatients = [
+      {
+        name: "María González",
+        email: "maria.gonzalez@email.com",
+        phone: "+56987654321",
+        reason: "Necesito ayuda con ansiedad y estrés laboral",
+        type: "online" as const,
+        time: "10:00",
+      },
+      {
+        name: "Juan Pérez",
+        email: "juan.perez@email.com",
+        phone: "+56912345678",
+        reason: "Consulta sobre depresión",
+        type: "presencial" as const,
+        time: "15:00",
+      },
+      {
+        name: "Ana Martínez",
+        email: "ana.martinez@email.com",
+        phone: "+56955555555",
+        reason: "Terapia de pareja",
+        type: "online" as const,
+        time: "11:00",
+      },
+    ]
+
+    const createdAppointments = []
+    
+    for (const patient of testPatients) {
+      const testAppointment = {
+        id: `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        patientName: patient.name,
+        patientEmail: patient.email,
+        patientPhone: patient.phone,
+        consultationReason: patient.reason,
+        appointmentType: patient.type,
+        date: new Date(Date.now() + 24 * 60 * 60 * 1000), // Mañana
+        time: patient.time,
+        status: "pending" as const,
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas
+        paymentMethod: "transfer" as const,
+      }
+
+      console.log("🧪 Creando cita de prueba...", testAppointment.id)
+      const appointment = await appointmentsStore.add(testAppointment)
+      console.log("✅ Cita de prueba creada:", appointment.id)
+      createdAppointments.push({
+        id: appointment.id,
+        patientName: appointment.patientName,
+        date: appointment.date,
+        time: appointment.time,
+        status: appointment.status,
+      })
     }
 
     console.log("🧪 Creando cita de prueba...", testAppointment.id)
@@ -28,14 +71,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Cita de prueba creada correctamente",
-      appointment: {
-        id: appointment.id,
-        patientName: appointment.patientName,
-        date: appointment.date,
-        time: appointment.time,
-        status: appointment.status,
-      },
+      message: `${createdAppointments.length} citas de prueba creadas correctamente`,
+      count: createdAppointments.length,
+      appointments: createdAppointments,
     })
   } catch (error) {
     console.error("❌ Error creando cita de prueba:", error)
