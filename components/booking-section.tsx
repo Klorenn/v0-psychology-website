@@ -961,12 +961,12 @@ export function BookingSection() {
                 Enviando solicitud...
               </Button>
             ) : (
-              <div className="flex justify-center w-full">
+              <div className="flex justify-center w-full mt-4">
                 <InteractiveHoverButton
                   onClick={handleSubmitBooking}
                   disabled={!hasMadeTransfer || !acceptedTerms}
                   text="Agendar"
-                  className="w-auto min-w-[180px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto min-w-[200px] disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
             )}

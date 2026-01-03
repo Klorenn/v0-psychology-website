@@ -90,24 +90,32 @@ export const TestimonialStack = ({ testimonials, visibleBehind = 2 }: Testimonia
         const displayOrder = (index - activeIndex + totalCards) % totalCards;
 
         // --- DYNAMIC STYLE CALCULATION ---
-        const style: CSSProperties = {};
+        const style: CSSProperties = {
+          position: 'absolute',
+          top: '0',
+          left: '50%',
+        };
+        
         if (displayOrder === 0) { // The active card
-          style.transform = `translateX(calc(-50% + ${dragOffset}px))`;
+          style.transform = `translateX(calc(-50% + ${dragOffset}px)) translateY(0)`;
           style.opacity = 1;
-          style.zIndex = totalCards;
+          style.zIndex = totalCards + 10;
           style.pointerEvents = 'auto';
+          style.visibility = 'visible';
         } else if (displayOrder <= visibleBehind) { // Cards stacked behind
           const scale = 1 - 0.05 * displayOrder;
-          const translateY = -2 * displayOrder; // in rem
-          style.transform = `translateX(-50%) scale(${scale}) translateY(${translateY}rem)`;
-          style.opacity = 1 - 0.2 * displayOrder;
+          const translateY = -15 * displayOrder; // in pixels
+          style.transform = `translateX(-50%) scale(${scale}) translateY(${translateY}px)`;
+          style.opacity = Math.max(0.4, 1 - 0.15 * displayOrder);
           style.zIndex = totalCards - displayOrder;
           style.pointerEvents = 'none';
+          style.visibility = 'visible';
         } else { // Cards that are out of view
-          style.transform = 'translateX(-50%) scale(0)';
+          style.transform = 'translateX(-50%) scale(0.8)';
           style.opacity = 0;
           style.zIndex = 0;
           style.pointerEvents = 'none';
+          style.visibility = 'hidden';
         }
 
         const tagClasses = (type: 'featured' | 'default') => type === 'featured' 
