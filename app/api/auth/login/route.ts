@@ -3,9 +3,16 @@ import { verifyAdminCredentials, createAuthToken, areCredentialsConfigured } fro
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar configuración de credenciales
     if (!areCredentialsConfigured()) {
+      console.error("[Login] ❌ Credenciales no configuradas")
+      console.error("   ADMIN_EMAIL:", process.env.ADMIN_EMAIL ? "✅ Configurado" : "❌ No configurado")
+      console.error("   ADMIN_PASSWORD:", process.env.ADMIN_PASSWORD ? "✅ Configurado" : "❌ No configurado")
       return NextResponse.json(
-        { error: "Credenciales de administrador no configuradas" },
+        { 
+          error: "Credenciales de administrador no configuradas",
+          details: "Verifica que ADMIN_EMAIL y ADMIN_PASSWORD estén configuradas en Vercel"
+        },
         { status: 500 }
       )
     }
@@ -20,14 +27,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    console.log(`[Login] Intento de login para: ${email.substring(0, 5)}...`)
+    
     const isValid = await verifyAdminCredentials(email, password)
 
     if (!isValid) {
+      console.log(`[Login] ❌ Credenciales inválidas para: ${email.substring(0, 5)}...`)
       return NextResponse.json(
-        { error: "Credenciales inválidas" },
+        { 
+          error: "Credenciales incorrectas. Verifica tu correo y contraseña.",
+          hint: "Asegúrate de que las variables ADMIN_EMAIL y ADMIN_PASSWORD estén correctamente configuradas en Vercel"
+        },
         { status: 401 }
       )
     }
+    
+    console.log(`[Login] ✅ Login exitoso para: ${email.substring(0, 5)}...`)
 
     const token = await createAuthToken(email)
 

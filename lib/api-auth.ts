@@ -21,9 +21,18 @@ const JWT_SECRET = getJWTSecret()
 const SESSION_DURATION = 24 * 60 * 60 * 1000 // 24 horas
 
 // Credenciales de admin - solo en servidor
+// Normalizar y trim para evitar problemas con espacios
 const ADMIN_CREDENTIALS = {
-  email: process.env.ADMIN_EMAIL || "",
-  password: process.env.ADMIN_PASSWORD || "",
+  email: (process.env.ADMIN_EMAIL || "").trim(),
+  password: (process.env.ADMIN_PASSWORD || "").trim(),
+}
+
+// Log de configuración (solo en desarrollo o si hay problemas)
+if (process.env.NODE_ENV === "development" || !ADMIN_CREDENTIALS.email || !ADMIN_CREDENTIALS.password) {
+  console.log("[Auth] Configuración de credenciales:")
+  console.log("   ADMIN_EMAIL:", ADMIN_CREDENTIALS.email ? `${ADMIN_CREDENTIALS.email.substring(0, 5)}...` : "❌ NO CONFIGURADO")
+  console.log("   ADMIN_PASSWORD:", ADMIN_CREDENTIALS.password ? `✅ Configurado (${ADMIN_CREDENTIALS.password.length} caracteres)` : "❌ NO CONFIGURADO")
+  console.log("   JWT_SECRET:", process.env.JWT_SECRET ? `✅ Configurado (${process.env.JWT_SECRET.length} caracteres)` : "⚠️ Usando fallback")
 }
 
 export interface AuthSession {
@@ -37,10 +46,27 @@ export interface AuthSession {
 export async function verifyAdminCredentials(email: string, password: string): Promise<boolean> {
   if (!ADMIN_CREDENTIALS.email || !ADMIN_CREDENTIALS.password) {
     console.error("⚠️ Credenciales de admin no configuradas en variables de entorno")
+    console.error("   ADMIN_EMAIL configurado:", !!ADMIN_CREDENTIALS.email)
+    console.error("   ADMIN_PASSWORD configurado:", !!ADMIN_CREDENTIALS.password)
     return false
   }
   
-  return email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password
+  // Normalizar emails (trim y lowercase para comparación)
+  const normalizedInputEmail = email.trim().toLowerCase()
+  const normalizedConfigEmail = ADMIN_CREDENTIALS.email.trim().toLowerCase()
+  
+  // Comparación exacta de password (sin normalizar, case-sensitive)
+  const passwordMatch = password === ADMIN_CREDENTIALS.password
+  
+  // Log de debug (sin exponer valores completos)
+  if (normalizedInputEmail !== normalizedConfigEmail) {
+    console.log(`[Auth] Email no coincide. Input: ${normalizedInputEmail.substring(0, 5)}..., Config: ${normalizedConfigEmail.substring(0, 5)}...`)
+  }
+  if (!passwordMatch) {
+    console.log(`[Auth] Password no coincide. Longitud input: ${password.length}, Longitud config: ${ADMIN_CREDENTIALS.password.length}`)
+  }
+  
+  return normalizedInputEmail === normalizedConfigEmail && passwordMatch
 }
 
 /**
