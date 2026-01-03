@@ -6,10 +6,17 @@ import { ADMIN_CREDENTIALS } from "@/lib/api-auth"
  * SOLO PARA DEBUG - Eliminar en producción
  */
 export async function GET() {
-  // Verificar variables de entorno (sin exponer valores completos)
+  // Forzar lectura de variables de entorno (por si hay caché)
+  // En Next.js, las variables de entorno se leen en tiempo de build para NEXT_PUBLIC_*
+  // pero las variables sin NEXT_PUBLIC_ se leen en runtime
   const rawAdminEmail = process.env.ADMIN_EMAIL
   const rawAdminPassword = process.env.ADMIN_PASSWORD
   const rawJwtSecret = process.env.JWT_SECRET
+  
+  // Verificar también desde ADMIN_CREDENTIALS (ya normalizado)
+  const { ADMIN_CREDENTIALS } = await import("@/lib/api-auth")
+  
+  // Verificar variables de entorno (sin exponer valores completos)
   
   const hasAdminEmail = !!rawAdminEmail
   const hasAdminPassword = !!rawAdminPassword
@@ -72,6 +79,15 @@ export async function GET() {
       email: normalizedEmail.substring(0, 10) + "...",
       emailLength: normalizedEmail.length,
       passwordLength: normalizedPassword.length,
+    },
+    fromADMIN_CREDENTIALS: {
+      email: ADMIN_CREDENTIALS.email.substring(0, 10) + "...",
+      emailLength: ADMIN_CREDENTIALS.email.length,
+      passwordLength: ADMIN_CREDENTIALS.password.length,
+      matches: {
+        email: normalizedEmail === ADMIN_CREDENTIALS.email,
+        password: normalizedPassword === ADMIN_CREDENTIALS.password,
+      },
     },
     message: credentialsConfigured 
       ? "✅ Credenciales configuradas correctamente"
