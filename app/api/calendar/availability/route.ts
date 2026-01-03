@@ -25,17 +25,18 @@ export async function GET(request: NextRequest) {
     // Obtener horarios de Google Calendar (si está conectado)
     let availableSlots = await getAvailableSlots(date)
     
-    // Obtener citas confirmadas y pendientes de pago del día
+    // Obtener citas confirmadas y pendientes del día (todas las pendientes se bloquean)
     const appointments = appointmentsStore.getAll()
     const dayAppointments = appointments.filter((a) => {
       const appointmentDate = new Date(a.date)
       return (
         appointmentDate.toDateString() === date.toDateString() &&
-        (a.status === "confirmed" || (a.status === "pending" && a.paymentMethod === "flow"))
+        (a.status === "confirmed" || a.status === "pending")
       )
     })
 
-    // Bloquear horarios ocupados por citas confirmadas o pendientes de Flow
+    // Bloquear horarios ocupados por citas confirmadas o pendientes
+    // Esto asegura que cuando se acepta una cita o se crea una nueva, se tache automáticamente
     const blockedTimes = dayAppointments.map((a) => a.time)
     availableSlots = availableSlots.filter((slot) => !blockedTimes.includes(slot))
     

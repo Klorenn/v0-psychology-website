@@ -1219,7 +1219,10 @@ export function BookingSection() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="consultationReason">Motivo de consulta</Label>
+              <Label htmlFor="consultationReason">
+                Motivo de consulta
+                <span className="text-xs text-muted-foreground font-normal ml-2">(Opcional)</span>
+              </Label>
               <textarea
                 id="consultationReason"
                 value={consultationReason}
@@ -1229,7 +1232,7 @@ export function BookingSection() {
                     setValidationErrors((prev) => ({ ...prev, consultationReason: "" }))
                   }
                 }}
-                placeholder="Cuénteme brevemente el motivo de su consulta..."
+                placeholder="Cuénteme brevemente por qué desea atenderse o el motivo de su consulta..."
                 rows={4}
                 className={`w-full rounded-xl border border-border/50 bg-transparent px-3 py-2 text-sm resize-none ${
                   validationErrors.consultationReason ? "border-destructive" : ""
@@ -1239,7 +1242,7 @@ export function BookingSection() {
                 <p className="text-sm text-destructive">{validationErrors.consultationReason}</p>
               )}
               <p className="text-xs text-muted-foreground">
-                Esta información me ayuda a preparar mejor su sesión
+                Esta información me ayuda a preparar mejor su sesión y entender sus necesidades
               </p>
             </div>
 

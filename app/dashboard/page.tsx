@@ -269,11 +269,24 @@ export default function DashboardPage() {
   const handleManualRefresh = async () => {
     try {
       console.log("🔄 Recarga manual iniciada...")
+      setIsInitializingDb(true)
       await appointmentsStore.init(true)
       setTimeUpdate((t) => t + 1)
       console.log("✅ Recarga manual completada")
+      // Mostrar feedback visual
+      const button = document.querySelector('[data-refresh-button]') as HTMLElement
+      if (button) {
+        const originalText = button.textContent
+        button.textContent = "✓ Recargado"
+        setTimeout(() => {
+          if (button) button.textContent = originalText
+        }, 2000)
+      }
     } catch (error) {
       console.error("❌ Error en recarga manual:", error)
+      alert("Error al recargar. Por favor, intenta nuevamente.")
+    } finally {
+      setIsInitializingDb(false)
     }
   }
 
@@ -373,11 +386,22 @@ export default function DashboardPage() {
             <Button 
               variant="outline" 
               onClick={handleManualRefresh} 
+              disabled={isInitializingDb}
               className="text-muted-foreground hover:text-foreground"
               size="sm"
+              data-refresh-button
             >
-              <Calendar className="w-4 h-4 mr-2" />
-              Recargar
+              {isInitializingDb ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Recargando...
+                </>
+              ) : (
+                <>
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Recargar
+                </>
+              )}
             </Button>
             <Button variant="ghost" onClick={handleLogout} className="text-muted-foreground hover:text-foreground">
               <LogOut className="w-4 h-4 mr-2" />
