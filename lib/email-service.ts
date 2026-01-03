@@ -1,6 +1,18 @@
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy initialization para evitar errores durante el build
+let resendInstance: Resend | null = null
+
+function getResendInstance(): Resend {
+  if (!resendInstance) {
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) {
+      throw new Error("RESEND_API_KEY no está configurado. Configúralo en tus variables de entorno.")
+    }
+    resendInstance = new Resend(apiKey)
+  }
+  return resendInstance
+}
 
 export interface AppointmentEmailParams {
   patientName: string
@@ -121,6 +133,7 @@ export async function sendAppointmentConfirmationEmail(
       console.warn("[Email] 📝 Verifica emails en: https://resend.com/emails")
     }
 
+    const resend = getResendInstance()
     const result = await resend.emails.send({
       from: fromEmail,
       to: patientEmail,

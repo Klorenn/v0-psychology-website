@@ -9,8 +9,15 @@ import { getSantiagoDateTime } from "@/lib/timezone-service"
 // Ve a https://resend.com/emails y verifica tu email en "Test Emails"
 const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || process.env.ADMIN_EMAIL || "ps.mariasanluis@gmail.com"
 
-// Inicializar Resend
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy initialization de Resend para evitar errores durante el build
+function getResendInstance() {
+  const { Resend } = require("resend")
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY no está configurado")
+  }
+  return new Resend(apiKey)
+}
 
 function isValidUUID(uuid: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -355,6 +362,7 @@ Para rechazar la cita, visita: ${rejectUrl}
       console.log(`[Email] Enviando notificación a: ${RECIPIENT_EMAIL}`)
       console.log(`[Email] Desde: ${fromEmail}`)
       
+      const resend = getResendInstance()
       const emailResult = await resend.emails.send({
         from: fromEmail,
         to: RECIPIENT_EMAIL,
