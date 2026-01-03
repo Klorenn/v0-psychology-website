@@ -71,10 +71,16 @@ export const TestimonialStack = ({ testimonials, visibleBehind = 2 }: Testimonia
     };
   }, [isDragging, handleDragMove, handleDragEnd]);
   
-  if (!testimonials?.length) return null;
+  if (!testimonials?.length) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        No hay testimonios disponibles
+      </div>
+    );
+  }
 
   return (
-    <section className="testimonials-stack relative pb-10">
+    <section className="testimonials-stack relative pb-10 w-full">
       {testimonials.map((testimonial, index) => {
         const isActive = index === activeIndex;
         // Calculate the card's position in the display order
@@ -83,19 +89,22 @@ export const TestimonialStack = ({ testimonials, visibleBehind = 2 }: Testimonia
         // --- DYNAMIC STYLE CALCULATION ---
         const style: CSSProperties = {};
         if (displayOrder === 0) { // The active card
-          style.transform = `translateX(${dragOffset}px)`;
+          style.transform = `translateX(calc(-50% + ${dragOffset}px))`;
           style.opacity = 1;
           style.zIndex = totalCards;
+          style.pointerEvents = 'auto';
         } else if (displayOrder <= visibleBehind) { // Cards stacked behind
           const scale = 1 - 0.05 * displayOrder;
           const translateY = -2 * displayOrder; // in rem
-          style.transform = `scale(${scale}) translateY(${translateY}rem)`;
+          style.transform = `translateX(-50%) scale(${scale}) translateY(${translateY}rem)`;
           style.opacity = 1 - 0.2 * displayOrder;
           style.zIndex = totalCards - displayOrder;
+          style.pointerEvents = 'none';
         } else { // Cards that are out of view
-          style.transform = 'scale(0)';
+          style.transform = 'translateX(-50%) scale(0)';
           style.opacity = 0;
           style.zIndex = 0;
+          style.pointerEvents = 'none';
         }
 
         const tagClasses = (type: 'featured' | 'default') => type === 'featured' 

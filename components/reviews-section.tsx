@@ -31,6 +31,10 @@ export function ReviewsSection() {
     loadApprovedReviews()
   }, [])
 
+  useEffect(() => {
+    console.log("Reviews loaded:", reviews.length, reviews)
+  }, [reviews])
+
   const loadApprovedReviews = async () => {
     try {
       const response = await fetch("/api/reviews/list?status=approved")
@@ -184,11 +188,19 @@ export function ReviewsSection() {
             <Loader2 className="w-6 h-6 animate-spin text-accent" />
           </div>
         ) : reviews.length > 0 ? (
-          <div className="relative mb-12 min-h-[500px] flex items-center justify-center">
-            <TestimonialStack 
-              testimonials={reviews.map(convertReviewToTestimonial)} 
-              visibleBehind={2}
-            />
+          <div className="relative mb-12 min-h-[500px] flex items-center justify-center w-full">
+            <div className="w-full max-w-2xl mx-auto px-4">
+              {(() => {
+                const testimonials = reviews.map(convertReviewToTestimonial)
+                console.log("Testimonials to render:", testimonials.length, testimonials)
+                return (
+                  <TestimonialStack 
+                    testimonials={testimonials} 
+                    visibleBehind={2}
+                  />
+                )
+              })()}
+            </div>
           </div>
         ) : (
           <div className="text-center py-12">
