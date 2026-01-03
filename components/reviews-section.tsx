@@ -38,7 +38,16 @@ export function ReviewsSection() {
   const loadApprovedReviews = async () => {
     try {
       console.log("🔍 Cargando reseñas aprobadas...")
-      const response = await fetch("/api/reviews/list?status=approved")
+      
+      // Timeout de 10 segundos
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000)
+      
+      const response = await fetch("/api/reviews/list?status=approved", {
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+      
       console.log("📡 Respuesta del servidor:", response.status, response.ok)
       
       if (response.ok) {
@@ -59,8 +68,12 @@ export function ReviewsSection() {
         console.error("❌ Error en respuesta:", response.status, response.statusText, errorData)
         setReviews([])
       }
-    } catch (error) {
-      console.error("❌ Error cargando reseñas:", error)
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error("⏱️ Timeout cargando reseñas")
+      } else {
+        console.error("❌ Error cargando reseñas:", error)
+      }
       setReviews([])
     } finally {
       setIsLoading(false)
