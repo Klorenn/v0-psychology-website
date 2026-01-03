@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { Moon, Sun } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
+import { useSiteConfig } from "@/lib/use-site-config"
+import { siteConfigStore } from "@/lib/site-config"
 
 interface ThemeToggleProps {
   className?: string
@@ -12,15 +14,45 @@ interface ThemeToggleProps {
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const config = useSiteConfig()
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
+  const handleToggle = () => {
+    const newTheme = resolvedTheme === "dark" ? "light" : "dark"
+    setTheme(newTheme)
+    
+    // Sincronizar con la configuración del sitio
+    const currentThemeConfig = config.theme || {
+      themeId: "lavender",
+      darkThemeId: "dark-lavender",
+      darkMode: false,
+    }
+    const newConfig = {
+      ...config,
+      theme: {
+        ...currentThemeConfig,
+        darkMode: newTheme === "dark",
+      },
+    }
+    
+    // Actualizar store
+    siteConfigStore.set(newConfig)
+    
+    // Guardar en el servidor
+    fetch("/api/site-config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newConfig),
+    }).catch(() => {})
+  }
+
   if (!mounted) {
     return (
-      <div className={cn("flex w-16 h-8 p-1 rounded-full", className)}>
-        <div className="w-6 h-6 rounded-full bg-muted" />
+      <div className={cn("flex w-16 h-8 p-1 rounded-full bg-muted", className)}>
+        <div className="w-6 h-6 rounded-full bg-muted-foreground/20" />
       </div>
     )
   }
@@ -36,13 +68,13 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
           : "bg-white border border-zinc-200",
         className
       )}
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      onClick={handleToggle}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault()
-          setTheme(isDark ? "light" : "dark")
+          handleToggle()
         }
       }}
       aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
