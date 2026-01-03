@@ -166,7 +166,7 @@ export function BookingSection() {
     try {
       const appointmentId = crypto.randomUUID()
       const amount = appointmentType === "online" ? 20000 : 27000
-      const description = `Sesión ${appointmentType === "online" ? "Online" : "Presencial"} - ${selectedDate.getDate()} de ${monthNames[selectedDate.getMonth()]} a las ${selectedTime} hrs`
+      const description = `Sesión ${appointmentType === "online" ? "Online" : "Presencial"} - ${selectedDate.getDate()} de ${monthNames[selectedDate.getMonth()]} · ${selectedTime}`
       
       // Formatear teléfono con código de país si es online
       let formattedPhone = patientPhone
@@ -241,7 +241,7 @@ export function BookingSection() {
     try {
       const appointmentId = crypto.randomUUID()
       const amount = appointmentType === "online" ? 20000 : 27000
-      const description = `Sesión ${appointmentType === "online" ? "Online" : "Presencial"} - ${selectedDate.getDate()} de ${monthNames[selectedDate.getMonth()]} a las ${selectedTime} hrs`
+      const description = `Sesión ${appointmentType === "online" ? "Online" : "Presencial"} - ${selectedDate.getDate()} de ${monthNames[selectedDate.getMonth()]} · ${selectedTime}`
       
       // Formatear teléfono con código de país si es online
       let formattedPhone = patientPhone
@@ -726,8 +726,7 @@ export function BookingSection() {
             <div className="bg-muted/50 rounded-xl p-4 text-sm space-y-2">
               <p className="font-medium text-foreground mb-1">Resumen de la cita</p>
               <p className="text-muted-foreground">
-                {selectedDate?.getDate()} de {selectedDate && monthNames[selectedDate.getMonth()]} a las {selectedTime}{" "}
-                hrs
+                {selectedDate?.getDate()} de {selectedDate && monthNames[selectedDate.getMonth()]} · {selectedTime}
               </p>
               <p className="text-muted-foreground">
                 Modalidad: <span className="font-medium text-foreground capitalize">{appointmentType}</span>
@@ -1309,8 +1308,7 @@ export function BookingSection() {
             <div className="bg-muted/50 rounded-xl p-4 text-sm space-y-2">
               <p className="font-medium text-foreground mb-1">Resumen de la cita</p>
               <p className="text-muted-foreground">
-                {selectedDate?.getDate()} de {selectedDate && monthNames[selectedDate.getMonth()]} a las {selectedTime}{" "}
-                hrs
+                {selectedDate?.getDate()} de {selectedDate && monthNames[selectedDate.getMonth()]} · {selectedTime}
               </p>
               <p className="text-muted-foreground">
                 Modalidad: <span className="font-medium text-foreground capitalize">{appointmentType}</span>
@@ -1352,7 +1350,7 @@ export function BookingSection() {
               <span className="font-medium text-foreground">
                 {selectedDate?.getDate()} de {selectedDate && monthNames[selectedDate.getMonth()]}
               </span>{" "}
-              a las <span className="font-medium text-foreground">{selectedTime} hrs</span> ha sido enviada.
+              <span className="font-medium text-foreground">{selectedTime}</span> ha sido enviada.
               <br />
               <br />
               <span className="text-green-600 font-medium">

@@ -791,13 +791,17 @@ function AppointmentCard({
 
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <p className="font-medium text-foreground">
-              {appointment.date.getDate()} de {monthNames[appointment.date.getMonth()]}
+            <p className="text-sm text-foreground">
+              {appointment.date.getDate()} de {monthNames[appointment.date.getMonth()]} · {appointment.time}
             </p>
-            <p className="text-sm text-muted-foreground">{appointment.time} hrs</p>
-            <Badge variant="outline" className="mt-1 capitalize">
+            <Badge variant="outline" className="mt-1 capitalize text-xs">
               {appointment.appointmentType}
             </Badge>
+            {appointment.createdAt && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Pedido el {appointment.createdAt.getDate()} de {monthNames[appointment.createdAt.getMonth()]} a las {appointment.createdAt.getHours().toString().padStart(2, "0")}:{appointment.createdAt.getMinutes().toString().padStart(2, "0")}
+              </p>
+            )}
             {appointment.receiptUrl && (
               <Badge variant="secondary" className="mt-1 text-xs">
                 ✓ Comprobante
@@ -1049,13 +1053,17 @@ function ConfirmedAppointmentCard({
 
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
           <div className="text-right">
-            <p className="font-medium text-foreground">
-              {appointment.date.getDate()} de {monthNames[appointment.date.getMonth()]}
+            <p className="text-sm text-foreground">
+              {appointment.date.getDate()} de {monthNames[appointment.date.getMonth()]} · {appointment.time}
             </p>
-            <p className="text-sm text-muted-foreground">{appointment.time} hrs</p>
-            <Badge variant="outline" className="mt-1 capitalize">
+            <Badge variant="outline" className="mt-1 capitalize text-xs">
               {appointment.appointmentType}
             </Badge>
+            {appointment.createdAt && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Pedido el {appointment.createdAt.getDate()} de {monthNames[appointment.createdAt.getMonth()]} a las {appointment.createdAt.getHours().toString().padStart(2, "0")}:{appointment.createdAt.getMinutes().toString().padStart(2, "0")}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2">
