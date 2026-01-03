@@ -44,29 +44,70 @@ export interface AuthSession {
  * Verificar credenciales de admin
  */
 export async function verifyAdminCredentials(email: string, password: string): Promise<boolean> {
+  // Log detallado de lo que recibimos
+  console.log("[Auth] Verificando credenciales...")
+  console.log("   Input email length:", email?.length || 0)
+  console.log("   Input password length:", password?.length || 0)
+  console.log("   Config email length:", ADMIN_CREDENTIALS.email?.length || 0)
+  console.log("   Config password length:", ADMIN_CREDENTIALS.password?.length || 0)
+  
   if (!ADMIN_CREDENTIALS.email || !ADMIN_CREDENTIALS.password) {
     console.error("⚠️ Credenciales de admin no configuradas en variables de entorno")
     console.error("   ADMIN_EMAIL configurado:", !!ADMIN_CREDENTIALS.email)
+    console.error("   ADMIN_EMAIL valor raw:", process.env.ADMIN_EMAIL ? "✅ Existe" : "❌ No existe")
     console.error("   ADMIN_PASSWORD configurado:", !!ADMIN_CREDENTIALS.password)
+    console.error("   ADMIN_PASSWORD valor raw:", process.env.ADMIN_PASSWORD ? "✅ Existe" : "❌ No existe")
     return false
   }
   
   // Normalizar emails (trim y lowercase para comparación)
-  const normalizedInputEmail = email.trim().toLowerCase()
-  const normalizedConfigEmail = ADMIN_CREDENTIALS.email.trim().toLowerCase()
+  const normalizedInputEmail = (email || "").trim().toLowerCase()
+  const normalizedConfigEmail = (ADMIN_CREDENTIALS.email || "").trim().toLowerCase()
   
-  // Comparación exacta de password (sin normalizar, case-sensitive)
-  const passwordMatch = password === ADMIN_CREDENTIALS.password
+  // Comparación de password - primero sin trim, luego con trim como fallback
+  // Esto maneja casos donde hay espacios en las variables de entorno
+  const passwordInput = password || ""
+  const passwordConfig = ADMIN_CREDENTIALS.password || ""
   
-  // Log de debug (sin exponer valores completos)
-  if (normalizedInputEmail !== normalizedConfigEmail) {
-    console.log(`[Auth] Email no coincide. Input: ${normalizedInputEmail.substring(0, 5)}..., Config: ${normalizedConfigEmail.substring(0, 5)}...`)
-  }
+  // Intentar comparación exacta primero
+  let passwordMatch = passwordInput === passwordConfig
+  
+  // Si no coincide, intentar con trim (por si hay espacios en las variables de entorno)
   if (!passwordMatch) {
-    console.log(`[Auth] Password no coincide. Longitud input: ${password.length}, Longitud config: ${ADMIN_CREDENTIALS.password.length}`)
+    passwordMatch = passwordInput.trim() === passwordConfig.trim()
+    if (passwordMatch) {
+      console.log("[Auth] ⚠️ Password coincide después de trim - posible espacio en variable de entorno")
+    }
   }
   
-  return normalizedInputEmail === normalizedConfigEmail && passwordMatch
+  // Log detallado de comparación (sin exponer valores completos)
+  const emailMatch = normalizedInputEmail === normalizedConfigEmail
+  
+  console.log(`[Auth] Comparación de email: ${emailMatch ? "✅" : "❌"}`)
+  if (!emailMatch) {
+    console.log(`   Input: "${normalizedInputEmail.substring(0, 10)}..." (length: ${normalizedInputEmail.length})`)
+    console.log(`   Config: "${normalizedConfigEmail.substring(0, 10)}..." (length: ${normalizedConfigEmail.length})`)
+    // Mostrar códigos de caracteres para debugging
+    console.log(`   Input char codes (first 5):`, normalizedInputEmail.substring(0, 5).split('').map(c => c.charCodeAt(0)))
+    console.log(`   Config char codes (first 5):`, normalizedConfigEmail.substring(0, 5).split('').map(c => c.charCodeAt(0)))
+  }
+  
+  console.log(`[Auth] Comparación de password: ${passwordMatch ? "✅" : "❌"}`)
+  if (!passwordMatch) {
+    console.log(`   Input length: ${passwordInput.length}, Config length: ${passwordConfig.length}`)
+    // Mostrar códigos de caracteres del password (solo primeros y últimos para seguridad)
+    if (passwordInput.length > 0 && passwordConfig.length > 0) {
+      const inputFirst = passwordInput.substring(0, 3).split('').map(c => c.charCodeAt(0))
+      const configFirst = passwordConfig.substring(0, 3).split('').map(c => c.charCodeAt(0))
+      console.log(`   Input first 3 char codes:`, inputFirst)
+      console.log(`   Config first 3 char codes:`, configFirst)
+    }
+  }
+  
+  const result = emailMatch && passwordMatch
+  console.log(`[Auth] Resultado final: ${result ? "✅ AUTENTICACIÓN EXITOSA" : "❌ AUTENTICACIÓN FALLIDA"}`)
+  
+  return result
 }
 
 /**

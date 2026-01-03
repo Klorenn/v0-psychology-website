@@ -21,13 +21,20 @@ export async function POST(request: NextRequest) {
     const { email, password } = body
 
     if (!email || !password) {
+      console.error("[Login] ❌ Email o password faltantes")
+      console.error("   Email recibido:", email ? "✅" : "❌")
+      console.error("   Password recibido:", password ? "✅" : "❌")
       return NextResponse.json(
         { error: "Email y contraseña son requeridos" },
         { status: 400 }
       )
     }
 
-    console.log(`[Login] Intento de login para: ${email.substring(0, 5)}...`)
+    console.log(`[Login] ========================================`)
+    console.log(`[Login] Intento de login`)
+    console.log(`[Login] Email recibido: ${email.substring(0, 10)}... (length: ${email.length})`)
+    console.log(`[Login] Password recibido: length ${password.length}`)
+    console.log(`[Login] ========================================`)
     
     const isValid = await verifyAdminCredentials(email, password)
 
