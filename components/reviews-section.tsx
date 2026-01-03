@@ -35,10 +35,21 @@ export function ReviewsSection() {
       const response = await fetch("/api/reviews/list?status=approved")
       if (response.ok) {
         const data = await response.json()
-        setReviews(data.reviews || [])
+        // Asegurar que las fechas se conviertan correctamente
+        const reviewsWithDates = (data.reviews || []).map((r: any) => ({
+          ...r,
+          createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
+          approvedAt: r.approvedAt ? new Date(r.approvedAt) : undefined,
+          rejectedAt: r.rejectedAt ? new Date(r.rejectedAt) : undefined,
+        }))
+        setReviews(reviewsWithDates)
+      } else {
+        console.error("Error en respuesta:", response.status, response.statusText)
+        setReviews([])
       }
     } catch (error) {
       console.error("Error cargando reseñas:", error)
+      setReviews([])
     } finally {
       setIsLoading(false)
     }
@@ -101,7 +112,7 @@ export function ReviewsSection() {
   const isContentValid = characterCount >= MIN_LENGTH && characterCount <= MAX_LENGTH
 
   return (
-    <section id="reseñas" className="py-20 px-6 bg-muted/30">
+    <section id="reseñas" className="py-20 px-6 bg-muted/30 min-h-[500px]">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="font-serif text-3xl md:text-4xl text-foreground mb-4">
