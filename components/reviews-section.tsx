@@ -250,17 +250,32 @@ export function ReviewsSection() {
           </div>
         )}
 
-        {/* Botón para dejar reseña */}
+        {/* Sección para dejar reseña */}
         {!showForm && !submitSuccess && (
-          <div className="text-center">
-            <Button
-              onClick={() => setShowForm(true)}
-              className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90"
-              size="lg"
-            >
-              <Star className="w-4 h-4 mr-2" />
-              Dejar una reseña
-            </Button>
+          <div className="max-w-2xl mx-auto mt-12">
+            <div className="bg-card rounded-2xl p-8 shadow-sm border border-border/50">
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-accent/10 mb-4">
+                  <Star className="w-8 h-8 text-accent" />
+                </div>
+                <h3 className="font-serif text-2xl text-foreground mb-2">
+                  Comparte tu experiencia
+                </h3>
+                <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                  Tu opinión es muy valiosa. Ayuda a otros a conocer más sobre el acompañamiento profesional.
+                </p>
+              </div>
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => setShowForm(true)}
+                  className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 px-8 py-6 text-base font-medium"
+                  size="lg"
+                >
+                  <Star className="w-5 h-5 mr-2" />
+                  Dejar una reseña
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 

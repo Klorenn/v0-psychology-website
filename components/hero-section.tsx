@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button"
 import { useSiteConfig } from "@/lib/use-site-config"
 
 export function HeroSection() {
@@ -24,13 +25,12 @@ export function HeroSection() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button
-                size="lg"
-                className="px-8 py-6 text-base font-medium rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
-                asChild
-              >
-                <a href="#agenda">{config.hero.ctaPrimary}</a>
-              </Button>
+              <a href="#agenda" className="inline-block">
+                <InteractiveHoverButton
+                  text={config.hero.ctaPrimary}
+                  className="min-w-[200px]"
+                />
+              </a>
               <Button
                 variant="outline"
                 size="lg"

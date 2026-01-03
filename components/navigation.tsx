@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Menu, X, Instagram, Linkedin, Mail, Calendar, Moon, Sun } from "lucide-react"
+import { Menu, X, Instagram, Linkedin, Mail, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { useSiteConfig } from "@/lib/use-site-config"
 import { siteConfigStore } from "@/lib/site-config"
 import { useTheme } from "next-themes"
@@ -122,17 +123,9 @@ export function Navigation({ isStatic = false }: NavigationProps = {}) {
             
             {/* Dark Mode Toggle */}
             {mounted && (
-              <button
-                onClick={toggleDarkMode}
-                className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center hover:bg-accent/10 transition-colors"
-                aria-label="Toggle dark mode"
-              >
-                {theme === "dark" ? (
-                  <Sun className="w-4 h-4 text-muted-foreground hover:text-accent transition-colors" strokeWidth={1.5} />
-                ) : (
-                  <Moon className="w-4 h-4 text-muted-foreground hover:text-accent transition-colors" strokeWidth={1.5} />
-                )}
-              </button>
+              <ThemeToggle 
+                className="shrink-0"
+              />
             )}
             
             <div className="flex items-center gap-3">
@@ -210,20 +203,10 @@ export function Navigation({ isStatic = false }: NavigationProps = {}) {
                       {/* Dark Mode Toggle Mobile */}
                       {mounted && (
                         <div className="px-2 py-2">
-                          <button
-                            onClick={() => {
-                              toggleDarkMode()
-                              setIsMobileMenuOpen(false)
-                            }}
-                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors"
-                          >
+                          <div className="flex items-center justify-between px-3 py-2">
                             <span className="text-sm text-muted-foreground">Modo Oscuro</span>
-                            {theme === "dark" ? (
-                              <Sun className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-                            ) : (
-                              <Moon className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-                            )}
-                          </button>
+                            <ThemeToggle />
+                          </div>
                         </div>
                       )}
 
