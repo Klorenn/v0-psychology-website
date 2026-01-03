@@ -12,11 +12,11 @@ export function Footer() {
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
       
       <div className="max-w-6xl mx-auto">
-        <div className="grid md:grid-cols-3 gap-12 mb-16">
+        <div className="grid md:grid-cols-3 gap-8 lg:gap-12 mb-16">
           {/* About Section */}
           <div className="space-y-4">
             <h3 className="font-serif text-2xl text-foreground mb-4">Psicología</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Espacio de bienestar emocional. Atención psicológica profesional con calidez y respeto.
             </p>
           </div>
@@ -26,13 +26,13 @@ export function Footer() {
             <h4 className="font-semibold text-foreground mb-5 text-xs uppercase tracking-widest">Contacto</h4>
             <div className="space-y-4">
               <a 
-                href={`mailto:${config.social.email}`} 
+                href={`mailto:${config.social.email || ""}`} 
                 className="group flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-all duration-200"
               >
-                <div className="w-9 h-9 rounded-lg bg-muted/50 flex items-center justify-center group-hover:bg-accent/10 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-muted/50 flex items-center justify-center group-hover:bg-accent/10 transition-colors shrink-0">
                   <Mail className="w-4 h-4" strokeWidth={1.5} />
                 </div>
-                <span className="group-hover:translate-x-1 transition-transform">{config.social.email}</span>
+                <span className="group-hover:translate-x-1 transition-transform break-all">{config.social.email || "ps.mariasanluis@gmail.com"}</span>
               </a>
             </div>
           </div>
@@ -41,22 +41,22 @@ export function Footer() {
           <div className="space-y-4">
             <h4 className="font-semibold text-foreground mb-5 text-xs uppercase tracking-widest">Ubicación</h4>
             <div className="space-y-4">
-              <div className="flex items-start gap-3 text-sm text-muted-foreground">
+              <div className="flex items-start gap-3 text-sm">
                 <div className="w-9 h-9 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-                  <MapPin className="w-4 h-4" strokeWidth={1.5} />
+                  <MapPin className="w-4 h-4 text-foreground" strokeWidth={1.5} />
                 </div>
                 <div>
-                  <p className="text-foreground font-medium">{config.location.city}</p>
-                  <p className="text-muted-foreground">{config.location.country}</p>
+                  <p className="text-foreground font-medium">{config.location?.city || "Temuco"}</p>
+                  <p className="text-muted-foreground">{config.location?.country || "Chile"}</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 text-sm text-muted-foreground">
+              <div className="flex items-start gap-3 text-sm">
                 <div className="w-9 h-9 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-                  <Clock className="w-4 h-4" strokeWidth={1.5} />
+                  <Clock className="w-4 h-4 text-foreground" strokeWidth={1.5} />
                 </div>
                 <div>
-                  <p className="text-foreground font-medium">{config.location.schedule.days}</p>
-                  <p className="text-muted-foreground">{config.location.schedule.hours}</p>
+                  <p className="text-foreground font-medium">{config.location?.schedule?.days || "Lunes a Viernes"}</p>
+                  <p className="text-muted-foreground">{config.location?.schedule?.hours || "9:00 - 18:00 hrs"}</p>
                 </div>
               </div>
             </div>
