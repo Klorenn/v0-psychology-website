@@ -5,6 +5,7 @@ import { HeroSection } from "@/components/hero-section"
 import { ValuesSection } from "@/components/values-section"
 import { LocationSection } from "@/components/location-section"
 import { BookingSection } from "@/components/booking-section"
+import { ReviewsSection } from "@/components/reviews-section"
 import { Footer } from "@/components/footer"
 import { ThemeApplier } from "@/components/theme-applier"
 import { useSiteConfig } from "@/lib/use-site-config"
@@ -22,6 +23,8 @@ export default function Home() {
         return <LocationSection key="location" />
       case "booking":
         return <BookingSection key="booking" />
+      case "reviews":
+        return <ReviewsSection key="reviews" />
       default:
         return null
     }

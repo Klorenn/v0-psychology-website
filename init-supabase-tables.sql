@@ -53,6 +53,26 @@ CREATE TABLE IF NOT EXISTS google_calendar_tokens (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Crear tabla de reseñas
+CREATE TABLE IF NOT EXISTS reviews (
+  id TEXT PRIMARY KEY,
+  content TEXT NOT NULL,
+  author_name TEXT,
+  author_pill_name TEXT,
+  is_anonymous BOOLEAN NOT NULL DEFAULT true,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP NOT NULL,
+  approved_at TIMESTAMP,
+  rejected_at TIMESTAMP
+);
+
+-- Crear índices para reseñas
+CREATE INDEX IF NOT EXISTS idx_reviews_status 
+ON reviews(status);
+
+CREATE INDEX IF NOT EXISTS idx_reviews_created_at 
+ON reviews(created_at DESC);
+
 -- Verificar que las tablas se crearon correctamente
 SELECT 
   'appointments' as table_name, 
@@ -67,5 +87,10 @@ UNION ALL
 SELECT 
   'google_calendar_tokens' as table_name, 
   COUNT(*) as row_count 
-FROM google_calendar_tokens;
+FROM google_calendar_tokens
+UNION ALL
+SELECT 
+  'reviews' as table_name, 
+  COUNT(*) as row_count 
+FROM reviews;
 

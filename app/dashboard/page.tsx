@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { appointmentsStore, type Appointment } from "@/lib/appointments-store"
 import { authStore } from "@/lib/auth-store"
-import { Check, X, Clock, LogOut, Calendar, FileText, ExternalLink, Settings, Mail, Video, Copy, CheckCircle, Bell, BellOff, Loader2 } from "lucide-react"
+import { Check, X, Clock, LogOut, Calendar, FileText, ExternalLink, Settings, Mail, Video, Copy, CheckCircle, Bell, BellOff, Loader2, Star } from "lucide-react"
 import { requestNotificationPermission, canSendNotifications, notifyAppointmentApproved, notifyAppointmentRejected } from "@/lib/notifications"
 import { VisualPageEditor } from "@/components/visual-page-editor"
 import { GoogleCalendarSettings } from "@/components/google-calendar-settings"
 import { ThemeSelectorExtended } from "@/components/theme-selector-extended"
 import { EmailTemplateEditor } from "@/components/email-template-editor"
+import { ReviewsPanel } from "@/components/reviews-panel"
 import { useSiteConfig } from "@/lib/use-site-config"
 import { siteConfigStore } from "@/lib/site-config"
 
@@ -47,7 +48,7 @@ const getServerSnapshotForAppointments = () => [] // En el servidor siempre arra
 export default function DashboardPage() {
   const router = useRouter()
   const [timeUpdate, setTimeUpdate] = useState(0)
-  const [activeTab, setActiveTab] = useState<"appointments" | "settings">("appointments")
+  const [activeTab, setActiveTab] = useState<"appointments" | "settings" | "reviews">("appointments")
   const [siteConfig, setSiteConfig] = useState(siteConfigStore.get())
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [authRestored, setAuthRestored] = useState(false)
@@ -424,6 +425,17 @@ export default function DashboardPage() {
           >
             <Calendar className="w-4 h-4 inline mr-2" />
             Citas
+          </button>
+          <button
+            onClick={() => setActiveTab("reviews")}
+            className={`px-4 py-2 font-medium text-sm transition-colors ${
+              activeTab === "reviews"
+                ? "text-foreground border-b-2 border-accent"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Star className="w-4 h-4 inline mr-2" />
+            Reseñas
           </button>
           <button
             onClick={() => setActiveTab("settings")}

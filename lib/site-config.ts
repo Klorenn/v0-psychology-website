@@ -124,7 +124,7 @@ const defaultConfig: SiteConfig = {
     linkedin: "https://www.linkedin.com/in/maria-san-luis-03481b337/",
     email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "",
   },
-  sectionOrder: ["hero", "values", "location", "booking"],
+  sectionOrder: ["hero", "values", "location", "booking", "reviews"],
   theme: {
     themeId: "lavender",
     darkThemeId: "dark-lavender",

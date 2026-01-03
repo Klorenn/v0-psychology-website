@@ -84,6 +84,15 @@ export async function initializeDatabase() {
       throw new Error("La tabla 'site_config' no existe. Por favor, ejecuta el script SQL en Supabase SQL Editor")
     }
     
+    const { error: reviewsError } = await supabase
+      .from("reviews")
+      .select("id")
+      .limit(1)
+    
+    if (reviewsError && reviewsError.code === "42P01") {
+      console.warn("⚠️ La tabla 'reviews' no existe. Se creará automáticamente o puedes ejecutar el script SQL")
+    }
+    
     console.log("✅ Base de datos verificada correctamente")
   } catch (error: any) {
     console.error("Error verificando base de datos:", error)
@@ -462,6 +471,131 @@ export async function deleteGoogleTokens() {
     return true
   } catch (error) {
     console.error("Error eliminando tokens de Google:", error)
+    return false
+  }
+}
+
+/**
+ * Guardar una reseña en la base de datos
+ */
+export async function saveReview(review: {
+  id: string
+  content: string
+  authorName?: string
+  authorPillName?: string
+  isAnonymous: boolean
+  status: "pending" | "approved" | "rejected"
+  createdAt: Date
+}) {
+  const supabase = getSupabaseClient()
+  
+  if (!supabase) {
+    return false
+  }
+  
+  try {
+    const { error } = await supabase
+      .from("reviews")
+      .upsert({
+        id: review.id,
+        content: review.content,
+        author_name: review.authorName || null,
+        author_pill_name: review.authorPillName || null,
+        is_anonymous: review.isAnonymous,
+        status: review.status,
+        created_at: review.createdAt.toISOString(),
+        approved_at: null,
+        rejected_at: null,
+      }, {
+        onConflict: "id",
+      })
+    
+    if (error) {
+      console.error("Error guardando reseña:", error)
+      return false
+    }
+    
+    return true
+  } catch (error) {
+    console.error("Error guardando reseña:", error)
+    return false
+  }
+}
+
+/**
+ * Obtener todas las reseñas
+ */
+export async function getAllReviews() {
+  const supabase = getSupabaseClient()
+  
+  if (!supabase) {
+    return []
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from("reviews")
+      .select("*")
+      .order("created_at", { ascending: false })
+    
+    if (error) {
+      console.error("Error obteniendo reseñas:", error)
+      return []
+    }
+    
+    return (data || []).map((row: any) => ({
+      id: row.id,
+      content: row.content,
+      authorName: row.author_name || undefined,
+      authorPillName: row.author_pill_name || undefined,
+      isAnonymous: row.is_anonymous,
+      status: row.status,
+      createdAt: new Date(row.created_at),
+      approvedAt: row.approved_at ? new Date(row.approved_at) : undefined,
+      rejectedAt: row.rejected_at ? new Date(row.rejected_at) : undefined,
+    }))
+  } catch (error) {
+    console.error("Error obteniendo reseñas:", error)
+    return []
+  }
+}
+
+/**
+ * Actualizar estado de una reseña
+ */
+export async function updateReviewStatus(id: string, status: "approved" | "rejected") {
+  const supabase = getSupabaseClient()
+  
+  if (!supabase) {
+    return false
+  }
+  
+  try {
+    const updateData: any = {
+      status,
+    }
+    
+    if (status === "approved") {
+      updateData.approved_at = new Date().toISOString()
+      updateData.rejected_at = null
+    } else {
+      updateData.rejected_at = new Date().toISOString()
+      updateData.approved_at = null
+    }
+    
+    const { error } = await supabase
+      .from("reviews")
+      .update(updateData)
+      .eq("id", id)
+    
+    if (error) {
+      console.error("Error actualizando estado de reseña:", error)
+      return false
+    }
+    
+    return true
+  } catch (error) {
+    console.error("Error actualizando estado de reseña:", error)
     return false
   }
 }
