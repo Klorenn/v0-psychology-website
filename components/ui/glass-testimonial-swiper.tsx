@@ -83,7 +83,7 @@ export const TestimonialStack = ({ testimonials, visibleBehind = 2 }: Testimonia
   }
 
   return (
-    <section className="testimonials-stack relative pb-10 w-full" style={{ minHeight: '400px' }}>
+    <section className="testimonials-stack relative pb-16 w-full" style={{ minHeight: '450px', height: '450px' }}>
       {testimonials.map((testimonial, index) => {
         const isActive = index === activeIndex;
         // Calculate the card's position in the display order

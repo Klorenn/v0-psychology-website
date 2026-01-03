@@ -195,7 +195,7 @@ export function ReviewsSection() {
             <Loader2 className="w-6 h-6 animate-spin text-accent" />
           </div>
         ) : reviews.length > 0 ? (
-          <div className="relative mb-12 min-h-[500px] flex items-center justify-center w-full">
+          <div className="relative mb-12 min-h-[500px] flex items-center justify-center w-full py-8">
             <div className="w-full max-w-2xl mx-auto px-4">
               {(() => {
                 try {
@@ -204,22 +204,24 @@ export function ReviewsSection() {
                   
                   if (testimonials.length === 0) {
                     return (
-                      <div className="text-center py-8 text-muted-foreground">
+                      <div className="text-center py-8 text-muted-foreground bg-card/50 rounded-lg border border-border p-4">
                         No se pudieron convertir las reseñas a testimonios
                       </div>
                     )
                   }
                   
                   return (
-                    <TestimonialStack 
-                      testimonials={testimonials} 
-                      visibleBehind={2}
-                    />
+                    <div className="w-full" style={{ minHeight: '400px', position: 'relative' }}>
+                      <TestimonialStack 
+                        testimonials={testimonials} 
+                        visibleBehind={2}
+                      />
+                    </div>
                   )
                 } catch (error) {
                   console.error("❌ Error convirtiendo reseñas:", error)
                   return (
-                    <div className="text-center py-8 text-destructive">
+                    <div className="text-center py-8 text-destructive bg-destructive/10 rounded-lg border border-destructive/20 p-4">
                       Error al mostrar las reseñas. Por favor, recarga la página.
                     </div>
                   )
