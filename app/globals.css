@@ -98,6 +98,8 @@
   min-height: 450px;
   padding: 2rem 1rem;
   display: block;
+  visibility: visible;
+  opacity: 1;
 }
 
 .testimonial-card {

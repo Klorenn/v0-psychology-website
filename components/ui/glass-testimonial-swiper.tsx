@@ -71,16 +71,19 @@ export const TestimonialStack = ({ testimonials, visibleBehind = 2 }: Testimonia
     };
   }, [isDragging, handleDragMove, handleDragEnd]);
   
+  console.log("🎯 TestimonialStack renderizando con:", testimonials?.length || 0, "testimonios")
+
   if (!testimonials?.length) {
+    console.warn("⚠️ No hay testimonios para mostrar")
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className="text-center py-8 text-muted-foreground bg-card/50 rounded-lg border border-border p-4">
         No hay testimonios disponibles
       </div>
     );
   }
 
   return (
-    <section className="testimonials-stack relative pb-10 w-full">
+    <section className="testimonials-stack relative pb-10 w-full" style={{ minHeight: '400px' }}>
       {testimonials.map((testimonial, index) => {
         const isActive = index === activeIndex;
         // Calculate the card's position in the display order

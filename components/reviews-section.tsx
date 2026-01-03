@@ -37,9 +37,14 @@ export function ReviewsSection() {
 
   const loadApprovedReviews = async () => {
     try {
+      console.log("🔍 Cargando reseñas aprobadas...")
       const response = await fetch("/api/reviews/list?status=approved")
+      console.log("📡 Respuesta del servidor:", response.status, response.ok)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log("📦 Datos recibidos:", data)
+        
         // Asegurar que las fechas se conviertan correctamente
         const reviewsWithDates = (data.reviews || []).map((r: any) => ({
           ...r,
@@ -47,13 +52,15 @@ export function ReviewsSection() {
           approvedAt: r.approvedAt ? new Date(r.approvedAt) : undefined,
           rejectedAt: r.rejectedAt ? new Date(r.rejectedAt) : undefined,
         }))
+        console.log("✅ Reseñas procesadas:", reviewsWithDates.length, reviewsWithDates)
         setReviews(reviewsWithDates)
       } else {
-        console.error("Error en respuesta:", response.status, response.statusText)
+        const errorData = await response.json().catch(() => ({}))
+        console.error("❌ Error en respuesta:", response.status, response.statusText, errorData)
         setReviews([])
       }
     } catch (error) {
-      console.error("Error cargando reseñas:", error)
+      console.error("❌ Error cargando reseñas:", error)
       setReviews([])
     } finally {
       setIsLoading(false)
@@ -191,14 +198,32 @@ export function ReviewsSection() {
           <div className="relative mb-12 min-h-[500px] flex items-center justify-center w-full">
             <div className="w-full max-w-2xl mx-auto px-4">
               {(() => {
-                const testimonials = reviews.map(convertReviewToTestimonial)
-                console.log("Testimonials to render:", testimonials.length, testimonials)
-                return (
-                  <TestimonialStack 
-                    testimonials={testimonials} 
-                    visibleBehind={2}
-                  />
-                )
+                try {
+                  const testimonials = reviews.map(convertReviewToTestimonial)
+                  console.log("🎨 Testimonials convertidos:", testimonials.length, testimonials)
+                  
+                  if (testimonials.length === 0) {
+                    return (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No se pudieron convertir las reseñas a testimonios
+                      </div>
+                    )
+                  }
+                  
+                  return (
+                    <TestimonialStack 
+                      testimonials={testimonials} 
+                      visibleBehind={2}
+                    />
+                  )
+                } catch (error) {
+                  console.error("❌ Error convirtiendo reseñas:", error)
+                  return (
+                    <div className="text-center py-8 text-destructive">
+                      Error al mostrar las reseñas. Por favor, recarga la página.
+                    </div>
+                  )
+                }
               })()}
             </div>
           </div>
