@@ -22,16 +22,24 @@ const SESSION_DURATION = 24 * 60 * 60 * 1000 // 24 horas
 
 // Credenciales de admin - solo en servidor
 // Normalizar y trim para evitar problemas con espacios
+// FALLBACK: Si no hay variables de entorno, usar valores hardcodeados
+const DEFAULT_ADMIN_EMAIL = "ps.msanluis@gmail.com"
+const DEFAULT_ADMIN_PASSWORD = "misakki12_"
+
 export const ADMIN_CREDENTIALS = {
-  email: (process.env.ADMIN_EMAIL || "").trim(),
-  password: (process.env.ADMIN_PASSWORD || "").trim(),
+  email: (process.env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL).trim(),
+  password: (process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD).trim(),
 }
 
 // Log de configuración (solo en desarrollo o si hay problemas)
 if (process.env.NODE_ENV === "development" || !ADMIN_CREDENTIALS.email || !ADMIN_CREDENTIALS.password) {
   console.log("[Auth] Configuración de credenciales:")
+  const usingEnvEmail = !!process.env.ADMIN_EMAIL
+  const usingEnvPassword = !!process.env.ADMIN_PASSWORD
   console.log("   ADMIN_EMAIL:", ADMIN_CREDENTIALS.email ? `${ADMIN_CREDENTIALS.email.substring(0, 5)}...` : "❌ NO CONFIGURADO")
+  console.log("   ADMIN_EMAIL source:", usingEnvEmail ? "✅ Variables de entorno" : "⚠️ Valores hardcodeados (fallback)")
   console.log("   ADMIN_PASSWORD:", ADMIN_CREDENTIALS.password ? `✅ Configurado (${ADMIN_CREDENTIALS.password.length} caracteres)` : "❌ NO CONFIGURADO")
+  console.log("   ADMIN_PASSWORD source:", usingEnvPassword ? "✅ Variables de entorno" : "⚠️ Valores hardcodeados (fallback)")
   console.log("   JWT_SECRET:", process.env.JWT_SECRET ? `✅ Configurado (${process.env.JWT_SECRET.length} caracteres)` : "⚠️ Usando fallback")
 }
 
