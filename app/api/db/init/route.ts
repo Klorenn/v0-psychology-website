@@ -20,7 +20,8 @@ async function handleInit() {
       tables: [
         "appointments (con campos: receipt_data, receipt_filename, receipt_mimetype)",
         "site_config",
-        "google_calendar_tokens"
+        "google_calendar_tokens",
+        "reviews"
       ]
     })
   } catch (error) {

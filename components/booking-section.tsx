@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ChevronLeft, ChevronRight, Clock, Loader2, CalendarDays, Shield } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button"
 import { appointmentsStore } from "@/lib/appointments-store"
 import { BankTransferDetails } from "@/components/bank-transfer-details"
 import { TermsAndConditions } from "@/components/terms-and-conditions"
@@ -952,13 +953,23 @@ export function BookingSection() {
               </div>
             </div>
 
-            <Button
-              onClick={handleSubmitBooking}
-              disabled={isSubmitting || !hasMadeTransfer || !acceptedTerms}
-              className="w-full rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
-            >
-              {isSubmitting ? "Enviando solicitud..." : "Confirmar y enviar solicitud"}
-            </Button>
+            {isSubmitting ? (
+              <Button
+                disabled
+                className="w-full rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
+              >
+                Enviando solicitud...
+              </Button>
+            ) : (
+              <div className="flex justify-center w-full">
+                <InteractiveHoverButton
+                  onClick={handleSubmitBooking}
+                  disabled={!hasMadeTransfer || !acceptedTerms}
+                  text="Agendar"
+                  className="w-auto min-w-[180px] disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -1341,8 +1352,8 @@ export function BookingSection() {
       <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
         <DialogContent className="sm:max-w-md bg-background border-border/50">
           <DialogHeader>
-            <div className="mx-auto w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center mb-4">
-              <Clock className="w-6 h-6 text-amber-600" />
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/30 flex items-center justify-center mb-4">
+              <Clock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
             </div>
             <DialogTitle className="font-serif text-2xl text-center">Solicitud enviada</DialogTitle>
             <DialogDescription className="text-center pt-2">
@@ -1353,7 +1364,7 @@ export function BookingSection() {
               <span className="font-medium text-foreground">{selectedTime}</span> ha sido enviada.
               <br />
               <br />
-              <span className="text-green-600 font-medium">
+              <span className="text-green-600 dark:text-green-400 font-medium">
                 ✓ Comprobante recibido correctamente
               </span>
               <br />

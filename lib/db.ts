@@ -90,7 +90,8 @@ export async function initializeDatabase() {
       .limit(1)
     
     if (reviewsError && reviewsError.code === "42P01") {
-      console.warn("⚠️ La tabla 'reviews' no existe. Se creará automáticamente o puedes ejecutar el script SQL")
+      console.warn("⚠️ La tabla 'reviews' no existe. Por favor, ejecuta el script SQL en Supabase SQL Editor (ver init-supabase-tables.sql) para crearla.")
+      // No lanzamos error porque reviews es opcional, pero recomendamos crearla
     }
     
     console.log("✅ Base de datos verificada correctamente")

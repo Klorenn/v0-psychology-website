@@ -81,7 +81,7 @@ export function ReviewsPanel() {
       case "rejected":
         return <Badge variant="destructive">Rechazada</Badge>
       case "pending":
-        return <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-200">Pendiente</Badge>
+        return <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-100 border-amber-200 dark:border-amber-800">Pendiente</Badge>
     }
   }
 
@@ -161,7 +161,7 @@ export function ReviewsPanel() {
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
-                          className="w-4 h-4 fill-yellow-400 text-yellow-400"
+                          className="w-4 h-4 fill-yellow-400 dark:fill-yellow-500 text-yellow-400 dark:text-yellow-500"
                         />
                       ))}
                     </div>

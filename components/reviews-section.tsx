@@ -6,8 +6,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Input } from "@/components/ui/input"
-import { Star, Send, Loader2, CheckCircle } from "lucide-react"
+import { Star, Send, Loader2, CheckCircle, ChevronLeft, ChevronRight, Calendar, Heart } from "lucide-react"
 import type { Review } from "@/lib/reviews-store"
+import { TestimonialStack, type Testimonial } from "@/components/ui/glass-testimonial-swiper"
 
 const MIN_LENGTH = 50
 const MAX_LENGTH = 1000
@@ -108,6 +109,60 @@ export function ReviewsSection() {
     return "Anónimo"
   }
 
+  // Convertir Review a Testimonial
+  const convertReviewToTestimonial = (review: Review): Testimonial => {
+    const authorDisplay = getAuthorDisplay(review)
+    const initials = review.isAnonymous 
+      ? "A" 
+      : (review.authorPillName || review.authorName || "A")
+        .split(" ")
+        .map(n => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    
+    // Gradientes de colores cálidos para psicología
+    const gradients = [
+      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+      'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+      'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+      'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+      'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+    ]
+    const gradientIndex = review.id.charCodeAt(0) % gradients.length
+    
+    // Calcular fecha relativa
+    const now = new Date()
+    const reviewDate = review.createdAt
+    const diffTime = Math.abs(now.getTime() - reviewDate.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    let dateText = "Reciente"
+    if (diffDays === 1) dateText = "Hace 1 día"
+    else if (diffDays < 7) dateText = `Hace ${diffDays} días`
+    else if (diffDays < 30) dateText = `Hace ${Math.floor(diffDays / 7)} semanas`
+    else if (diffDays < 365) dateText = `Hace ${Math.floor(diffDays / 30)} meses`
+    else dateText = `Hace ${Math.floor(diffDays / 365)} años`
+
+    return {
+      id: review.id,
+      initials,
+      name: authorDisplay,
+      role: review.isAnonymous ? "Paciente" : "Paciente",
+      quote: review.content,
+      tags: review.isAnonymous 
+        ? [{ text: 'Anónimo', type: 'default' as const }]
+        : [{ text: 'Verificado', type: 'featured' as const }],
+      stats: [
+        { icon: Star, text: '5 estrellas' },
+        { icon: Calendar, text: dateText }
+      ],
+      avatarGradient: gradients[gradientIndex],
+    }
+  }
+
   const characterCount = content.length
   const isContentValid = characterCount >= MIN_LENGTH && characterCount <= MAX_LENGTH
 
@@ -129,28 +184,11 @@ export function ReviewsSection() {
             <Loader2 className="w-6 h-6 animate-spin text-accent" />
           </div>
         ) : reviews.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {reviews.map((review) => (
-              <div
-                key={review.id}
-                className="bg-card rounded-xl p-6 shadow-sm border border-border/50"
-              >
-                <div className="flex items-center gap-1 mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="w-4 h-4 fill-yellow-400 text-yellow-400"
-                    />
-                  ))}
-                </div>
-                <p className="text-foreground mb-4 whitespace-pre-wrap leading-relaxed">
-                  {review.content}
-                </p>
-                <p className="text-sm text-muted-foreground font-medium">
-                  — {getAuthorDisplay(review)}
-                </p>
-              </div>
-            ))}
+          <div className="relative mb-12 min-h-[500px] flex items-center justify-center">
+            <TestimonialStack 
+              testimonials={reviews.map(convertReviewToTestimonial)} 
+              visibleBehind={2}
+            />
           </div>
         ) : (
           <div className="text-center py-12">
