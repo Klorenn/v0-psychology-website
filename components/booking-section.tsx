@@ -636,21 +636,39 @@ export function BookingSection() {
                           {DEFAULT_SLOTS.map((time) => {
                             const isAvailable = availableSlots.includes(time)
                             const isSelected = selectedTime === time
+                            
+                            // Verificar si la hora ya pasó (solo si es hoy)
+                            const today = new Date()
+                            today.setHours(0, 0, 0, 0)
+                            const selectedDateOnly = new Date(selectedDate)
+                            selectedDateOnly.setHours(0, 0, 0, 0)
+                            const isToday = selectedDateOnly.getTime() === today.getTime()
+                            
+                            let isPast = false
+                            if (isToday) {
+                              const [hours, minutes] = time.split(":").map(Number)
+                              const timeSlot = new Date(selectedDate)
+                              timeSlot.setHours(hours, minutes, 0, 0)
+                              const now = new Date()
+                              // Comparar en zona horaria local (el servidor ya filtró según Santiago)
+                              isPast = timeSlot < now
+                            }
 
                             return (
                               <button
                                 key={time}
-                                onClick={() => isAvailable && handleTimeSelect(time)}
-                                disabled={!isAvailable}
+                                onClick={() => isAvailable && !isPast && handleTimeSelect(time)}
+                                disabled={!isAvailable || isPast}
                                 className={`
                                   py-2.5 px-3 rounded-xl text-sm font-medium transition-all
                                   ${
-                                    !isAvailable
+                                    !isAvailable || isPast
                                       ? "bg-muted/30 text-muted-foreground/40 cursor-not-allowed line-through"
                                       : "bg-muted/50 hover:bg-accent/10 cursor-pointer text-foreground"
                                   }
                                   ${isSelected ? "bg-accent text-accent-foreground hover:bg-accent/90 ring-2 ring-accent/30" : ""}
                                 `}
+                                title={isPast ? "Esta hora ya pasó" : !isAvailable ? "Hora no disponible" : ""}
                               >
                                 {time}
                               </button>
