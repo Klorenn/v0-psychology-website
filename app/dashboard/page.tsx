@@ -450,7 +450,9 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {activeTab === "settings" ? (
+        {activeTab === "reviews" ? (
+          <ReviewsPanel />
+        ) : activeTab === "settings" ? (
           <div className="space-y-6">
             <GoogleCalendarSettings />
             <ThemeSelectorExtended />
