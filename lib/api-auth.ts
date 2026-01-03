@@ -64,19 +64,37 @@ export async function verifyAdminCredentials(email: string, password: string): P
   const normalizedInputEmail = (email || "").trim().toLowerCase()
   const normalizedConfigEmail = (ADMIN_CREDENTIALS.email || "").trim().toLowerCase()
   
-  // Comparación de password - primero sin trim, luego con trim como fallback
-  // Esto maneja casos donde hay espacios en las variables de entorno
+  // Comparación de password - múltiples estrategias
   const passwordInput = password || ""
   const passwordConfig = ADMIN_CREDENTIALS.password || ""
   
-  // Intentar comparación exacta primero
+  // Estrategia 1: Comparación exacta
   let passwordMatch = passwordInput === passwordConfig
   
-  // Si no coincide, intentar con trim (por si hay espacios en las variables de entorno)
+  // Estrategia 2: Si no coincide, intentar con trim
   if (!passwordMatch) {
-    passwordMatch = passwordInput.trim() === passwordConfig.trim()
+    const trimmedInput = passwordInput.trim()
+    const trimmedConfig = passwordConfig.trim()
+    passwordMatch = trimmedInput === trimmedConfig
     if (passwordMatch) {
       console.log("[Auth] ⚠️ Password coincide después de trim - posible espacio en variable de entorno")
+    }
+  }
+  
+  // Estrategia 3: Comparación byte a byte (para detectar caracteres invisibles)
+  if (!passwordMatch && passwordInput.length === passwordConfig.length) {
+    // Comparar cada carácter
+    let allMatch = true
+    for (let i = 0; i < passwordInput.length; i++) {
+      if (passwordInput.charCodeAt(i) !== passwordConfig.charCodeAt(i)) {
+        allMatch = false
+        console.log(`[Auth] Carácter diferente en posición ${i}: input=${passwordInput.charCodeAt(i)}, config=${passwordConfig.charCodeAt(i)}`)
+        break
+      }
+    }
+    if (allMatch) {
+      passwordMatch = true
+      console.log("[Auth] ⚠️ Password coincide byte a byte pero no con === - posible problema de encoding")
     }
   }
   
