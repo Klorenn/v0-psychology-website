@@ -22,7 +22,7 @@ const SESSION_DURATION = 24 * 60 * 60 * 1000 // 24 horas
 
 // Credenciales de admin - solo en servidor
 // Normalizar y trim para evitar problemas con espacios
-const ADMIN_CREDENTIALS = {
+export const ADMIN_CREDENTIALS = {
   email: (process.env.ADMIN_EMAIL || "").trim(),
   password: (process.env.ADMIN_PASSWORD || "").trim(),
 }
