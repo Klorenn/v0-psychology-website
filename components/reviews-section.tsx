@@ -153,8 +153,10 @@ export function ReviewsSection() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 text-muted-foreground">
-            <p>Aún no hay reseñas publicadas.</p>
+          <div className="text-center py-12">
+            <Star className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
+            <p className="text-muted-foreground text-lg mb-2">Aún no hay reseñas publicadas.</p>
+            <p className="text-sm text-muted-foreground">Sé el primero en compartir tu experiencia</p>
           </div>
         )}
 
