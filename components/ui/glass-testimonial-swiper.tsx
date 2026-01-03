@@ -114,9 +114,21 @@ export const TestimonialStack = ({ testimonials, visibleBehind = 2 }: Testimonia
           ? 'bg-primary/20 text-primary border border-primary/30' 
           : 'bg-secondary text-secondary-foreground';
           
+        console.log(`🎴 Renderizando tarjeta ${index}:`, {
+          displayOrder,
+          isActive,
+          style,
+          testimonial: { id: testimonial.id, name: testimonial.name }
+        })
+
         return (
           <div
-            ref={el => cardRefs.current[index] = el}
+            ref={el => {
+              cardRefs.current[index] = el
+              if (el && displayOrder === 0) {
+                console.log("✅ Tarjeta activa renderizada:", el)
+              }
+            }}
             key={testimonial.id}
             className="testimonial-card glass-effect backdrop-blur-xl"
             style={style} // Apply dynamic styles here
