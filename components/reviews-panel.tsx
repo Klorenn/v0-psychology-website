@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Star, Check, X, Loader2, Clock } from "lucide-react"
+import { Star, Check, X, Loader2, Clock, Trash2 } from "lucide-react"
 import type { Review } from "@/lib/reviews-store"
+import { AppointmentMenu } from "@/components/ui/appointment-menu"
+import { authenticatedFetch } from "@/lib/api-client"
 
 const monthNames = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -16,6 +18,7 @@ export function ReviewsPanel() {
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all")
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     loadReviews()
@@ -30,7 +33,14 @@ export function ReviewsPanel() {
       const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
-        setReviews(data.reviews || [])
+        // Convertir fechas de string a Date objects
+        const reviewsWithDates = (data.reviews || []).map((review: any) => ({
+          ...review,
+          createdAt: review.createdAt ? new Date(review.createdAt) : new Date(),
+          approvedAt: review.approvedAt ? new Date(review.approvedAt) : undefined,
+          rejectedAt: review.rejectedAt ? new Date(review.rejectedAt) : undefined,
+        }))
+        setReviews(reviewsWithDates)
       }
     } catch (error) {
       console.error("Error cargando reseñas:", error)
@@ -42,7 +52,7 @@ export function ReviewsPanel() {
   const handleUpdateStatus = async (id: string, status: "approved" | "rejected") => {
     setUpdatingId(id)
     try {
-      const response = await fetch("/api/reviews/update-status", {
+      const response = await authenticatedFetch("/api/reviews/update-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status }),
@@ -58,6 +68,28 @@ export function ReviewsPanel() {
       alert("Error al actualizar el estado de la reseña")
     } finally {
       setUpdatingId(null)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id)
+    try {
+      const response = await authenticatedFetch("/api/reviews/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Error al eliminar la reseña")
+      }
+
+      await loadReviews()
+    } catch (error) {
+      console.error("Error:", error)
+      alert("Error al eliminar la reseña")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -161,7 +193,11 @@ export function ReviewsPanel() {
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
-                          className="w-4 h-4 fill-yellow-400 dark:fill-yellow-500 text-yellow-400 dark:text-yellow-500"
+                          className={`w-4 h-4 ${
+                            i < (review.rating || 5)
+                              ? "fill-yellow-400 dark:fill-yellow-500 text-yellow-400 dark:text-yellow-500"
+                              : "fill-gray-200 dark:fill-gray-700 text-gray-300 dark:text-gray-600"
+                          }`}
                         />
                       ))}
                     </div>
@@ -174,6 +210,17 @@ export function ReviewsPanel() {
                     Enviada el {review.createdAt.getDate()} de {monthNames[review.createdAt.getMonth()]} a las {review.createdAt.getHours().toString().padStart(2, "0")}:{review.createdAt.getMinutes().toString().padStart(2, "0")}
                   </p>
                 </div>
+                <AppointmentMenu
+                  items={[
+                    {
+                      label: "Eliminar",
+                      icon: <Trash2 className="w-4 h-4" />,
+                      onClick: () => handleDelete(review.id),
+                      disabled: deletingId === review.id,
+                      variant: "destructive",
+                    },
+                  ]}
+                />
               </div>
 
               <p className="text-foreground whitespace-pre-wrap leading-relaxed mb-4">

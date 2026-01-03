@@ -5,6 +5,7 @@ import { HeroSection } from "@/components/hero-section"
 import { ValuesSection } from "@/components/values-section"
 import { LocationSection } from "@/components/location-section"
 import { BookingSection } from "@/components/booking-section"
+import { LeaveReviewSection } from "@/components/leave-review-section"
 import { ReviewsSection } from "@/components/reviews-section"
 import { Footer } from "@/components/footer"
 import { ThemeApplier } from "@/components/theme-applier"
@@ -34,7 +35,24 @@ export default function Home() {
     <main className="min-h-screen">
       <ThemeApplier />
       <Navigation />
-      {config.sectionOrder.map((sectionId) => renderSection(sectionId))}
+      {config.sectionOrder.map((sectionId) => {
+        const section = renderSection(sectionId)
+        // Si es la sección de booking, agregar LeaveReviewSection y ReviewsSection después
+        if (sectionId === "booking") {
+          return (
+            <div key="booking-with-review">
+              {section}
+              <LeaveReviewSection />
+              <ReviewsSection />
+            </div>
+          )
+        }
+        // No mostrar ReviewsSection si ya está incluida después de booking
+        if (sectionId === "reviews") {
+          return null
+        }
+        return section
+      })}
       <Footer />
     </main>
   )

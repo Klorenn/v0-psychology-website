@@ -15,9 +15,9 @@ export function Footer() {
         <div className="grid md:grid-cols-3 gap-8 lg:gap-12 mb-16">
           {/* About Section */}
           <div className="space-y-4">
-            <h3 className="font-serif text-2xl text-foreground mb-4">Psicología</h3>
+            <h3 className="font-serif text-2xl text-foreground mb-4">Atención psicológica</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Espacio de bienestar emocional. Atención psicológica profesional con calidez y respeto.
+              Espacio de acompañamiento emocional con calidez, respeto y profesionalismo.
             </p>
           </div>
 

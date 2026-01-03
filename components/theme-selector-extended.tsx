@@ -15,6 +15,7 @@ import {
 } from "@/lib/themes-extended"
 import { useSiteConfig } from "@/lib/use-site-config"
 import { siteConfigStore } from "@/lib/site-config"
+import { authenticatedFetch } from "@/lib/api-client"
 
 export function ThemeSelectorExtended() {
   const { theme: currentTheme, setTheme } = useTheme()
@@ -67,8 +68,20 @@ export function ThemeSelectorExtended() {
     }
     siteConfigStore.set(newConfig)
     
+    // Aplicar inmediatamente si estamos en modo claro
+    if (!themeConfig.darkMode) {
+      const theme = getThemeById(themeId)
+      if (theme) {
+        const root = document.documentElement
+        root.style.setProperty("--accent", theme.colors.accent)
+        root.style.setProperty("--accent-foreground", theme.colors.accentForeground)
+        root.style.setProperty("--primary", theme.colors.primary)
+        root.style.setProperty("--primary-foreground", theme.colors.primaryForeground)
+      }
+    }
+    
     // Guardar en el servidor
-    fetch("/api/site-config", {
+    authenticatedFetch("/api/site-config", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newConfig),
@@ -87,8 +100,20 @@ export function ThemeSelectorExtended() {
     }
     siteConfigStore.set(newConfig)
     
+    // Aplicar inmediatamente si estamos en modo oscuro
+    if (themeConfig.darkMode) {
+      const theme = getThemeById(themeId)
+      if (theme) {
+        const root = document.documentElement
+        root.style.setProperty("--accent", theme.colors.accent)
+        root.style.setProperty("--accent-foreground", theme.colors.accentForeground)
+        root.style.setProperty("--primary", theme.colors.primary)
+        root.style.setProperty("--primary-foreground", theme.colors.primaryForeground)
+      }
+    }
+    
     // Guardar en el servidor
-    fetch("/api/site-config", {
+    authenticatedFetch("/api/site-config", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newConfig),
@@ -109,8 +134,19 @@ export function ThemeSelectorExtended() {
     setTheme(newDarkMode ? "dark" : "light")
     setActiveTab(newDarkMode ? "dark" : "light")
     
+    // Aplicar colores del tema correspondiente inmediatamente
+    const themeId = newDarkMode ? selectedDarkThemeId : selectedLightThemeId
+    const theme = getThemeById(themeId)
+    if (theme) {
+      const root = document.documentElement
+      root.style.setProperty("--accent", theme.colors.accent)
+      root.style.setProperty("--accent-foreground", theme.colors.accentForeground)
+      root.style.setProperty("--primary", theme.colors.primary)
+      root.style.setProperty("--primary-foreground", theme.colors.primaryForeground)
+    }
+    
     // Guardar en el servidor
-    fetch("/api/site-config", {
+    authenticatedFetch("/api/site-config", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newConfig),

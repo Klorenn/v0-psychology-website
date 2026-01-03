@@ -11,7 +11,7 @@ try {
   appointmentsPersistence = require("./appointments-persistence").appointmentsPersistence
 }
 
-export type AppointmentStatus = "pending" | "confirmed" | "cancelled" | "expired"
+export type AppointmentStatus = "pending" | "confirmed" | "cancelled" | "expired" | "attended"
 export type AppointmentType = "online" | "presencial"
 
 export interface Appointment {
@@ -36,6 +36,8 @@ export interface Appointment {
   paymentMethod?: "transfer" | "flow" | "webpay"
   mercadoPagoPaymentId?: string // Reutilizado para Flow payment ID y Transbank buy_order
   mercadoPagoPreferenceId?: string
+  calendarEventId?: string // ID del evento en Google Calendar
+  meetLink?: string // Link de Google Meet (solo para sesiones online)
 }
 
 // Global in-memory store
@@ -147,13 +149,36 @@ export const appointmentsStore = {
   async approve(id: string) {
     await initialize()
     appointments = appointments.map((a) => (a.id === id ? { ...a, status: "confirmed" as AppointmentStatus } : a))
+    
+    // Actualizar estado en BD directamente para asegurar consistencia
+    try {
+      const { updateAppointmentStatus } = await import("./db")
+      await updateAppointmentStatus(id, "confirmed")
+    } catch (error) {
+      console.error("Error actualizando estado en BD:", error)
+      // Continuar aunque falle, al menos se guardará en memoria
+    }
+    
     await persist()
     notifyListeners()
+    
+    // La automatización se maneja en la API route /api/appointments/update-status
+    // No se importa aquí para evitar problemas con módulos de Node.js en el cliente
   },
 
   async reject(id: string) {
     await initialize()
     appointments = appointments.map((a) => (a.id === id ? { ...a, status: "cancelled" as AppointmentStatus } : a))
+    
+    // Actualizar estado en BD directamente para asegurar consistencia
+    try {
+      const { updateAppointmentStatus } = await import("./db")
+      await updateAppointmentStatus(id, "cancelled")
+    } catch (error) {
+      console.error("Error actualizando estado en BD:", error)
+      // Continuar aunque falle, al menos se guardará en memoria
+    }
+    
     await persist()
     notifyListeners()
   },

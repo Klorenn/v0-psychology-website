@@ -15,9 +15,11 @@ interface FileUploadProps {
   error?: string
   required?: boolean
   isUploading?: boolean
+  label?: string
+  accept?: string
 }
 
-export function FileUpload({ value, onChange, error, required, isUploading = false }: FileUploadProps) {
+export function FileUpload({ value, onChange, error, required, isUploading = false, label, accept = ".jpg,.jpeg,.png,.pdf" }: FileUploadProps) {
   const [dragActive, setDragActive] = useState(false)
   const [localError, setLocalError] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -99,9 +101,11 @@ export function FileUpload({ value, onChange, error, required, isUploading = fal
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="receipt">
-        Comprobante de transferencia {required && <span className="text-destructive">*</span>}
-      </Label>
+      {label && (
+        <Label htmlFor="file-upload">
+          {label} {required && <span className="text-destructive">*</span>}
+        </Label>
+      )}
 
       {!value ? (
         <div
@@ -120,8 +124,8 @@ export function FileUpload({ value, onChange, error, required, isUploading = fal
           <input
             ref={fileInputRef}
             type="file"
-            id="receipt"
-            accept=".jpg,.jpeg,.png,.pdf"
+            id="file-upload"
+            accept={accept}
             onChange={handleChange}
             className="hidden"
             required={required}

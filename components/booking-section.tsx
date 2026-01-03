@@ -167,7 +167,7 @@ export function BookingSection() {
     try {
       const appointmentId = crypto.randomUUID()
       const amount = appointmentType === "online" ? 20000 : 27000
-      const description = `Sesión ${appointmentType === "online" ? "Online" : "Presencial"} - ${selectedDate.getDate()} de ${monthNames[selectedDate.getMonth()]} · ${selectedTime}`
+      const description = `Consulta ${appointmentType === "online" ? "Online" : "Presencial"} - ${selectedDate.getDate()} de ${monthNames[selectedDate.getMonth()]} · ${selectedTime}`
       
       // Formatear teléfono con código de país si es online
       let formattedPhone = patientPhone
@@ -242,7 +242,7 @@ export function BookingSection() {
     try {
       const appointmentId = crypto.randomUUID()
       const amount = appointmentType === "online" ? 20000 : 27000
-      const description = `Sesión ${appointmentType === "online" ? "Online" : "Presencial"} - ${selectedDate.getDate()} de ${monthNames[selectedDate.getMonth()]} · ${selectedTime}`
+      const description = `Consulta ${appointmentType === "online" ? "Online" : "Presencial"} - ${selectedDate.getDate()} de ${monthNames[selectedDate.getMonth()]} · ${selectedTime}`
       
       // Formatear teléfono con código de país si es online
       let formattedPhone = patientPhone
@@ -531,9 +531,9 @@ export function BookingSection() {
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-accent/10 mb-4">
             <CalendarDays className="w-6 h-6 text-accent" strokeWidth={1.5} />
           </div>
-          <h2 className="font-serif text-3xl md:text-4xl text-foreground mb-3">Agende su sesión</h2>
+          <h2 className="font-serif text-3xl md:text-4xl text-foreground mb-3">Agendar sesión</h2>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Seleccione una fecha y hora disponible para su primera consulta
+            Seleccione una fecha y hora disponible para coordinar su atención.
           </p>
         </div>
 
@@ -719,13 +719,13 @@ export function BookingSection() {
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl">Método de pago</DialogTitle>
             <DialogDescription>
-              Seleccione cómo desea realizar el pago de su sesión
+              Seleccione cómo desea realizar el pago de su consulta
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 mt-4">
             <div className="bg-muted/50 rounded-xl p-4 text-sm space-y-2">
-              <p className="font-medium text-foreground mb-1">Resumen de la cita</p>
+              <p className="font-medium text-foreground mb-1">Resumen de la consulta</p>
               <p className="text-muted-foreground">
                 {selectedDate?.getDate()} de {selectedDate && monthNames[selectedDate.getMonth()]} · {selectedTime}
               </p>
@@ -808,7 +808,7 @@ export function BookingSection() {
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl">Datos para transferencia</DialogTitle>
             <DialogDescription>
-              Realice la transferencia bancaria y envíe el comprobante por correo para confirmar su reserva
+              Realice la transferencia bancaria y envíe el comprobante por correo para confirmar su consulta
             </DialogDescription>
           </DialogHeader>
 
@@ -867,7 +867,7 @@ export function BookingSection() {
                           setValidationErrors((prev) => ({ ...prev, email: "Ingrese un correo electrónico válido" }))
                           return
                         }
-                        const subject = encodeURIComponent("Comprobante de transferencia - Reserva")
+                        const subject = encodeURIComponent("Comprobante de transferencia - Consulta")
                         const body = encodeURIComponent(`Hola ${patientName},\n\nAdjunto el comprobante de transferencia bancaria por el monto de $${getPrice()} CLP.\n\nGracias.`)
                         // Usar mailto: para abrir el cliente de correo del usuario
                         window.location.href = `mailto:ps.mariasanluis@gmail.com?subject=${subject}&body=${body}`
@@ -885,7 +885,7 @@ export function BookingSection() {
               <p className="text-amber-900 dark:text-amber-100 font-medium mb-1">⚠️ Importante</p>
               <p className="text-amber-800 dark:text-amber-200 text-xs">
                 Tiene un plazo de <strong>24 horas</strong> para enviar el comprobante de transferencia al correo indicado. 
-                Su reserva quedará pendiente hasta que recibamos el comprobante. 
+                Su consulta quedará pendiente hasta que recibamos el comprobante. 
                 Recibirá un correo de confirmación una vez que validemos el pago.
               </p>
             </div>
@@ -965,7 +965,7 @@ export function BookingSection() {
                 <InteractiveHoverButton
                   onClick={handleSubmitBooking}
                   disabled={!hasMadeTransfer || !acceptedTerms}
-                  text="Agendar"
+                  text="Confirmar consulta"
                   className="w-full sm:w-auto min-w-[200px] disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
@@ -1270,7 +1270,7 @@ export function BookingSection() {
                 <p className="text-sm text-destructive">{validationErrors.consultationReason}</p>
               )}
               <p className="text-xs text-muted-foreground">
-                Esta información me ayuda a preparar mejor su sesión y entender sus necesidades
+                Esta información me ayuda a preparar mejor su consulta y entender sus necesidades
               </p>
             </div>
 
@@ -1317,7 +1317,7 @@ export function BookingSection() {
             </div>
 
             <div className="bg-muted/50 rounded-xl p-4 text-sm space-y-2">
-              <p className="font-medium text-foreground mb-1">Resumen de la cita</p>
+              <p className="font-medium text-foreground mb-1">Resumen de la consulta</p>
               <p className="text-muted-foreground">
                 {selectedDate?.getDate()} de {selectedDate && monthNames[selectedDate.getMonth()]} · {selectedTime}
               </p>
@@ -1332,7 +1332,7 @@ export function BookingSection() {
             <div className="bg-muted/30 rounded-xl p-3 text-xs flex items-start gap-2">
               <Shield className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
               <p className="text-muted-foreground">
-                Sus datos son confidenciales y se utilizan únicamente para gestionar su cita. No comparto
+                Sus datos son confidenciales y se utilizan únicamente para gestionar su consulta. No comparto
                 información con terceros.
               </p>
             </div>
@@ -1357,7 +1357,7 @@ export function BookingSection() {
             </div>
             <DialogTitle className="font-serif text-2xl text-center">Solicitud enviada</DialogTitle>
             <DialogDescription className="text-center pt-2">
-              Su solicitud de cita para el{" "}
+              Su solicitud de consulta para el{" "}
               <span className="font-medium text-foreground">
                 {selectedDate?.getDate()} de {selectedDate && monthNames[selectedDate.getMonth()]}
               </span>{" "}
@@ -1370,8 +1370,8 @@ export function BookingSection() {
               <br />
               <br />
               <span className="text-sm">
-                La reserva se confirma una vez recibido el comprobante de transferencia. Recibirá un correo cuando
-                confirme su cita.
+                La consulta se confirma una vez recibido el comprobante de transferencia. Recibirá un correo cuando
+                se confirme su consulta.
               </span>
             </DialogDescription>
           </DialogHeader>

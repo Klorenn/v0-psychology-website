@@ -14,6 +14,7 @@ interface ThemeToggleProps {
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [isToggling, setIsToggling] = useState(false)
   const config = useSiteConfig()
 
   useEffect(() => {
@@ -21,6 +22,10 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
   }, [])
 
   const handleToggle = () => {
+    // Prevenir múltiples clics rápidos
+    if (isToggling) return
+    
+    setIsToggling(true)
     const newTheme = resolvedTheme === "dark" ? "light" : "dark"
     setTheme(newTheme)
     
@@ -46,7 +51,14 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newConfig),
-    }).catch(() => {})
+    })
+    .catch(() => {})
+    .finally(() => {
+      // Permitir otro toggle después de un breve delay
+      setTimeout(() => {
+        setIsToggling(false)
+      }, 300)
+    })
   }
 
   if (!mounted) {
@@ -62,22 +74,26 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
   return (
     <div
       className={cn(
-        "flex w-16 h-8 p-1 rounded-full cursor-pointer transition-all duration-300",
+        "flex w-16 h-8 p-1 rounded-full transition-all duration-300",
+        isToggling ? "cursor-wait opacity-70" : "cursor-pointer",
         isDark 
           ? "bg-zinc-950 border border-zinc-800" 
           : "bg-white border border-zinc-200",
         className
       )}
-      onClick={handleToggle}
+      onClick={isToggling ? undefined : handleToggle}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault()
-          handleToggle()
+          if (!isToggling) {
+            handleToggle()
+          }
         }
       }}
       aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+      aria-disabled={isToggling}
     >
       <div className="flex justify-between items-center w-full relative">
         <div

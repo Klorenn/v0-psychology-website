@@ -6,7 +6,10 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code")
   const error = searchParams.get("error")
   
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+  // Forzar uso de localhost para desarrollo (ignorar NEXT_PUBLIC_BASE_URL si apunta a localtunnel)
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.includes("localhost") 
+    ? process.env.NEXT_PUBLIC_BASE_URL 
+    : "http://localhost:3000"
   const dashboardUrl = `${baseUrl}/dashboard`
   
   if (error) {
@@ -19,7 +22,8 @@ export async function GET(request: NextRequest) {
   
   const clientId = process.env.GOOGLE_CLIENT_ID
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${baseUrl}/api/google-calendar/callback`
+  // Forzar uso de localhost para desarrollo
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3000/api/google-calendar/callback"
   
   if (!clientId || !clientSecret) {
     return NextResponse.redirect(`${dashboardUrl}?calendar_error=not_configured`)
@@ -71,14 +75,39 @@ export async function GET(request: NextRequest) {
       console.log(`✅ Email de Google Calendar vinculado: ${userEmail}`)
     }
     
-    // Obtener calendario principal
+    // Obtener calendario principal o buscar por email
     let calendarId = "primary"
     if (calendarResponse.ok) {
       const calendars = await calendarResponse.json()
-      const primaryCalendar = calendars.items?.find((cal: any) => cal.primary)
-      if (primaryCalendar) {
-        calendarId = primaryCalendar.id
+      const items = calendars.items || []
+      
+      // Buscar calendario por email del usuario primero
+      if (userEmail) {
+        const emailCalendar = items.find((cal: any) => 
+          cal.id === userEmail || 
+          cal.id?.includes(userEmail) ||
+          cal.summary === userEmail
+        )
+        if (emailCalendar) {
+          calendarId = emailCalendar.id
+          console.log(`✅ Calendario encontrado por email: ${calendarId}`)
+        }
       }
+      
+      // Si no se encontró por email, usar el calendario principal
+      if (calendarId === "primary") {
+        const primaryCalendar = items.find((cal: any) => cal.primary)
+        if (primaryCalendar) {
+          calendarId = primaryCalendar.id
+          console.log(`✅ Usando calendario principal: ${calendarId}`)
+        }
+      }
+      
+      // Log de todos los calendarios disponibles para debugging
+      console.log(`📋 Calendarios disponibles (${items.length}):`)
+      items.slice(0, 5).forEach((cal: any) => {
+        console.log(`   - ${cal.id} (${cal.summary}) ${cal.primary ? '[PRIMARY]' : ''}`)
+      })
     }
     
     // Guardar tokens con email del usuario

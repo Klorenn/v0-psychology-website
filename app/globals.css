@@ -225,11 +225,23 @@
   * {
     @apply border-border outline-ring/50;
   }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
   body {
     @apply bg-background text-foreground;
     /* Mejorar legibilidad en modo oscuro */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Scroll suave mejorado */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
   
   /* Optimizar contraste en modo oscuro */
@@ -255,5 +267,24 @@
   .dark select:focus {
     border-color: var(--ring);
     outline-color: var(--ring);
+  }
+
+  /* Mejorar contraste del hover en pestañas y botones */
+  /* Asegurar que el texto tenga buen contraste cuando se usa el color accent */
+  [class*="hover:text-accent"] {
+    /* El color accent ya está configurado para tener buen contraste */
+    /* Si el accent es claro, el sistema de temas ya tiene accent-foreground oscuro */
+    /* Si el accent es oscuro, el sistema de temas ya tiene accent-foreground claro */
+  }
+
+  /* Asegurar buen contraste en modo claro cuando el accent es muy claro */
+  :not(.dark) [class*="hover:text-accent"]:hover {
+    /* Si el accent es muy claro, usar un color más oscuro para mejor contraste */
+    filter: brightness(0.7) saturate(1.2);
+  }
+
+  /* En modo oscuro, el accent generalmente es más visible */
+  .dark [class*="hover:text-accent"]:hover {
+    filter: brightness(1.1) saturate(1.1);
   }
 }

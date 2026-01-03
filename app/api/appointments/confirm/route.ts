@@ -47,24 +47,18 @@ export async function GET(request: NextRequest) {
     if (action === "accept") {
       await appointmentsStore.approve(appointmentId)
       
-      // Crear evento en Google Calendar si está conectado
-      let meetLink: string | null = null
+      // Automatizar: crear evento en Google Calendar y enviar email
+      // Esta función es idempotente: si ya tiene evento, no hace nada
       try {
-        const { createCalendarEvent } = await import("@/lib/google-calendar")
-        const eventResult = await createCalendarEvent(appointment)
-        if (eventResult) {
-          console.log(`Evento creado en Google Calendar: ${eventResult.eventId}`)
-          meetLink = eventResult.meetLink
-        }
+        const { automateAppointmentConfirmation } = await import("@/lib/appointment-automation")
+        await automateAppointmentConfirmation(appointmentId)
       } catch (error) {
-        console.error("Error creando evento en Google Calendar:", error)
-        // No fallar si no se puede crear el evento
+        console.error("Error en automatización de cita:", error)
+        // No fallar si la automatización falla
       }
     } else {
       await appointmentsStore.reject(appointmentId)
     }
-
-      // NO enviar correo automáticamente - ahora es manual desde el dashboard
 
     // Redirigir a la página de confirmación
     return NextResponse.redirect(`${baseUrl}/confirm?action=${action}&id=${appointmentId}`)

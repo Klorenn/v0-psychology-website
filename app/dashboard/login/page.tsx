@@ -17,19 +17,26 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    setIsLoading(true)
 
     if (!email.trim() || !password.trim()) {
       setError("Por favor, completa todos los campos")
+      setIsLoading(false)
       return
     }
 
-    if (authStore.login(email.trim(), password)) {
+    const success = await authStore.login(email.trim(), password.trim())
+    
+    if (success) {
       router.push("/dashboard")
     } else {
       setError("Credenciales incorrectas. Verifica tu correo y contraseña.")
+      setIsLoading(false)
     }
   }
 
@@ -81,8 +88,12 @@ export default function LoginPage() {
 
           {error && <p className="text-destructive text-sm">{error}</p>}
 
-          <Button type="submit" className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-            Iniciar sesión
+          <Button 
+            type="submit" 
+            className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+            disabled={isLoading}
+          >
+            {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
           </Button>
         </form>
       </div>

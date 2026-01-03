@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { FileUpload } from "@/components/file-upload"
 import { Save, Upload, X, Plus, Trash2 } from "lucide-react"
 import type { SiteConfig } from "@/lib/site-config"
+import { authenticatedFetch } from "@/lib/api-client"
 
 interface SiteConfigEditorProps {
   onClose?: () => void
@@ -52,7 +53,7 @@ export function SiteConfigEditor({ onClose }: SiteConfigEditorProps) {
     setMessage(null)
     
     try {
-      const response = await fetch("/api/site-config", {
+      const response = await authenticatedFetch("/api/site-config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(config),
@@ -82,7 +83,7 @@ export function SiteConfigEditor({ onClose }: SiteConfigEditorProps) {
       formData.append("file", file)
       formData.append("type", type)
       
-      const response = await fetch("/api/upload-image", {
+      const response = await authenticatedFetch("/api/upload-image", {
         method: "POST",
         body: formData,
       })

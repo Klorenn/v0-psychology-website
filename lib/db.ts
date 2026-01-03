@@ -153,6 +153,8 @@ export async function saveAppointment(appointment: any) {
         receipt_mimetype: appointment.receiptMimetype || null,
         payment_method: appointment.paymentMethod || null,
         payment_id: appointment.mercadoPagoPaymentId || null,
+        calendar_event_id: appointment.calendarEventId || null,
+        meet_link: appointment.meetLink || null,
       }, {
         onConflict: "id",
       })
@@ -238,11 +240,13 @@ export async function getAllAppointments() {
           expiresAt: row.expires_at instanceof Date ? row.expires_at : new Date(row.expires_at),
           receiptUrl: row.receipt_url || undefined,
           receiptData: row.receipt_data || undefined,
-          receiptFilename: row.receipt_filename || undefined,
-          receiptMimetype: row.receipt_mimetype || undefined,
-          paymentMethod: row.payment_method || undefined,
-          mercadoPagoPaymentId: row.payment_id || undefined,
-        }
+      receiptFilename: row.receipt_filename || undefined,
+      receiptMimetype: row.receipt_mimetype || undefined,
+      paymentMethod: row.payment_method || undefined,
+      mercadoPagoPaymentId: row.payment_id || undefined,
+      calendarEventId: row.calendar_event_id || undefined,
+      meetLink: row.meet_link || undefined,
+    }
       } catch (mapError) {
         console.error(`Error mapeando cita ${row.id}:`, mapError)
         return null
@@ -262,6 +266,66 @@ export async function getAllAppointments() {
   } catch (error: any) {
     console.error("❌ Error obteniendo citas:", error)
     return []
+  }
+}
+
+/**
+ * Obtener una cita por ID
+ */
+export async function getAppointmentById(id: string) {
+  const supabase = getSupabaseClient()
+  
+  if (!supabase) {
+    return null
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("id", id)
+      .single()
+    
+    if (error) {
+      if (error.code === "PGRST116") {
+        // No encontrado
+        return null
+      }
+      console.error("Error obteniendo cita:", error)
+      return null
+    }
+    
+    if (!data) {
+      return null
+    }
+    
+    return {
+      id: data.id,
+      patientName: data.patient_name,
+      patientEmail: data.patient_email,
+      patientPhone: data.patient_phone,
+      consultationReason: data.consultation_reason || undefined,
+      emergencyContactRelation: data.emergency_contact_relation || undefined,
+      emergencyContactName: data.emergency_contact_name || undefined,
+      emergencyContactPhone: data.emergency_contact_phone || undefined,
+      appointmentType: data.appointment_type,
+      date: data.date instanceof Date ? data.date : new Date(data.date),
+      time: data.time,
+      status: data.status,
+      createdAt: data.created_at instanceof Date ? data.created_at : new Date(data.created_at),
+      expiresAt: data.expires_at instanceof Date ? data.expires_at : new Date(data.expires_at),
+      receiptUrl: data.receipt_url || undefined,
+      receiptData: data.receipt_data || undefined,
+      receiptFilename: data.receipt_filename || undefined,
+      receiptMimetype: data.receipt_mimetype || undefined,
+      paymentMethod: data.payment_method || undefined,
+      mercadoPagoPaymentId: data.payment_id || undefined,
+      calendarEventId: data.calendar_event_id || undefined,
+      meetLink: data.meet_link || undefined,
+    }
+  } catch (error) {
+    console.error("Error obteniendo cita por ID:", error)
+    return null
   }
 }
 
@@ -298,6 +362,55 @@ export async function updateAppointmentStatus(id: string, status: string) {
     return true
   } catch (error) {
     console.error("❌ Error actualizando estado:", error)
+    return false
+  }
+}
+
+/**
+ * Actualizar información de Google Calendar en una cita
+ */
+export async function updateAppointmentCalendarInfo(
+  id: string,
+  calendarEventId: string,
+  meetLink: string | null
+): Promise<boolean> {
+  const supabase = getSupabaseClient()
+  
+  if (!supabase) {
+    return false
+  }
+  
+  try {
+    console.log(`🔄 Actualizando información de Google Calendar para cita ${id}...`)
+    const updateData: any = {
+      calendar_event_id: calendarEventId,
+    }
+    
+    if (meetLink) {
+      updateData.meet_link = meetLink
+    }
+    
+    const { data, error } = await supabase
+      .from("appointments")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+    
+    if (error) {
+      console.error("❌ Error actualizando información de Google Calendar:", error)
+      return false
+    }
+    
+    if (data && data.length > 0) {
+      console.log(`✅ Información de Google Calendar actualizada: ${data[0].id}`)
+    } else {
+      console.warn(`⚠️ No se encontró la cita ${id} para actualizar`)
+      return false
+    }
+    
+    return true
+  } catch (error) {
+    console.error("❌ Error actualizando información de Google Calendar:", error)
     return false
   }
 }
@@ -477,11 +590,45 @@ export async function deleteGoogleTokens() {
 }
 
 /**
+ * Eliminar todas las citas de la base de datos
+ */
+export async function deleteAllAppointments() {
+  const supabase = getSupabaseClient()
+  
+  if (!supabase) {
+    console.error("❌ No se pudo obtener cliente de Supabase para eliminar citas")
+    return { success: false, error: "No hay conexión a la base de datos" }
+  }
+  
+  try {
+    const { error } = await supabase
+      .from("appointments")
+      .delete()
+      .neq("id", "") // Eliminar todas las filas
+    
+    if (error) {
+      console.error("❌ Error eliminando citas:", error)
+      return { success: false, error: error.message }
+    }
+    
+    console.log("✅ Todas las citas eliminadas correctamente")
+    return { success: true }
+  } catch (error) {
+    console.error("❌ Error eliminando citas:", error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Error desconocido" 
+    }
+  }
+}
+
+/**
  * Guardar una reseña en la base de datos
  */
 export async function saveReview(review: {
   id: string
   content: string
+  rating?: number
   authorName?: string
   authorPillName?: string
   isAnonymous: boolean
@@ -491,15 +638,19 @@ export async function saveReview(review: {
   const supabase = getSupabaseClient()
   
   if (!supabase) {
+    console.error("❌ No se pudo obtener cliente de Supabase para guardar reseña")
     return false
   }
   
   try {
-    const { error } = await supabase
+    console.log(`💾 Intentando guardar reseña ${review.id}...`)
+    
+    const { data, error } = await supabase
       .from("reviews")
       .upsert({
         id: review.id,
         content: review.content,
+        rating: review.rating || null,
         author_name: review.authorName || null,
         author_pill_name: review.authorPillName || null,
         is_anonymous: review.isAnonymous,
@@ -512,13 +663,44 @@ export async function saveReview(review: {
       })
     
     if (error) {
-      console.error("Error guardando reseña:", error)
+      console.error("❌ Error guardando reseña:", {
+        error: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        reviewId: review.id,
+      })
+      
+      // Si es error de tabla no existe
+      if (error.code === "42P01" || error.message?.includes("does not exist") || error.message?.includes("relation")) {
+        console.error("⚠️ La tabla 'reviews' no existe. Por favor, ejecuta el script SQL en Supabase SQL Editor")
+        throw new Error("La tabla 'reviews' no existe. Por favor, ejecuta el script SQL en Supabase SQL Editor")
+      }
+      
+      // Si es error de permisos (RLS)
+      if (error.code === "42501" || error.message?.includes("permission denied") || error.message?.includes("row-level security")) {
+        console.error("⚠️ Error de permisos. Verifica las políticas RLS (Row Level Security) en Supabase")
+        throw new Error("Error de permisos. Verifica las políticas RLS en Supabase para la tabla 'reviews'")
+      }
+      
       return false
     }
     
+    console.log(`✅ Reseña ${review.id} guardada exitosamente en Supabase`)
     return true
-  } catch (error) {
-    console.error("Error guardando reseña:", error)
+  } catch (error: any) {
+    console.error("❌ Error guardando reseña:", {
+      error: error?.message || error,
+      stack: error?.stack,
+      reviewId: review.id,
+    })
+    
+    // Si es error de conexión
+    if (error?.message?.includes("fetch failed") || error?.message?.includes("connection") || error?.message?.includes("ECONNREFUSED")) {
+      console.error("⚠️ Error de conexión a la base de datos. Verifica las variables de entorno.")
+      throw new Error("Error de conexión a la base de datos. Verifica las variables de entorno.")
+    }
+    
     return false
   }
 }
@@ -547,6 +729,7 @@ export async function getAllReviews() {
     return (data || []).map((row: any) => ({
       id: row.id,
       content: row.content,
+      rating: row.rating || undefined,
       authorName: row.author_name || undefined,
       authorPillName: row.author_pill_name || undefined,
       isAnonymous: row.is_anonymous,
@@ -597,6 +780,34 @@ export async function updateReviewStatus(id: string, status: "approved" | "rejec
     return true
   } catch (error) {
     console.error("Error actualizando estado de reseña:", error)
+    return false
+  }
+}
+
+/**
+ * Eliminar una reseña
+ */
+export async function deleteReview(id: string) {
+  const supabase = getSupabaseClient()
+  
+  if (!supabase) {
+    return false
+  }
+  
+  try {
+    const { error } = await supabase
+      .from("reviews")
+      .delete()
+      .eq("id", id)
+    
+    if (error) {
+      console.error("Error eliminando reseña:", error)
+      return false
+    }
+    
+    return true
+  } catch (error) {
+    console.error("Error eliminando reseña:", error)
     return false
   }
 }

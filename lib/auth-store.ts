@@ -1,30 +1,37 @@
-// ⚠️ IMPORTANTE: Configura estas variables en .env.local
-// NEXT_PUBLIC_ADMIN_EMAIL=tu-email@ejemplo.com
-// NEXT_PUBLIC_ADMIN_PASSWORD=tu-contraseña-segura
-// Nota: Estas variables son públicas (NEXT_PUBLIC_*) y se exponen al cliente.
-// Para mayor seguridad, considera implementar autenticación en el servidor.
-const ADMIN_CREDENTIALS = {
-  email: process.env.NEXT_PUBLIC_ADMIN_EMAIL || "",
-  password: process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "",
+// Sistema de autenticación mejorado usando JWT del servidor
+// Las credenciales ahora están en el servidor (ADMIN_EMAIL, ADMIN_PASSWORD)
+// y se usa JWT para mantener la sesión
+
+const AUTH_KEY = "psychology_dashboard_auth_token"
+
+// Función para verificar token con el servidor
+async function verifyTokenWithServer(token: string): Promise<boolean> {
+  try {
+    const response = await fetch("/api/auth/verify", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    return response.ok && (await response.json()).authenticated === true
+  } catch {
+    return false
+  }
 }
 
-const AUTH_KEY = "psychology_dashboard_auth"
-
 // Función para obtener el estado inicial desde localStorage
-function getInitialAuthState(): boolean {
+async function getInitialAuthState(): Promise<boolean> {
   if (typeof window === "undefined") return false
   try {
-    const stored = localStorage.getItem(AUTH_KEY)
-    if (stored) {
-      const { email, timestamp } = JSON.parse(stored)
-      // Verificar que sea el email correcto y que no haya expirado (24 horas)
-      const isExpired = Date.now() - timestamp > 24 * 60 * 60 * 1000
-      if (email === ADMIN_CREDENTIALS.email && !isExpired) {
-        return true
-      } else {
-        // Limpiar si está expirado o incorrecto
+    const token = localStorage.getItem(AUTH_KEY)
+    if (token) {
+      // Verificar con el servidor
+      const isValid = await verifyTokenWithServer(token)
+      if (!isValid) {
         localStorage.removeItem(AUTH_KEY)
+        return false
       }
+      return true
     }
   } catch {
     // Si hay error al leer, asumir no autenticado
@@ -36,117 +43,112 @@ function getInitialAuthState(): boolean {
 let isAuthenticated = false
 let authListeners: (() => void)[] = []
 let isInitialized = false
+let isInitializing = false
 
 // Inicializar inmediatamente si estamos en el cliente
 // Esto se ejecuta ANTES de cualquier componente React
 if (typeof window !== "undefined") {
-  try {
-    const stored = localStorage.getItem(AUTH_KEY)
-    if (stored) {
-      const { email, timestamp } = JSON.parse(stored)
-      const isExpired = Date.now() - timestamp > 24 * 60 * 60 * 1000
-      if (email === ADMIN_CREDENTIALS.email && !isExpired) {
-        isAuthenticated = true
-      } else {
-        // Limpiar si está expirado o incorrecto
-        localStorage.removeItem(AUTH_KEY)
-        isAuthenticated = false
-      }
-    }
-    isInitialized = true
-  } catch (error) {
-    console.error("Error inicializando autenticación:", error)
-    isAuthenticated = false
-    isInitialized = true
-  }
+  isInitializing = true
+  getInitialAuthState()
+    .then((authenticated) => {
+      isAuthenticated = authenticated
+      isInitialized = true
+      isInitializing = false
+      notifyAuthListeners()
+    })
+    .catch((error) => {
+      console.error("Error inicializando autenticación:", error)
+      isAuthenticated = false
+      isInitialized = true
+      isInitializing = false
+      notifyAuthListeners()
+    })
 }
 
 export const authStore = {
   isAuthenticated: () => {
-    // Verificar localStorage cada vez por si cambió en otra pestaña
-    if (typeof window !== "undefined") {
-      try {
-        const stored = getInitialAuthState()
-        if (stored !== isAuthenticated) {
-          isAuthenticated = stored
-          notifyAuthListeners()
-        }
-      } catch (error) {
-        // Si hay error, mantener el estado actual
-        console.error("Error verificando autenticación:", error)
-      }
-    }
     return isAuthenticated
   },
   
-  // Método para restaurar sesión sin contraseña (útil después de redirecciones)
-  // Este método sincroniza el estado interno con localStorage
-  restoreSession: () => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem(AUTH_KEY)
-        if (stored) {
-          const { email, timestamp } = JSON.parse(stored)
-          const isExpired = Date.now() - timestamp > 24 * 60 * 60 * 1000
-          if (email === ADMIN_CREDENTIALS.email && !isExpired) {
-            // Restaurar el estado interno solo si cambió
-            if (!isAuthenticated) {
-              isAuthenticated = true
-              notifyAuthListeners()
-            }
-            return true
-          } else {
-            // Limpiar si está expirado o incorrecto
-            localStorage.removeItem(AUTH_KEY)
-            if (isAuthenticated) {
-              isAuthenticated = false
-              notifyAuthListeners()
-            }
-          }
-        } else {
-          if (isAuthenticated) {
-            isAuthenticated = false
-            notifyAuthListeners()
-          }
-        }
-      } catch (error) {
-        console.error("Error restaurando sesión:", error)
+  // Método para restaurar sesión verificando con el servidor
+  restoreSession: async (): Promise<boolean> => {
+    if (typeof window === "undefined") return false
+    
+    try {
+      const token = localStorage.getItem(AUTH_KEY)
+      if (!token) {
         if (isAuthenticated) {
           isAuthenticated = false
           notifyAuthListeners()
         }
+        return false
       }
+
+      const isValid = await verifyTokenWithServer(token)
+      if (isValid) {
+        if (!isAuthenticated) {
+          isAuthenticated = true
+          notifyAuthListeners()
+        }
+        return true
+      } else {
+        localStorage.removeItem(AUTH_KEY)
+        if (isAuthenticated) {
+          isAuthenticated = false
+          notifyAuthListeners()
+        }
+        return false
+      }
+    } catch (error) {
+      console.error("Error restaurando sesión:", error)
+      if (isAuthenticated) {
+        isAuthenticated = false
+        notifyAuthListeners()
+      }
+      return false
     }
-    return isAuthenticated
   },
   
   // Verificar si está inicializado
   isInitialized: () => isInitialized,
 
-  login: (email: string, password: string): boolean => {
-    // Debug: verificar si las credenciales están configuradas (solo en desarrollo)
-    if (process.env.NODE_ENV === "development") {
-      console.log("Admin email configurado:", ADMIN_CREDENTIALS.email ? "Sí" : "No")
-      console.log("Admin password configurado:", ADMIN_CREDENTIALS.password ? "Sí" : "No")
-    }
-    
-    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
-      isAuthenticated = true
-      // Guardar en localStorage
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(AUTH_KEY, JSON.stringify({
-            email: ADMIN_CREDENTIALS.email,
-            timestamp: Date.now(),
-          }))
-        } catch {
-          // Si no se puede guardar, continuar de todas formas
-        }
+  login: async (email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (!response.ok) {
+        return false
       }
-      notifyAuthListeners()
-      return true
+
+      const data = await response.json()
+      if (data.success && data.token) {
+        // Guardar token en localStorage
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(AUTH_KEY, data.token)
+          } catch {
+            // Si no se puede guardar, continuar de todas formas
+          }
+        }
+        isAuthenticated = true
+        notifyAuthListeners()
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error("Error en login:", error)
+      return false
     }
-    return false
+  },
+
+  // Obtener token para usar en requests
+  getToken: (): string | null => {
+    if (typeof window === "undefined") return null
+    return localStorage.getItem(AUTH_KEY)
   },
 
   logout: () => {

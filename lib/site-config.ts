@@ -8,12 +8,14 @@ export interface SiteConfig {
     imagePosition: string // CSS object-position value (e.g., "center 25%", "center top", "50% 30%")
     ctaPrimary: string
     ctaSecondary: string
+    aboutMe?: string // Información sobre María para el modal "Conozca más"
   }
   
   // Navigation
   navigation: {
     logo: string
     logoText: string
+    order?: string[] // Orden de elementos: ["menu-items", "separator", "social-icons", "booking-button", "theme-toggle"]
   }
   
   // Values Section
@@ -64,52 +66,91 @@ export interface SiteConfig {
     subject: string // Asunto del email cuando se confirma una cita
     body: string // Cuerpo del email (puede incluir variables como {{patientName}}, {{date}}, {{time}}, {{meetLink}})
   }
+
+  // Cursos y Diplomados
+  courses?: {
+    enabled: boolean
+    items: Array<{
+      id: string
+      title: string
+      institution?: string
+      year?: string
+      description?: string
+      certificateUrl?: string
+    }>
+  }
+
+  // Recomendaciones de Lecturas
+  readingRecommendations?: {
+    enabled: boolean
+    items: Array<{
+      id: string
+      title: string
+      author?: string
+      description?: string
+      coverImage?: string
+      link?: string
+    }>
+  }
+
+  // Imágenes Adicionales
+  additionalImages?: {
+    enabled: boolean
+    images: Array<{
+      id: string
+      url: string
+      alt: string
+      caption?: string
+    }>
+  }
 }
 
 const defaultConfig: SiteConfig = {
   hero: {
     subtitle: "Psicóloga Clínica",
-    title: "Soy María Jesús Chavez San Luis",
-    description: "Le acompaño en su proceso de crecimiento personal con calidez, respeto y profesionalismo. Juntos encontraremos el camino hacia una vida más plena.",
+    title: "Psicóloga clínica",
+    description: "Le acompaño en su proceso terapéutico con calidez, respeto y profesionalismo, ofreciendo un espacio seguro para su bienestar emocional.",
     profileImage: "/images/whatsapp-20image-202026-01-01-20at-2019.jpeg",
     imagePosition: "center 25%",
-    ctaPrimary: "Agende su primera sesión",
-    ctaSecondary: "Conozca más",
+    ctaPrimary: "Agendar sesión",
+    ctaSecondary: "Sobre mí",
+    aboutMe: "Soy María Jesús Chávez San Luis, psicóloga clínica. Mi trabajo se centra en acompañar procesos emocionales desde una mirada respetuosa, cercana y profesional, considerando la historia y el ritmo de cada persona.",
   },
   navigation: {
     logo: "",
     logoText: "María San Luis",
+    order: ["menu-items", "separator", "social-icons", "booking-button", "theme-toggle"],
   },
   values: {
-    subtitle: "Mi enfoque",
-    title: "Valores que guían mi práctica",
-    description: "Cada sesión está fundamentada en principios que priorizan su bienestar integral",
+    subtitle: "Enfoque terapéutico",
+    title: "Mi enfoque terapéutico",
+    description: "Cada proceso terapéutico se basa en principios que priorizan el bienestar emocional, la singularidad y la confidencialidad.",
     items: [
       {
         icon: "Heart",
         title: "Empatía",
-        description: "Escucha activa y comprensión genuina de su experiencia única.",
+        description: "Escucha activa y comprensión respetuosa de su experiencia personal.",
       },
       {
         icon: "Shield",
         title: "Confianza",
-        description: "Un vínculo seguro donde usted puede ser completamente usted mismo.",
+        description: "Un espacio seguro donde puede expresarse con libertad y autenticidad.",
       },
       {
         icon: "Users",
         title: "Acompañamiento",
-        description: "Caminaremos juntos en cada paso de su proceso de sanación.",
+        description: "Trabajo colaborativo en su proceso terapéutico, respetando su ritmo y necesidades.",
       },
       {
         icon: "Lock",
         title: "Confidencialidad",
-        description: "Absoluta privacidad y respeto por su historia personal.",
+        description: "Privacidad y confidencialidad absolutas, garantizadas por el código deontológico profesional.",
       },
     ],
   },
   location: {
-    subtitle: "Encuéntrame",
-    title: "Ubicación de la consulta",
+    subtitle: "Consulta presencial",
+    title: "Consulta presencial",
     address: "Temuco",
     city: "Temuco",
     country: "Chile",
@@ -131,29 +172,40 @@ const defaultConfig: SiteConfig = {
     darkMode: false,
   },
   emailTemplate: {
-    subject: "Confirmación de Sesión - {{date}}",
+    subject: "Confirmación de Consulta - {{date}}",
     body: [
-      "Hola {{patientName}},",
+      "Estimado/a {{patientName}},",
       "",
-      "Espero que estés teniendo un lindo día.",
-      "Quería escribirte para confirmarte con cariño los detalles de tu próxima sesión:",
+      "Le confirmo los detalles de su consulta programada:",
       "",
-      "🗓 **{{date}}**",
-      "⏰ **{{time}} hrs**",
+      "🗓 **Fecha:** {{date}}",
+      "⏰ **Hora:** {{time}} hrs",
       "📍 **Modalidad:** {{appointmentType}}",
       "💰 **Valor:** $" + "{{price}} CLP",
       "{{#if meetLink}}",
       "🔗 **Enlace de Google Meet:** {{meetLink}}",
       "{{/if}}",
       "",
-      "Para cuidar tu espacio y dejar la hora reservada, te agradeceré realizar el pago por **transferencia bancaria antes de la sesión**.",
+      "Para confirmar su reserva, le solicito realizar el pago mediante **transferencia bancaria antes de la fecha de la consulta**.",
       "",
-      "Si necesitas decirme algo antes de venir, tienes alguna inquietud o te surge la necesidad de reprogramar, puedes escribirme con total confianza. Estoy aquí para acompañarte 🌿",
+      "Si tiene alguna consulta, necesita modificar la fecha u hora, o requiere información adicional, puede contactarme con confianza.",
       "",
-      "Un abrazo grande,",
+      "Saludos cordiales,",
       "**María Jesús Chávez**",
       "Psicóloga Clínica"
     ].join("\n"),
+  },
+  courses: {
+    enabled: false,
+    items: [],
+  },
+  readingRecommendations: {
+    enabled: false,
+    items: [],
+  },
+  additionalImages: {
+    enabled: false,
+    images: [],
   },
 }
 

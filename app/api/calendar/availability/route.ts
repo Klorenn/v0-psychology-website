@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getAvailableSlots } from "@/lib/google-calendar"
+import { getAvailableSlots } from "@/lib/googleCalendar"
 import { appointmentsStore } from "@/lib/appointments-store"
 
 // Default available time slots (9am-12pm and 3pm-6pm)

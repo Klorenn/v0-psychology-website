@@ -6,10 +6,13 @@ import { Input } from "@/components/ui/input"
 import { FileUpload } from "@/components/file-upload"
 import { Save, X, Edit2, GripVertical, Eye, EyeOff } from "lucide-react"
 import type { SiteConfig } from "@/lib/site-config"
+import { authenticatedFetch } from "@/lib/api-client"
 import { HeroSection } from "@/components/hero-section"
 import { ValuesSection } from "@/components/values-section"
 import { LocationSection } from "@/components/location-section"
 import { BookingSection } from "@/components/booking-section"
+import { ReviewsSection } from "@/components/reviews-section"
+import { LeaveReviewSection } from "@/components/leave-review-section"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 
@@ -40,7 +43,7 @@ export function VisualPageEditor({ config, onConfigChange, onSave }: VisualPageE
       formData.append("file", file)
       formData.append("type", type)
       
-      const response = await fetch("/api/upload-image", {
+      const response = await authenticatedFetch("/api/upload-image", {
         method: "POST",
         body: formData,
       })
@@ -144,6 +147,20 @@ export function VisualPageEditor({ config, onConfigChange, onSave }: VisualPageE
             }}
           >
             <BookingSection />
+            <LeaveReviewSection />
+            <ReviewsSection />
+          </div>
+        )
+      case "reviews":
+        return (
+          <div
+            key="reviews"
+            className="relative"
+            onClick={() => {
+              // Reviews section is not editable for now
+            }}
+          >
+            <ReviewsSection />
           </div>
         )
       default:
@@ -169,10 +186,10 @@ export function VisualPageEditor({ config, onConfigChange, onSave }: VisualPageE
         </Button>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         {/* Main Preview Area */}
-        <div className={`flex-1 overflow-auto bg-background ${previewMode ? "" : "border-r border-border"}`}>
-          <div className="relative">
+        <div className={`flex-1 overflow-auto bg-background ${isEditing ? "border-r border-border" : ""}`}>
+          <div className="relative min-h-full">
             {/* Navigation - Always visible */}
             <div
               className={`relative cursor-pointer transition-all mb-4 ${
@@ -202,8 +219,8 @@ export function VisualPageEditor({ config, onConfigChange, onSave }: VisualPageE
 
         {/* Editing Panel */}
         {isEditing && selectedSection && (
-          <div className="w-96 border-l border-border bg-card overflow-y-auto">
-            <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between z-10">
+          <div className="w-96 border-l border-border bg-card overflow-y-auto flex-shrink-0">
+            <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between z-10 shadow-sm">
             <h3 className="font-serif text-lg text-foreground">
               Editando: {selectedSection === "hero" ? "Hero" : selectedSection === "values" ? "Valores" : selectedSection === "location" ? "Ubicación" : "Navegación"}
             </h3>
@@ -236,6 +253,21 @@ export function VisualPageEditor({ config, onConfigChange, onSave }: VisualPageE
                     onChange={(e) => onConfigChange({ ...config, hero: { ...config.hero, description: e.target.value } })}
                     className="w-full min-h-[100px] rounded-md border border-input bg-transparent px-3 py-2 text-sm"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Información "Conozca más"
+                    <span className="text-xs text-muted-foreground ml-2">(aparece en el modal)</span>
+                  </label>
+                  <textarea
+                    value={config.hero.aboutMe || ""}
+                    onChange={(e) => onConfigChange({ ...config, hero: { ...config.hero, aboutMe: e.target.value } })}
+                    placeholder="Información detallada sobre ti que aparecerá cuando los usuarios hagan clic en 'Conozca más'..."
+                    className="w-full min-h-[200px] rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Este texto aparecerá en el modal cuando los usuarios hagan clic en el botón "Conozca más"
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">Foto de Perfil</label>

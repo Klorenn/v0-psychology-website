@@ -1,25 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server"
-import nodemailer from "nodemailer"
+import { Resend } from "resend"
 import { validateEmail, validatePhone, validateName, sanitizeName, sanitizePhone, sanitizeString } from "@/lib/validation"
 import { appointmentsStore } from "@/lib/appointments-store"
+import { getSantiagoDateTime } from "@/lib/timezone-service"
 
-const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || ""
+// Email del administrador que recibirá las notificaciones de nuevas citas
+// IMPORTANTE: En Resend sandbox, solo puedes enviar a emails verificados
+// Ve a https://resend.com/emails y verifica tu email en "Test Emails"
+const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || process.env.ADMIN_EMAIL || "ps.mariasanluis@gmail.com"
 
-// Configuración del transporter de nodemailer
-// Nota: En producción, configura estas variables de entorno:
-// - SMTP_HOST (ej: smtp.gmail.com)
-// - SMTP_PORT (ej: 587)
-// - SMTP_USER (tu correo)
-// - SMTP_PASS (tu contraseña de aplicación)
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "587"),
-  secure: false, // true para 465, false para otros puertos
-  auth: {
-    user: process.env.SMTP_USER || RECIPIENT_EMAIL,
-    pass: process.env.SMTP_PASS || "",
-  },
-})
+// Inicializar Resend
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 function isValidUUID(uuid: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -27,6 +18,7 @@ function isValidUUID(uuid: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  // Este endpoint es público - los usuarios pueden crear citas sin autenticación
   try {
     const body = await request.json()
     let { appointmentId, patientName, patientEmail, patientPhone, consultationReason, emergencyContactRelation, emergencyContactName, emergencyContactPhone, appointmentType, date, time } = body
@@ -304,15 +296,6 @@ Para aceptar la cita, visita: ${acceptUrl}
 Para rechazar la cita, visita: ${rejectUrl}
     `
 
-    // Enviar el correo
-    const mailOptions = {
-      from: process.env.SMTP_USER || RECIPIENT_EMAIL,
-      to: RECIPIENT_EMAIL,
-      subject: `Nueva Solicitud de Cita - ${patientName}`,
-      text: emailText,
-      html: emailHtml,
-    }
-
     // IMPORTANTE: Guardar la cita en la base de datos PRIMERO
     try {
       console.log("💾 Guardando cita en base de datos...", appointmentId)
@@ -329,7 +312,7 @@ Para rechazar la cita, visita: ${rejectUrl}
         date: appointmentDate,
         time,
         status: "pending",
-        createdAt: new Date(),
+        createdAt: await getSantiagoDateTime(),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas para enviar el comprobante
         paymentMethod: "transfer",
       })
@@ -347,37 +330,66 @@ Para rechazar la cita, visita: ${rejectUrl}
       )
     }
 
-    // Si no hay configuración SMTP, solo loguear (para desarrollo)
-    if (!process.env.SMTP_PASS) {
-      console.log("=== EMAIL (SMTP no configurado) ===")
-      console.log("To:", RECIPIENT_EMAIL)
-      console.log("Subject:", mailOptions.subject)
-      console.log("Body:", emailText)
-      console.log("================================")
+    // Enviar email usando Resend
+    const fromEmail = process.env.EMAIL_FROM || "onboarding@resend.dev"
+    
+    if (!RECIPIENT_EMAIL || RECIPIENT_EMAIL === "") {
+      console.warn("[Email] RECIPIENT_EMAIL no configurado, no se enviará email de notificación")
       return NextResponse.json({ 
         success: true, 
-        message: "Cita guardada. Email logged (SMTP not configured)",
+        message: "Cita guardada. Email no enviado (RECIPIENT_EMAIL no configurado)",
         appointmentId 
       })
     }
 
     try {
-      await transporter.sendMail(mailOptions)
-      console.log("✅ Email enviado correctamente para cita:", appointmentId)
-    } catch (smtpError) {
-      console.error("❌ Error SMTP:", smtpError)
-      // Si falla el envío SMTP pero la cita ya está guardada, retornar éxito parcial
+      if (!process.env.RESEND_API_KEY) {
+        console.warn("[Email] RESEND_API_KEY no configurado, no se enviará email")
+        return NextResponse.json({ 
+          success: true, 
+          message: "Cita guardada. Email no enviado (RESEND_API_KEY no configurado)",
+          appointmentId 
+        })
+      }
+
+      console.log(`[Email] Enviando notificación a: ${RECIPIENT_EMAIL}`)
+      console.log(`[Email] Desde: ${fromEmail}`)
+      
+      const emailResult = await resend.emails.send({
+        from: fromEmail,
+        to: RECIPIENT_EMAIL,
+        subject: `Nueva Solicitud de Cita - ${patientName}`,
+        html: emailHtml,
+        text: emailText,
+      })
+
+      console.log(`[Email] ✅ Email enviado correctamente. ID: ${emailResult.data?.id}`)
+      console.log(`[Email] 📧 Destinatario: ${RECIPIENT_EMAIL}`)
+      
+      // Advertencia si está en sandbox
+      if (fromEmail === "onboarding@resend.dev") {
+        console.warn(`[Email] ⚠️ Estás usando Resend en modo sandbox. Asegúrate de que ${RECIPIENT_EMAIL} esté verificado en https://resend.com/emails`)
+      }
+    } catch (emailError: any) {
+      console.error("[Email] ❌ Error enviando email de notificación:", emailError)
+      
+      // Mensaje más específico según el tipo de error
+      let errorMessage = "Error al enviar email"
+      if (emailError?.message?.includes("not verified") || emailError?.message?.includes("not in allowed list")) {
+        errorMessage = `El email ${RECIPIENT_EMAIL} no está verificado en Resend. Ve a https://resend.com/emails y agrégalo a "Test Emails" para modo sandbox.`
+        console.error(`[Email] ⚠️ ${errorMessage}`)
+      } else if (emailError?.message) {
+        errorMessage = emailError.message
+      }
+      
+      // Si falla el envío pero la cita ya está guardada, retornar éxito parcial
       // El email se puede enviar manualmente después
-      console.log("=== EMAIL (falló SMTP, pero cita guardada) ===")
-      console.log("To:", RECIPIENT_EMAIL)
-      console.log("Subject:", mailOptions.subject)
-      console.log("Body:", emailText)
-      console.log("================================")
       return NextResponse.json({ 
         success: true, 
-        message: "Cita guardada correctamente. Error al enviar email (puedes enviarlo manualmente desde el dashboard)",
+        message: "Cita guardada correctamente. Error al enviar email (puedes ver la cita en el dashboard)",
         appointmentId,
-        emailError: true
+        emailError: true,
+        emailErrorMessage: errorMessage
       })
     }
 

@@ -6,6 +6,7 @@ export interface GoogleCalendarTokens {
   refreshToken: string
   expiryDate: number
   calendarId?: string
+  userEmail?: string
 }
 
 // Funciones que se exportan - detectan automáticamente si usar DB o JSON

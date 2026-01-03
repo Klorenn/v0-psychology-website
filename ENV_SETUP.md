@@ -29,9 +29,13 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_URL=https://[tu-proyecto].supabase.co
 
 # ===================================
-# 📧 SMTP Configuration (Nodemailer)
+# 📧 Email Configuration
 # ===================================
-# Para enviar correos electrónicos de confirmación
+# Resend (Recomendado para emails automáticos)
+RESEND_API_KEY=re_xxxxx
+RESEND_FROM_EMAIL=noreply@tudominio.com
+
+# SMTP (Nodemailer) - Opcional, para emails manuales desde dashboard
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=ps.msanluis@gmail.com
@@ -65,10 +69,13 @@ TRANSBANK_API_KEY=tu_api_key
 TRANSBANK_ENVIRONMENT=integration
 
 # ===================================
-# 🔐 Dashboard Admin
+# 🔐 Dashboard Admin (Solo servidor - NO usar NEXT_PUBLIC_*)
 # ===================================
-NEXT_PUBLIC_ADMIN_EMAIL=ps.msanluis@gmail.com
-NEXT_PUBLIC_ADMIN_PASSWORD=misakki12_
+# IMPORTANTE: Estas variables NO deben tener el prefijo NEXT_PUBLIC_*
+# porque contienen información sensible que no debe exponerse al cliente
+ADMIN_EMAIL=tu-email@ejemplo.com
+ADMIN_PASSWORD=tu-contraseña-segura-aqui
+JWT_SECRET=tu-secret-key-muy-largo-y-aleatorio-minimo-32-caracteres
 
 # ===================================
 # 📧 Email Configuration
@@ -193,6 +200,34 @@ GOOGLE_CLIENT_ID=123456789-abcdefg.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-abcdefghijklmnop
 GOOGLE_REDIRECT_URI=https://tu-dominio.vercel.app/api/google-calendar/callback
 ```
+
+### Paso 5: Configurar Service Account (para automatización)
+1. En Google Cloud Console → "APIs y servicios" → "Credenciales"
+2. "+ CREAR CREDENCIALES" → "Cuenta de servicio"
+3. Nombre: "Calendar Bot"
+4. Crear y descargar la clave JSON
+5. Copia el **email de la Service Account** (ej: `calendarbot@project.iam.gserviceaccount.com`)
+
+### Paso 6: Compartir calendario con Service Account
+1. Ve a [Google Calendar](https://calendar.google.com/)
+2. Configuración → "Configuración de compartir"
+3. En "Compartir con personas específicas", agrega el **email de la Service Account**
+4. Permisos: **"Hacer cambios en eventos"**
+5. Guarda los cambios
+
+### Variables adicionales para Service Account:
+```env
+# Service Account (para automatización de eventos)
+GOOGLE_PROJECT_ID=tu-project-id
+GOOGLE_CLIENT_EMAIL=calendarbot@project.iam.gserviceaccount.com
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+GOOGLE_CALENDAR_EMAIL=ps.mariasanluis@gmail.com
+```
+
+**⚠️ IMPORTANTE:** 
+- `GOOGLE_CALENDAR_EMAIL` debe ser el email del calendario donde se crearán los eventos
+- El usuario debe compartir su calendario con la Service Account (Paso 6)
+- El nombre del evento será: **"Sesión psicológica"**
 
 ---
 

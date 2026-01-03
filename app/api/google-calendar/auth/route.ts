@@ -2,7 +2,15 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/google-calendar/callback`
+  // Forzar uso de localhost para desarrollo (ignorar NEXT_PUBLIC_BASE_URL si apunta a localtunnel)
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3000/api/google-calendar/callback"
+  
+  // Log para debugging
+  console.log(`[OAuth] 🔍 Configuración de OAuth:`)
+  console.log(`[OAuth]   Client ID: ${clientId ? clientId.substring(0, 20) + '...' : 'NO CONFIGURADO'}`)
+  console.log(`[OAuth]   Redirect URI: ${redirectUri}`)
+  console.log(`[OAuth]   NEXT_PUBLIC_BASE_URL: ${process.env.NEXT_PUBLIC_BASE_URL || 'NO CONFIGURADO'}`)
+  console.log(`[OAuth]   GOOGLE_REDIRECT_URI: ${process.env.GOOGLE_REDIRECT_URI || 'NO CONFIGURADO (usando fallback)'}`)
   
   if (!clientId) {
     return NextResponse.json(
@@ -21,6 +29,10 @@ export async function GET(request: NextRequest) {
     access_type: "offline",
     prompt: "consent",
   })}`
+  
+  console.log(`[OAuth] 🔗 URL de autorización generada`)
+  console.log(`[OAuth] ⚠️  Asegúrate de que esta URI esté en Google Cloud Console:`)
+  console.log(`[OAuth]    ${redirectUri}`)
   
   return NextResponse.redirect(authUrl)
 }

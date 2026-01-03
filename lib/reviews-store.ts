@@ -7,6 +7,7 @@ export type ReviewStatus = "pending" | "approved" | "rejected"
 export interface Review {
   id: string
   content: string
+  rating?: number // Calificación de 1 a 5 estrellas
   authorName?: string // Opcional: solo si el usuario eligió mostrar nombre
   authorPillName?: string // Opcional: nombre de píldora (ej: "María P.")
   isAnonymous: boolean

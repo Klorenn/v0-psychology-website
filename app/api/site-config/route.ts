@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { siteConfigStore, type SiteConfig } from "@/lib/site-config"
 import { siteConfigPersistence } from "@/lib/site-config-persistence"
+import { requireAuth } from "@/lib/api-auth"
 
 // Inicializar configuración al cargar
 let initialized = false
@@ -23,7 +24,42 @@ export async function GET() {
   try {
     await initializeConfig()
     const config = siteConfigStore.get()
-    return NextResponse.json(config)
+    const defaultConfig = siteConfigStore.getDefault()
+    
+    // Fusionar con valores por defecto para asegurar que siempre tenga los textos correctos
+    const mergedConfig: SiteConfig = {
+      ...defaultConfig,
+      ...config,
+      hero: {
+        ...defaultConfig.hero,
+        ...config.hero,
+        // Asegurar valores correctos - usar defaults si están vacíos o son los antiguos
+        title: (config.hero?.title && config.hero.title !== "Soy María Jesús Chavez San Luis") 
+          ? config.hero.title 
+          : defaultConfig.hero.title,
+        ctaPrimary: config.hero?.ctaPrimary || defaultConfig.hero.ctaPrimary,
+        ctaSecondary: (config.hero?.ctaSecondary && config.hero.ctaSecondary !== "Conozca más")
+          ? config.hero.ctaSecondary
+          : defaultConfig.hero.ctaSecondary,
+        description: config.hero?.description || defaultConfig.hero.description,
+        aboutMe: config.hero?.aboutMe || defaultConfig.hero.aboutMe,
+      },
+      values: {
+        ...defaultConfig.values,
+        ...config.values,
+        title: config.values?.title || defaultConfig.values.title,
+        subtitle: config.values?.subtitle || defaultConfig.values.subtitle,
+        description: config.values?.description || defaultConfig.values.description,
+      },
+      location: {
+        ...defaultConfig.location,
+        ...config.location,
+        subtitle: config.location?.subtitle || defaultConfig.location.subtitle,
+        title: config.location?.title || defaultConfig.location.title,
+      },
+    }
+    
+    return NextResponse.json(mergedConfig)
   } catch (error) {
     console.error("Error obteniendo configuración:", error)
     return NextResponse.json(
@@ -34,9 +70,23 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  // Verificar autenticación
+  const authResult = await requireAuth(request)
+  if (!authResult.authenticated) {
+    return authResult.response!
+  }
+
   try {
     await initializeConfig()
     const body = await request.json()
+    
+    if (!body || typeof body !== "object") {
+      return NextResponse.json(
+        { error: "Cuerpo de la solicitud inválido" },
+        { status: 400 }
+      )
+    }
+    
     const config = body as SiteConfig
     
     // Validar estructura básica con mensajes más específicos
@@ -95,6 +145,17 @@ export async function POST(request: NextRequest) {
     }
     if (typeof config.theme.darkMode !== "boolean") {
       config.theme.darkMode = false
+    }
+    
+    // Asegurar que navigation.order tenga valores por defecto si faltan
+    if (!config.navigation.order || !Array.isArray(config.navigation.order)) {
+      config.navigation.order = [
+        "menu-items",
+        "separator",
+        "social-icons",
+        "booking-button",
+        "theme-toggle",
+      ]
     }
     
     // Guardar en persistencia

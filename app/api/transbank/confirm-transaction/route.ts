@@ -87,18 +87,8 @@ async function confirmTransaction(tokenWs: string | null, appointmentId: string 
         }
       }
 
-      // Crear evento en Google Calendar si está conectado
-      try {
-        const { createCalendarEvent } = await import("@/lib/google-calendar")
-        const eventResult = await createCalendarEvent(appointment)
-        if (eventResult) {
-          console.log(`Evento creado en Google Calendar: ${eventResult.eventId}`)
-        }
-      } catch (error) {
-        console.error("Error creando evento en Google Calendar:", error)
-      }
-
-      // El correo ahora se envía manualmente desde el dashboard
+      // La automatización se ejecuta automáticamente en appointmentsStore.approve()
+      // No es necesario llamarla aquí porque approve() ya la invoca
 
       // Redirigir a página de éxito
       return NextResponse.redirect(

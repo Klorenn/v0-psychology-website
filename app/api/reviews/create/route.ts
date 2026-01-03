@@ -8,12 +8,20 @@ const MAX_LENGTH = 1000 // Máximo de caracteres (aproximadamente 3 párrafos)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { content, authorName, authorPillName, isAnonymous } = body
+    const { content, rating, authorName, authorPillName, isAnonymous } = body
 
     // Validaciones
     if (!content || typeof content !== "string") {
       return NextResponse.json(
         { error: "El contenido de la reseña es requerido" },
+        { status: 400 }
+      )
+    }
+
+    // Validar rating
+    if (!rating || typeof rating !== "number" || rating < 1 || rating > 5) {
+      return NextResponse.json(
+        { error: "Debes seleccionar una calificación de 1 a 5 estrellas" },
         { status: 400 }
       )
     }
@@ -57,6 +65,7 @@ export async function POST(request: NextRequest) {
     const review = {
       id: reviewId,
       content: content.trim(),
+      rating: rating,
       authorName: isAnonymous ? undefined : (authorName?.trim() || undefined),
       authorPillName: isAnonymous ? undefined : (authorPillName?.trim() || undefined),
       isAnonymous: isAnonymous !== false, // Por defecto anónimo
@@ -64,24 +73,44 @@ export async function POST(request: NextRequest) {
       createdAt: new Date(),
     }
 
-    const success = await saveReview(review)
+    try {
+      const success = await saveReview(review)
 
-    if (!success) {
+      if (!success) {
+        console.error("❌ No se pudo guardar la reseña en la base de datos")
+        return NextResponse.json(
+          { error: "Error al guardar la reseña en la base de datos. Por favor, verifica que la tabla 'reviews' exista y tenga los permisos correctos." },
+          { status: 500 }
+        )
+      }
+
+      console.log(`✅ Reseña ${reviewId} creada exitosamente`)
+      return NextResponse.json({
+        success: true,
+        message: "Reseña enviada correctamente. Será revisada antes de publicarse.",
+        reviewId,
+      })
+    } catch (dbError: any) {
+      console.error("❌ Error de base de datos al guardar reseña:", dbError)
+      
+      // Si el error tiene un mensaje específico, usarlo
+      if (dbError?.message) {
+        return NextResponse.json(
+          { error: dbError.message },
+          { status: 500 }
+        )
+      }
+      
       return NextResponse.json(
-        { error: "Error al guardar la reseña" },
+        { error: "Error al guardar la reseña en la base de datos. Por favor, verifica la configuración." },
         { status: 500 }
       )
     }
-
-    return NextResponse.json({
-      success: true,
-      message: "Reseña enviada correctamente. Será revisada antes de publicarse.",
-      reviewId,
-    })
   } catch (error) {
-    console.error("Error creando reseña:", error)
+    console.error("❌ Error creando reseña:", error)
+    const errorMessage = error instanceof Error ? error.message : "Error interno del servidor"
     return NextResponse.json(
-      { error: "Error interno del servidor" },
+      { error: errorMessage },
       { status: 500 }
     )
   }
