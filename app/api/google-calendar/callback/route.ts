@@ -46,8 +46,20 @@ export async function GET(request: NextRequest) {
   }
   
   if (!code) {
-    // Si no hay código ni error, puede ser que Google redirigió sin parámetros
-    // Esto puede pasar si la URI de redirección no coincide exactamente
+    // Si no hay código ni error, puede ser:
+    // 1. Se visitó directamente la URL sin parámetros (no es un callback de Google)
+    // 2. Google redirigió sin parámetros (URI no coincide)
+    
+    // Si no hay parámetros en absoluto, es una visita directa
+    const hasAnyParams = searchParams.toString().length > 0
+    
+    if (!hasAnyParams) {
+      // Visita directa - mostrar mensaje informativo
+      console.log(`[OAuth Callback] ℹ️  Visita directa al callback sin parámetros`)
+      return NextResponse.redirect(`${dashboardUrl}?calendar_info=${encodeURIComponent('Para conectar Google Calendar, ve al dashboard y haz clic en "Vincular con Google Calendar"')}`)
+    }
+    
+    // Si hay parámetros pero no code ni error, es un problema de configuración
     console.error(`[OAuth Callback] ❌ No se recibió código de autorización`)
     console.error(`[OAuth Callback] ❌ Esto generalmente significa que la URI de redirección en Google Cloud Console no coincide`)
     console.error(`[OAuth Callback] ❌ URI esperada: ${process.env.GOOGLE_REDIRECT_URI || `${baseUrl}/api/google-calendar/callback`}`)

@@ -54,6 +54,15 @@ export function GoogleCalendarSettings() {
     const urlParams = new URLSearchParams(window.location.search)
     const calendarConnected = urlParams.get("calendar_connected")
     const calendarError = urlParams.get("calendar_error")
+    const calendarInfo = urlParams.get("calendar_info")
+    
+    if (calendarInfo) {
+      setSuccess(decodeURIComponent(calendarInfo))
+      setIsLoading(false)
+      // Limpiar URL
+      window.history.replaceState({}, "", window.location.pathname)
+      return
+    }
     
     if (calendarConnected === "success") {
       setSuccess("Google Calendar vinculado correctamente")
