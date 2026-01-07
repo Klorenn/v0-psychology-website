@@ -44,6 +44,7 @@ import { ConfigSection } from "@/components/ui/config-section"
 import { AboutMeEditor } from "@/components/about-me-editor"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { FreeSlotManager } from "@/components/free-slot-manager"
+import { GoogleCalendarSettings } from "@/components/google-calendar-settings"
 import { useSiteConfig } from "@/lib/use-site-config"
 import { siteConfigStore } from "@/lib/site-config"
 import { authenticatedFetch } from "@/lib/api-client"
@@ -1040,6 +1041,13 @@ export default function DashboardPage() {
               onConfigChange={handleConfigChange}
               onSave={handleSaveConfig}
             />
+            </ConfigSection>
+
+            <ConfigSection
+              title="Google Calendar"
+              icon={<Calendar className="w-5 h-5" />}
+            >
+              <GoogleCalendarSettings />
             </ConfigSection>
 
             <ConfigSection
