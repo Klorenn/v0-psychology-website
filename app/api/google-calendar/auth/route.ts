@@ -2,15 +2,37 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID
-  // Forzar uso de localhost para desarrollo (ignorar NEXT_PUBLIC_BASE_URL si apunta a localtunnel)
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3000/api/google-calendar/callback"
+  
+  // Determinar la URI de redirección:
+  // 1. Usar GOOGLE_REDIRECT_URI si está configurado (preferido)
+  // 2. Si no, construir usando NEXT_PUBLIC_BASE_URL
+  // 3. Solo usar localhost como último recurso (desarrollo local)
+  let redirectUri = process.env.GOOGLE_REDIRECT_URI
+  
+  if (!redirectUri) {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+    redirectUri = `${baseUrl}/api/google-calendar/callback`
+  }
   
   // Log para debugging
   console.log(`[OAuth] 🔍 Configuración de OAuth:`)
   console.log(`[OAuth]   Client ID: ${clientId ? clientId.substring(0, 20) + '...' : 'NO CONFIGURADO'}`)
   console.log(`[OAuth]   Redirect URI: ${redirectUri}`)
   console.log(`[OAuth]   NEXT_PUBLIC_BASE_URL: ${process.env.NEXT_PUBLIC_BASE_URL || 'NO CONFIGURADO'}`)
-  console.log(`[OAuth]   GOOGLE_REDIRECT_URI: ${process.env.GOOGLE_REDIRECT_URI || 'NO CONFIGURADO (usando fallback)'}`)
+  console.log(`[OAuth]   GOOGLE_REDIRECT_URI: ${process.env.GOOGLE_REDIRECT_URI || 'NO CONFIGURADO (construyendo desde baseUrl)'}`)
+  
+  // Validar que no estemos usando localhost en producción
+  if (redirectUri.includes('localhost') && process.env.VERCEL) {
+    console.error(`[OAuth] ❌ ERROR: Se está usando localhost en producción!`)
+    console.error(`[OAuth] ❌ Configura GOOGLE_REDIRECT_URI o NEXT_PUBLIC_BASE_URL en Vercel`)
+    return NextResponse.json(
+      { 
+        error: "Configuración incorrecta: Se está usando localhost en producción. " +
+               "Configura GOOGLE_REDIRECT_URI o NEXT_PUBLIC_BASE_URL en las variables de entorno de Vercel."
+      },
+      { status: 500 }
+    )
+  }
   
   if (!clientId) {
     return NextResponse.json(

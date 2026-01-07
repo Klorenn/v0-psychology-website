@@ -10,8 +10,24 @@ export async function GET(request: NextRequest) {
   const fullUrl = request.nextUrl.toString()
   const allParams = Object.fromEntries(searchParams.entries())
   
-  // Usar NEXT_PUBLIC_BASE_URL si está configurado, sino usar localhost para desarrollo
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+  // Determinar baseUrl:
+  // 1. Usar NEXT_PUBLIC_BASE_URL si está configurado (preferido para producción)
+  // 2. Si estamos en Vercel, intentar obtener de headers
+  // 3. Solo usar localhost como último recurso (desarrollo local)
+  let baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+  
+  if (!baseUrl && process.env.VERCEL) {
+    // En Vercel, podemos obtener el host de los headers
+    const host = request.headers.get('host')
+    if (host) {
+      baseUrl = `https://${host}`
+    }
+  }
+  
+  if (!baseUrl) {
+    baseUrl = "http://localhost:3000"
+  }
+  
   const dashboardUrl = `${baseUrl}/dashboard`
   
   // Log detallado para debugging
@@ -45,7 +61,12 @@ export async function GET(request: NextRequest) {
   
   const clientId = process.env.GOOGLE_CLIENT_ID
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${baseUrl}/api/google-calendar/callback`
+  
+  // Determinar redirectUri (debe coincidir con el que se usó en /auth)
+  let redirectUri = process.env.GOOGLE_REDIRECT_URI
+  if (!redirectUri) {
+    redirectUri = `${baseUrl}/api/google-calendar/callback`
+  }
   
   console.log(`[OAuth Callback]   Client ID: ${clientId ? clientId.substring(0, 20) + '...' : 'NO CONFIGURADO'}`)
   console.log(`[OAuth Callback]   Client Secret: ${clientSecret ? 'CONFIGURADO' : 'NO CONFIGURADO'}`)
