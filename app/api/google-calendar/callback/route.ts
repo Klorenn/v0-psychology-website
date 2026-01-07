@@ -6,11 +6,16 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code")
   const error = searchParams.get("error")
   
-  // Forzar uso de localhost para desarrollo (ignorar NEXT_PUBLIC_BASE_URL si apunta a localtunnel)
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL?.includes("localhost") 
-    ? process.env.NEXT_PUBLIC_BASE_URL 
-    : "http://localhost:3000"
+  // Usar NEXT_PUBLIC_BASE_URL si está configurado, sino usar localhost para desarrollo
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
   const dashboardUrl = `${baseUrl}/dashboard`
+  
+  // Log para debugging
+  console.log(`[OAuth Callback] 🔍 Configuración:`)
+  console.log(`[OAuth Callback]   Base URL: ${baseUrl}`)
+  console.log(`[OAuth Callback]   Dashboard URL: ${dashboardUrl}`)
+  console.log(`[OAuth Callback]   Code recibido: ${code ? 'Sí' : 'No'}`)
+  console.log(`[OAuth Callback]   Error recibido: ${error || 'No'}`)
   
   if (error) {
     return NextResponse.redirect(`${dashboardUrl}?calendar_error=${encodeURIComponent(error)}`)
@@ -22,10 +27,14 @@ export async function GET(request: NextRequest) {
   
   const clientId = process.env.GOOGLE_CLIENT_ID
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET
-  // Forzar uso de localhost para desarrollo
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3000/api/google-calendar/callback"
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || `${baseUrl}/api/google-calendar/callback`
+  
+  console.log(`[OAuth Callback]   Client ID: ${clientId ? clientId.substring(0, 20) + '...' : 'NO CONFIGURADO'}`)
+  console.log(`[OAuth Callback]   Client Secret: ${clientSecret ? 'CONFIGURADO' : 'NO CONFIGURADO'}`)
+  console.log(`[OAuth Callback]   Redirect URI: ${redirectUri}`)
   
   if (!clientId || !clientSecret) {
+    console.error(`[OAuth Callback] ❌ Faltan credenciales: Client ID=${!!clientId}, Secret=${!!clientSecret}`)
     return NextResponse.redirect(`${dashboardUrl}?calendar_error=not_configured`)
   }
   
@@ -47,7 +56,18 @@ export async function GET(request: NextRequest) {
     
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json().catch(() => ({}))
-      console.error("Error intercambiando código:", errorData)
+      console.error(`[OAuth Callback] ❌ Error intercambiando código:`, {
+        status: tokenResponse.status,
+        statusText: tokenResponse.statusText,
+        error: errorData
+      })
+      
+      // Si es un error de redirect_uri_mismatch, dar un mensaje más específico
+      if (errorData.error === "redirect_uri_mismatch") {
+        console.error(`[OAuth Callback] ❌ redirect_uri_mismatch - La URI debe ser exactamente: ${redirectUri}`)
+        return NextResponse.redirect(`${dashboardUrl}?calendar_error=${encodeURIComponent('redirect_uri_mismatch')}`)
+      }
+      
       return NextResponse.redirect(`${dashboardUrl}?calendar_error=token_exchange_failed`)
     }
     
@@ -119,9 +139,14 @@ export async function GET(request: NextRequest) {
       userEmail: userEmail,
     })
     
+    console.log(`[OAuth Callback] ✅ Tokens guardados exitosamente para: ${userEmail}`)
     return NextResponse.redirect(`${dashboardUrl}?calendar_connected=success`)
   } catch (error) {
-    console.error("Error en callback de Google Calendar:", error)
+    console.error(`[OAuth Callback] ❌ Error en callback de Google Calendar:`, error)
+    if (error instanceof Error) {
+      console.error(`[OAuth Callback] ❌ Mensaje: ${error.message}`)
+      console.error(`[OAuth Callback] ❌ Stack: ${error.stack}`)
+    }
     return NextResponse.redirect(`${dashboardUrl}?calendar_error=server_error`)
   }
 }

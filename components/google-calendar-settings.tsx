@@ -80,6 +80,12 @@ export function GoogleCalendarSettings() {
         setError("Error del servidor al procesar la autorización. Por favor, intente nuevamente.")
       } else if (errorMsg === "access_denied") {
         setError("Acceso denegado. Asegúrese de que su email esté agregado como usuario de prueba en Google Cloud Console.")
+      } else if (errorMsg === "redirect_uri_mismatch") {
+        setError(
+          "Error de configuración: La URI de redirección no coincide. " +
+          "Verifica que en Google Cloud Console hayas agregado exactamente: " +
+          "https://psicoterapiamaria.online/api/google-calendar/callback"
+        )
       } else {
         setError(`Error: ${errorMsg}`)
       }
