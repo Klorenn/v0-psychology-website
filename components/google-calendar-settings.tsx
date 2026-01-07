@@ -72,8 +72,18 @@ export function GoogleCalendarSettings() {
       const errorMsg = decodeURIComponent(calendarError)
       if (errorMsg === "not_configured") {
         setError("Google Calendar no está configurado. Configure GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en las variables de entorno.")
-      } else if (errorMsg === "no_code") {
-        setError("No se recibió el código de autorización de Google.")
+      } else if (errorMsg.startsWith("no_code")) {
+        // El mensaje puede incluir información adicional después de |
+        const parts = errorMsg.split("|")
+        if (parts.length > 1) {
+          setError(parts[1])
+        } else {
+          setError(
+            "No se recibió el código de autorización de Google. " +
+            "Esto generalmente significa que la URI de redirección en Google Cloud Console no coincide exactamente con la configurada. " +
+            "Verifica que hayas agregado: https://psicoterapiamaria.online/api/google-calendar/callback"
+          )
+        }
       } else if (errorMsg === "token_exchange_failed") {
         setError("Error al intercambiar el código de autorización. Por favor, intente nuevamente.")
       } else if (errorMsg === "server_error") {

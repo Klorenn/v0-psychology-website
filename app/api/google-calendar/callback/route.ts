@@ -6,23 +6,41 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code")
   const error = searchParams.get("error")
   
+  // Obtener la URL completa de la request para debugging
+  const fullUrl = request.nextUrl.toString()
+  const allParams = Object.fromEntries(searchParams.entries())
+  
   // Usar NEXT_PUBLIC_BASE_URL si está configurado, sino usar localhost para desarrollo
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
   const dashboardUrl = `${baseUrl}/dashboard`
   
-  // Log para debugging
+  // Log detallado para debugging
   console.log(`[OAuth Callback] 🔍 Configuración:`)
+  console.log(`[OAuth Callback]   URL completa recibida: ${fullUrl}`)
+  console.log(`[OAuth Callback]   Todos los parámetros:`, allParams)
   console.log(`[OAuth Callback]   Base URL: ${baseUrl}`)
   console.log(`[OAuth Callback]   Dashboard URL: ${dashboardUrl}`)
   console.log(`[OAuth Callback]   Code recibido: ${code ? 'Sí' : 'No'}`)
   console.log(`[OAuth Callback]   Error recibido: ${error || 'No'}`)
+  console.log(`[OAuth Callback]   NEXT_PUBLIC_BASE_URL: ${process.env.NEXT_PUBLIC_BASE_URL || 'NO CONFIGURADO'}`)
   
   if (error) {
+    console.error(`[OAuth Callback] ❌ Error de Google: ${error}`)
     return NextResponse.redirect(`${dashboardUrl}?calendar_error=${encodeURIComponent(error)}`)
   }
   
   if (!code) {
-    return NextResponse.redirect(`${dashboardUrl}?calendar_error=no_code`)
+    // Si no hay código ni error, puede ser que Google redirigió sin parámetros
+    // Esto puede pasar si la URI de redirección no coincide exactamente
+    console.error(`[OAuth Callback] ❌ No se recibió código de autorización`)
+    console.error(`[OAuth Callback] ❌ Esto generalmente significa que la URI de redirección en Google Cloud Console no coincide`)
+    console.error(`[OAuth Callback] ❌ URI esperada: ${process.env.GOOGLE_REDIRECT_URI || `${baseUrl}/api/google-calendar/callback`}`)
+    console.error(`[OAuth Callback] ❌ URL recibida: ${fullUrl}`)
+    
+    // Construir mensaje de error más descriptivo
+    const expectedUri = process.env.GOOGLE_REDIRECT_URI || `${baseUrl}/api/google-calendar/callback`
+    const errorMsg = `no_code|Verifica que en Google Cloud Console hayas agregado exactamente: ${expectedUri}`
+    return NextResponse.redirect(`${dashboardUrl}?calendar_error=${encodeURIComponent(errorMsg)}`)
   }
   
   const clientId = process.env.GOOGLE_CLIENT_ID
