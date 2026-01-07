@@ -23,8 +23,10 @@ const SESSION_DURATION = 24 * 60 * 60 * 1000 // 24 horas
 // Credenciales de admin - solo en servidor
 // Normalizar y trim para evitar problemas con espacios
 // FALLBACK: Si no hay variables de entorno, usar valores hardcodeados
-const DEFAULT_ADMIN_EMAIL = "ps.msanluis@gmail.com"
-const DEFAULT_ADMIN_PASSWORD = "misakki12_"
+// ⚠️ IMPORTANTE: En producción, siempre usa variables de entorno
+// Estos valores son solo para desarrollo local
+const DEFAULT_ADMIN_EMAIL = "admin@example.com"
+const DEFAULT_ADMIN_PASSWORD = "change-me-in-production"
 
 export const ADMIN_CREDENTIALS = {
   email: (process.env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL).trim(),

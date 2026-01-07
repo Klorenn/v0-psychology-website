@@ -7,7 +7,7 @@ import { getSantiagoDateTime } from "@/lib/timezone-service"
 // Email del administrador que recibirá las notificaciones de nuevas citas
 // IMPORTANTE: En Resend sandbox, solo puedes enviar a emails verificados
 // Ve a https://resend.com/emails y verifica tu email en "Test Emails"
-const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || process.env.ADMIN_EMAIL || "ps.mariasanluis@gmail.com"
+const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || process.env.ADMIN_EMAIL || "admin@example.com"
 
 // Lazy initialization de Resend para evitar errores durante el build
 function getResendInstance() {

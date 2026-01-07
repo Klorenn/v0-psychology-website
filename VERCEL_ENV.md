@@ -30,8 +30,8 @@ https://supabase.com/dashboard/project/[tu-proyecto]/settings/api
 ### 🔐 Autenticación (Dashboard)
 
 ```env
-ADMIN_EMAIL=ps.msanluis@gmail.com
-ADMIN_PASSWORD=misakki12_
+ADMIN_EMAIL=tu_email_admin_aqui
+ADMIN_PASSWORD=tu_password_seguro_aqui
 JWT_SECRET=tu-secret-key-muy-largo-y-aleatorio-minimo-32-caracteres-aqui
 ```
 
@@ -47,7 +47,7 @@ openssl rand -base64 32
 ```env
 RESEND_API_KEY=re_xxxxx
 EMAIL_FROM=onboarding@resend.dev
-RECIPIENT_EMAIL=ps.mariasanluis@gmail.com
+RECIPIENT_EMAIL=tu_email_para_recibir_notificaciones_aqui
 ```
 
 **Obtén tu API key desde:**
@@ -76,8 +76,8 @@ NEXT_PUBLIC_BASE_URL=https://tu-dominio.vercel.app
 Solo si quieres usar Google Calendar para crear eventos automáticamente.
 
 ```env
-GOOGLE_CLIENT_ID=380731710574-uu8dk31s2fablto0h9t2j8os752umukr.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
+GOOGLE_CLIENT_ID=tu_client_id_de_google_cloud_console.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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loud_console
 GOOGLE_REDIRECT_URI=https://tu-dominio.vercel.app/api/google-calendar/callback
 ```
 
@@ -129,7 +129,7 @@ TRANSBANK_ENVIRONMENT=integration
 ### 📧 Contacto
 
 ```env
-NEXT_PUBLIC_CONTACT_EMAIL=ps.mariasanluis@gmail.com
+NEXT_PUBLIC_CONTACT_EMAIL=tu_email_de_contacto_aqui
 ```
 
 Email de contacto que se muestra en el sitio web.
