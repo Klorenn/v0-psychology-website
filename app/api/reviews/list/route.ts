@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     // Filtrar por estado si se especifica
     if (status) {
-      reviews = allReviews.filter(r => r.status === status)
+      reviews = allReviews.filter((r: any) => r.status === status)
     }
 
     return NextResponse.json({

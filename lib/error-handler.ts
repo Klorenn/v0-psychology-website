@@ -62,8 +62,8 @@ export function createErrorResponse(error: unknown, isProduction: boolean = proc
   const apiError = handleApiError(error, isProduction)
   return {
     error: apiError.message,
-    ...(apiError.code && { code: apiError.code }),
-    ...(apiError.details && { details: apiError.details }),
+    ...(apiError.code ? { code: apiError.code } : {}),
+    ...(apiError.details !== undefined ? { details: apiError.details } : {}),
   }
 }
 

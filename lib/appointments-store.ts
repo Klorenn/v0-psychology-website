@@ -62,7 +62,7 @@ async function initialize(force = false) {
     console.log(`✅ Cargadas ${loadedAppointments.length} citas desde persistencia`)
     
     if (loadedAppointments.length > 0) {
-      console.log("📋 Detalles de citas cargadas:", loadedAppointments.map(a => ({
+      console.log("📋 Detalles de citas cargadas:", loadedAppointments.map((a: any) => ({
         id: a.id,
         name: a.patientName,
         status: a.status,

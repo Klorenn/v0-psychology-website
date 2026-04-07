@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { appointmentsStore } from "@/lib/appointments-store"
 
-export async function GET(request: NextRequest, { params }: { params: { appointmentId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ appointmentId: string }> }) {
   try {
-    const appointmentId = params.appointmentId
+    const { appointmentId } = await params
 
     if (!appointmentId) {
       return NextResponse.json({ error: "ID de cita requerido" }, { status: 400 })

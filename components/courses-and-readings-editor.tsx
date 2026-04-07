@@ -373,7 +373,7 @@ export function CoursesAndReadingsEditor({
           {(config.additionalImages?.images || []).slice(0, 3).map((image) => (
             <div key={image.id} className="p-4 border border-border rounded-lg space-y-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-foreground">Imagen {config.additionalImages?.images.indexOf(image) + 1}</span>
+                <span className="text-sm font-medium text-foreground">Imagen {(config.additionalImages?.images ?? []).indexOf(image) + 1}</span>
                 <Button
                   variant="ghost"
                   size="sm"

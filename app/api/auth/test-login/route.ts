@@ -53,8 +53,8 @@ export async function POST(request: Request) {
         emailMatch,
         passwordMatch,
         emailCharCodes: {
-          input: inputEmail.substring(0, 5).split('').map(c => c.charCodeAt(0)),
-          config: normalizedEmail.substring(0, 5).split('').map(c => c.charCodeAt(0)),
+          input: inputEmail.substring(0, 5).split('').map((c: string) => c.charCodeAt(0)),
+          config: normalizedEmail.substring(0, 5).split('').map((c: string) => c.charCodeAt(0)),
         },
         passwordLengths: {
           input: inputPassword.length,

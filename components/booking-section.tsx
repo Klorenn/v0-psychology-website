@@ -150,175 +150,6 @@ export function BookingSection() {
     }, 100)
   }
 
-  const handlePaymentMethodSelect = async (method: "transfer") => {
-    setPaymentMethod(method)
-    
-    if (method === "transfer") {
-      setShowPaymentMethod(false)
-      setShowBankDetails(true)
-    }
-  }
-
-  const handleFlowPayment = async () => {
-    if (!selectedDate || !selectedTime) return
-    
-    setIsCreatingPayment(true)
-    
-    try {
-      const appointmentId = crypto.randomUUID()
-      const amount = appointmentType === "online" ? 20000 : 27000
-      const description = `Consulta ${appointmentType === "online" ? "Online" : "Presencial"} - ${selectedDate.getDate()} de ${monthNames[selectedDate.getMonth()]} · ${selectedTime}`
-      
-      // Formatear teléfono con código de país si es online
-      let formattedPhone = patientPhone
-      if (appointmentType === "online" && selectedCountry) {
-        if (!patientPhone.startsWith("+") && !patientPhone.startsWith(selectedCountry.dialCode)) {
-          formattedPhone = `${selectedCountry.dialCode} ${patientPhone.trim()}`
-        } else if (patientPhone.startsWith(selectedCountry.dialCode)) {
-          formattedPhone = patientPhone
-        }
-      }
-
-      // Crear la cita primero (pendiente de pago)
-      await appointmentsStore.add({
-        id: appointmentId,
-        patientName: sanitizeName(patientName),
-        patientEmail: sanitizeString(patientEmail).toLowerCase(),
-        patientPhone: sanitizePhone(formattedPhone),
-        consultationReason: sanitizeString(consultationReason) || undefined,
-        emergencyContactRelation: sanitizeString(emergencyContactRelation) || undefined,
-        emergencyContactName: sanitizeName(emergencyContactName) || undefined,
-        emergencyContactPhone: sanitizePhone(emergencyContactPhone) || undefined,
-        appointmentType,
-        date: selectedDate,
-        time: selectedTime,
-        status: "pending",
-        createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutos para pagar
-        paymentMethod: "flow",
-      })
-
-      // Crear pago en Flow
-      const paymentResponse = await fetch("/api/flow/create-payment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          appointmentId,
-          amount,
-          description,
-          patientEmail: sanitizeString(patientEmail).toLowerCase(),
-          patientName: sanitizeName(patientName),
-        }),
-      })
-
-      if (!paymentResponse.ok) {
-        const errorData = await paymentResponse.json().catch(() => ({}))
-        throw new Error(errorData.error || "Error al crear el pago. Por favor, intente nuevamente.")
-      }
-
-      const paymentData = await paymentResponse.json()
-      
-      // Redirigir al checkout de Flow
-      if (paymentData.url) {
-        window.location.href = paymentData.url
-      } else {
-        throw new Error("No se pudo obtener la URL de pago")
-      }
-    } catch (error) {
-      console.error("Error creando pago con Flow:", error)
-      const errorMessage = error instanceof Error ? error.message : "Error al procesar el pago. Por favor, intente nuevamente."
-      alert(errorMessage)
-      setIsCreatingPayment(false)
-    }
-  }
-
-  const handleWebpayPayment = async () => {
-    if (!selectedDate || !selectedTime) return
-    
-    setIsCreatingPayment(true)
-    
-    try {
-      const appointmentId = crypto.randomUUID()
-      const amount = appointmentType === "online" ? 20000 : 27000
-      const description = `Consulta ${appointmentType === "online" ? "Online" : "Presencial"} - ${selectedDate.getDate()} de ${monthNames[selectedDate.getMonth()]} · ${selectedTime}`
-      
-      // Formatear teléfono con código de país si es online
-      let formattedPhone = patientPhone
-      if (appointmentType === "online" && selectedCountry) {
-        if (!patientPhone.startsWith("+") && !patientPhone.startsWith(selectedCountry.dialCode)) {
-          formattedPhone = `${selectedCountry.dialCode} ${patientPhone.trim()}`
-        } else if (patientPhone.startsWith(selectedCountry.dialCode)) {
-          formattedPhone = patientPhone
-        }
-      }
-
-      // Crear la cita primero (pendiente de pago)
-      await appointmentsStore.add({
-        id: appointmentId,
-        patientName: sanitizeName(patientName),
-        patientEmail: sanitizeString(patientEmail).toLowerCase(),
-        patientPhone: sanitizePhone(formattedPhone),
-        consultationReason: sanitizeString(consultationReason) || undefined,
-        emergencyContactRelation: sanitizeString(emergencyContactRelation) || undefined,
-        emergencyContactName: sanitizeName(emergencyContactName) || undefined,
-        emergencyContactPhone: sanitizePhone(emergencyContactPhone) || undefined,
-        appointmentType,
-        date: selectedDate,
-        time: selectedTime,
-        status: "pending",
-        createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutos para pagar
-        paymentMethod: "webpay",
-      })
-
-      // Crear transacción en Transbank Webpay Plus
-      const paymentResponse = await fetch("/api/transbank/create-transaction", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          appointmentId,
-          amount,
-          description,
-          patientEmail: sanitizeString(patientEmail).toLowerCase(),
-          patientName: sanitizeName(patientName),
-        }),
-      })
-
-      if (!paymentResponse.ok) {
-        const errorData = await paymentResponse.json().catch(() => ({}))
-        throw new Error(errorData.error || "Error al crear la transacción. Por favor, intente nuevamente.")
-      }
-
-      const paymentData = await paymentResponse.json()
-      
-      // Redirigir al checkout de Webpay Plus
-      if (paymentData.url && paymentData.token) {
-        // Crear un formulario para redirigir a Webpay
-        const form = document.createElement("form")
-        form.method = "POST"
-        form.action = paymentData.url
-        const tokenInput = document.createElement("input")
-        tokenInput.type = "hidden"
-        tokenInput.name = "token_ws"
-        tokenInput.value = paymentData.token
-        form.appendChild(tokenInput)
-        document.body.appendChild(form)
-        form.submit()
-      } else {
-        throw new Error("No se pudo obtener la URL de pago")
-      }
-    } catch (error) {
-      console.error("Error creando pago con Webpay Plus:", error)
-      const errorMessage = error instanceof Error ? error.message : "Error al procesar el pago. Por favor, intente nuevamente."
-      alert(errorMessage)
-      setIsCreatingPayment(false)
-    }
-  }
-
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {}
 
@@ -708,8 +539,7 @@ export function BookingSection() {
 
       {/* Payment Method Selection Dialog */}
       <Dialog open={showPaymentMethod} onOpenChange={(open) => {
-        console.log("Payment Method Dialog changed:", open)
-        setShowPaymentMethod(open)
+          setShowPaymentMethod(open)
         if (!open && !isCreatingPayment) {
           // Si se cierra el diálogo sin seleccionar, volver al formulario
           setShowForm(true)
@@ -1262,16 +1092,22 @@ export function BookingSection() {
                 }}
                 placeholder="Cuénteme brevemente por qué desea atenderse o el motivo de su consulta..."
                 rows={4}
+                maxLength={500}
                 className={`w-full rounded-xl border border-border/50 bg-transparent px-3 py-2 text-sm resize-none ${
                   validationErrors.consultationReason ? "border-destructive" : ""
                 }`}
               />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  Esta información me ayuda a preparar mejor su consulta y entender sus necesidades
+                </p>
+                <p className={`text-xs ${consultationReason.length > 450 ? "text-amber-500" : "text-muted-foreground"}`}>
+                  {consultationReason.length}/500
+                </p>
+              </div>
               {validationErrors.consultationReason && (
                 <p className="text-sm text-destructive">{validationErrors.consultationReason}</p>
               )}
-              <p className="text-xs text-muted-foreground">
-                Esta información me ayuda a preparar mejor su consulta y entender sus necesidades
-              </p>
             </div>
 
             <div className="space-y-2">
@@ -1364,14 +1200,8 @@ export function BookingSection() {
               <span className="font-medium text-foreground">{selectedTime}</span> ha sido enviada.
               <br />
               <br />
-              <span className="text-green-600 dark:text-green-400 font-medium">
-                ✓ Comprobante recibido correctamente
-              </span>
-              <br />
-              <br />
               <span className="text-sm">
-                La consulta se confirma una vez recibido el comprobante de transferencia. Recibirá un correo cuando
-                se confirme su consulta.
+                Su solicitud está en revisión. La consulta se confirma una vez que se verifique el comprobante de transferencia enviado. Recibirá un correo cuando se confirme su consulta.
               </span>
             </DialogDescription>
           </DialogHeader>

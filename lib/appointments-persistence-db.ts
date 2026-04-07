@@ -41,7 +41,7 @@ export const appointmentsPersistence = {
       console.log(`✅ Cargadas ${appointments.length} citas desde Supabase`)
       
       if (appointments.length > 0) {
-        console.log("📋 Primeras citas cargadas:", appointments.slice(0, 3).map(a => ({
+        console.log("📋 Primeras citas cargadas:", appointments.slice(0, 3).map((a: any) => ({
           id: a.id,
           name: a.patientName,
           status: a.status

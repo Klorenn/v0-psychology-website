@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         status.testResult = {
           success: true,
           message: "API key válida",
-          domainsCount: domains.data?.length || 0,
+          domainsCount: (domains.data as any)?.length || 0,
         }
       } catch (testError: any) {
         // Si falla, puede ser por permisos, pero la key puede ser válida

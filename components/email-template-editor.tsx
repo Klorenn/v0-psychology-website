@@ -59,7 +59,7 @@ Quería escribirte para confirmarte con cariño los detalles de tu próxima sesi
 🗓 **{{date}}**
 ⏰ **{{time}} hrs**
 📍 **Modalidad:** {{appointmentType}}
-💰 **Valor:** ${{price}} CLP
+💰 **Valor:** \${{price}} CLP
 {{#if meetLink}}
 🔗 **Enlace de Google Meet:** {{meetLink}}
 {{/if}}
@@ -88,7 +88,7 @@ Psicóloga Clínica`
         .replace(/\{\{time\}\}/g, "15:00")
         .replace(/\{\{appointmentType\}\}/g, "Online")
         .replace(/\{\{price\}\}/g, "20.000")
-        .replace(/\{\{#if meetLink\}\}(.*?)\{\{\/if\}\}/gs, "$1")
+        .replace(/\{\{#if meetLink\}\}([\s\S]*?)\{\{\/if\}\}/g, "$1")
         .replace(/\{\{meetLink\}\}/g, "https://meet.google.com/abc-defg-hij")
     }
   }

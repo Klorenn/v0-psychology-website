@@ -48,6 +48,7 @@ if (process.env.NODE_ENV === "development" || !ADMIN_CREDENTIALS.email || !ADMIN
 export interface AuthSession {
   email: string
   timestamp: number
+  [key: string]: unknown
 }
 
 /**
