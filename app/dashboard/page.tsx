@@ -1476,18 +1476,24 @@ function AppointmentCard({
                   )}
                 </div>
               )}
-              {appointment.receiptUrl && (
-                <div className="mt-2">
+              {appointment.receiptUrl ? (
+                <div className="mt-2 flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <FileText className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
+                  <span className="text-xs text-green-800 dark:text-green-200 font-medium flex-1">Comprobante adjunto</span>
                   <a
                     href={appointment.receiptUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-accent hover:text-accent/80 transition-colors"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100 underline underline-offset-2 transition-colors"
                   >
-                    <FileText className="h-3.5 w-3.5" />
-                    Ver comprobante
+                    Ver
                     <ExternalLink className="h-3 w-3" />
                   </a>
+                </div>
+              ) : (
+                <div className="mt-2 flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span className="text-xs text-amber-800 dark:text-amber-200">Sin comprobante</span>
                 </div>
               )}
             </div>
@@ -1507,11 +1513,15 @@ function AppointmentCard({
                 Pedido el {formatSantiagoDateTime(appointment.createdAt)}
               </p>
             )}
-            {appointment.receiptUrl && (
-              <Badge variant="secondary" className="mt-1 text-xs">
-                ✓ Comprobante
+            {appointment.receiptUrl ? (
+              <Badge className="mt-1 text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-700">
+                ✓ Boleta
               </Badge>
-            )}
+            ) : appointment.status === "pending" ? (
+              <Badge variant="outline" className="mt-1 text-xs text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-700">
+                Sin boleta
+              </Badge>
+            ) : null}
           </div>
 
           <Badge variant="secondary" className="rounded-full font-mono">

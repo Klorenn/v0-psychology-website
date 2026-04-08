@@ -2,7 +2,6 @@
   "name": "psychology-system-quotes",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "npm@10.0.0",
   "scripts": {
     "preinstall": "find . -name 'pnpm-lock.yaml' -delete 2>/dev/null || true && find . -name 'yarn.lock' -delete 2>/dev/null || true",
     "build": "next build",

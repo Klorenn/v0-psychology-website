@@ -12,27 +12,28 @@ const siteDescription =
   "Apoyo psicológico cálido y profesional. Un espacio seguro para tu bienestar emocional."
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"),
-  title: "Psicología | Espacio de Bienestar",
+  metadataBase: new URL("https://psmariasanluis.com"),
+  title: "María San Luis · Psicóloga Clínica",
   description: siteDescription,
-  generator: "v0.app",
   openGraph: {
+    url: "https://psmariasanluis.com/",
+    type: "website",
     title: "María San Luis · Psicóloga Clínica",
     description: siteDescription,
-    type: "website",
-    locale: "es_ES",
+    locale: "es_CL",
     siteName: "María San Luis",
     images: [
       {
         url: "/og.png",
-        width: 1024,
-        height: 511,
-        alt: "María San Luis — Psicóloga clínica",
+        width: 1200,
+        height: 630,
+        alt: "María San Luis · Psicóloga Clínica",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
+    site: "psmariasanluis.com",
     title: "María San Luis · Psicóloga Clínica",
     description: siteDescription,
     images: ["/og.png"],
