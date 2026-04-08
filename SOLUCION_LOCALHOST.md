@@ -1,7 +1,7 @@
 # 🔧 Solución: Error de Redirección a localhost
 
 ## ❌ Problema
-Google está redirigiendo a `localhost:3000` en lugar de a `psicoterapiamaria.online`
+Google está redirigiendo a `localhost:3000` en lugar de a `psmariasanluis.com`
 
 ## ✅ Solución Rápida
 
@@ -12,7 +12,7 @@ Google está redirigiendo a `localhost:3000` en lugar de a `psicoterapiamaria.on
 3. Ve a **"APIs y servicios"** → **"Credenciales"**
 4. Haz clic en tu **ID de cliente OAuth 2.0**
 5. En **"URIs de redirección autorizadas"**, verifica que:
-   - ✅ Tengas: `https://psicoterapiamaria.online/api/google-calendar/callback`
+   - ✅ Tengas: `https://psmariasanluis.com/api/google-calendar/callback`
    - ❌ NO tengas: `http://localhost:3000/api/google-calendar/callback` (elimínala si está)
    - ❌ NO tengas ninguna otra URI de localhost
 
@@ -25,15 +25,15 @@ Ve a **Vercel Dashboard** → Tu proyecto → **Settings** → **Environment Var
 Asegúrate de tener estas variables:
 
 ```env
-NEXT_PUBLIC_BASE_URL=https://psicoterapiamaria.online
+NEXT_PUBLIC_BASE_URL=https://psmariasanluis.com
 GOOGLE_CLIENT_ID=tu_client_id
 GOOGLE_CLIENT_SECRET=tu_client_secret
-GOOGLE_REDIRECT_URI=https://psicoterapiamaria.online/api/google-calendar/callback
+GOOGLE_REDIRECT_URI=https://psmariasanluis.com/api/google-calendar/callback
 ```
 
 **Verifica que:**
-- `NEXT_PUBLIC_BASE_URL` sea exactamente `https://psicoterapiamaria.online` (sin `/` al final)
-- `GOOGLE_REDIRECT_URI` sea exactamente `https://psicoterapiamaria.online/api/google-calendar/callback` (sin `/` al final)
+- `NEXT_PUBLIC_BASE_URL` sea exactamente `https://psmariasanluis.com` (sin `/` al final)
+- `GOOGLE_REDIRECT_URI` sea exactamente `https://psmariasanluis.com/api/google-calendar/callback` (sin `/` al final)
 
 ### Paso 3: Eliminar URI de localhost en Google Cloud Console
 
@@ -41,7 +41,7 @@ Si tienes `http://localhost:3000/api/google-calendar/callback` en Google Cloud C
 
 1. Haz clic en el **ícono de papelera** al lado de esa URI
 2. Guarda los cambios
-3. Deja SOLO: `https://psicoterapiamaria.online/api/google-calendar/callback`
+3. Deja SOLO: `https://psmariasanluis.com/api/google-calendar/callback`
 
 ### Paso 4: Redesplegar en Vercel
 
@@ -52,10 +52,10 @@ Si tienes `http://localhost:3000/api/google-calendar/callback` en Google Cloud C
 
 ### Paso 5: Probar de Nuevo
 
-1. Ve a `https://psicoterapiamaria.online/dashboard`
+1. Ve a `https://psmariasanluis.com/dashboard`
 2. Haz clic en **"Vincular con Google"**
 3. Acepta los permisos
-4. Ahora debería redirigir correctamente a `psicoterapiamaria.online` en lugar de `localhost`
+4. Ahora debería redirigir correctamente a `psmariasanluis.com` en lugar de `localhost`
 
 ---
 
@@ -63,7 +63,7 @@ Si tienes `http://localhost:3000/api/google-calendar/callback` en Google Cloud C
 
 Visita este endpoint para ver qué está configurado:
 ```
-https://psicoterapiamaria.online/api/google-calendar/test
+https://psmariasanluis.com/api/google-calendar/test
 ```
 
 Esto te mostrará:
@@ -87,7 +87,7 @@ Esto te mostrará:
 
 En los logs de Vercel, deberías ver:
 ```
-[OAuth]   Redirect URI: https://psicoterapiamaria.online/api/google-calendar/callback
+[OAuth]   Redirect URI: https://psmariasanluis.com/api/google-calendar/callback
 ```
 
 Si ves `localhost`, significa que `GOOGLE_REDIRECT_URI` no está configurado en Vercel.
@@ -96,10 +96,10 @@ Si ves `localhost`, significa que `GOOGLE_REDIRECT_URI` no está configurado en 
 
 ## 📋 Checklist Final
 
-- [ ] En Google Cloud Console, SOLO tienes: `https://psicoterapiamaria.online/api/google-calendar/callback`
+- [ ] En Google Cloud Console, SOLO tienes: `https://psmariasanluis.com/api/google-calendar/callback`
 - [ ] NO tienes ninguna URI de localhost en Google Cloud Console
-- [ ] `NEXT_PUBLIC_BASE_URL` está configurado en Vercel: `https://psicoterapiamaria.online`
-- [ ] `GOOGLE_REDIRECT_URI` está configurado en Vercel: `https://psicoterapiamaria.online/api/google-calendar/callback`
+- [ ] `NEXT_PUBLIC_BASE_URL` está configurado en Vercel: `https://psmariasanluis.com`
+- [ ] `GOOGLE_REDIRECT_URI` está configurado en Vercel: `https://psmariasanluis.com/api/google-calendar/callback`
 - [ ] El proyecto fue redesplegado en Vercel
 - [ ] Los logs en Vercel muestran la URI correcta (no localhost)
 

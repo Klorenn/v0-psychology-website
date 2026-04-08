@@ -66,6 +66,8 @@ export function BookingSection() {
   const [hasMadeTransfer, setHasMadeTransfer] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [showTerms, setShowTerms] = useState(false)
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
+  const [receiptError, setReceiptError] = useState("")
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -224,7 +226,7 @@ export function BookingSection() {
     // Validar checkboxes para transferencia bancaria
     if (paymentMethod === "transfer") {
       if (!hasMadeTransfer) {
-        setValidationErrors((prev) => ({ ...prev, transfer: "Debe confirmar que ha realizado la transferencia y enviado el comprobante por correo" }))
+        setValidationErrors((prev) => ({ ...prev, transfer: "Debe confirmar que ha realizado la transferencia bancaria" }))
         return
       }
       if (!acceptedTerms) {
@@ -241,7 +243,6 @@ export function BookingSection() {
       // Formatear teléfono con código de país si es online
       let formattedPhone = patientPhone
       if (appointmentType === "online" && selectedCountry) {
-        // Si el teléfono ya incluye el código, no duplicarlo
         if (!patientPhone.startsWith("+") && !patientPhone.startsWith(selectedCountry.dialCode)) {
           formattedPhone = `${selectedCountry.dialCode} ${patientPhone.trim()}`
         } else if (patientPhone.startsWith(selectedCountry.dialCode)) {
@@ -259,6 +260,22 @@ export function BookingSection() {
         }
       }
 
+      // Leer boleta como base64 si fue adjuntada
+      let receiptData: string | undefined
+      let receiptFilename: string | undefined
+      let receiptMimetype: string | undefined
+      if (receiptFile) {
+        const buffer = await receiptFile.arrayBuffer()
+        const bytes = new Uint8Array(buffer)
+        let binary = ""
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i])
+        }
+        receiptData = btoa(binary)
+        receiptFilename = receiptFile.name
+        receiptMimetype = receiptFile.type
+      }
+
       const sanitizedData = {
         appointmentId,
         patientName: sanitizeName(patientName),
@@ -271,6 +288,9 @@ export function BookingSection() {
         appointmentType,
         date: selectedDate.toISOString(),
         time: selectedTime,
+        receiptData,
+        receiptFilename,
+        receiptMimetype,
       }
 
       const response = await fetch("/api/appointments/send-email", {
@@ -305,6 +325,8 @@ export function BookingSection() {
       setEmergencyContactPhone("")
       setHasMadeTransfer(false)
       setAcceptedTerms(false)
+      setReceiptFile(null)
+      setReceiptError("")
     setShowConfirmation(true)
     } catch (error) {
       console.error("Error al procesar solicitud", error)
@@ -338,6 +360,8 @@ export function BookingSection() {
     setShowBankDetails(false)
     setHasMadeTransfer(false)
     setAcceptedTerms(false)
+    setReceiptFile(null)
+    setReceiptError("")
   }
 
   const getPrice = () => {
@@ -645,70 +669,60 @@ export function BookingSection() {
           <div className="space-y-6 mt-4">
             <BankTransferDetails amount={getPrice()} />
 
-            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 space-y-3">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">📧</span>
-                <div className="flex-1">
-                  <p className="font-medium text-blue-900 dark:text-blue-100 mb-2">
-                    Envíe el comprobante por correo
-                  </p>
-                  <p className="text-sm text-blue-800 dark:text-blue-200 mb-2">
-                    Después de realizar la transferencia, debe enviar el comprobante por correo electrónico a:
-                  </p>
-                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-3">
-                    ps.mariasanluis@gmail.com
-                  </p>
-                  <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
-                    El comprobante debe ser legible y mostrar claramente:
-                  </p>
-                  <ul className="text-sm text-blue-800 dark:text-blue-200 list-disc list-inside space-y-1 mb-3">
-                    <li>Banco emisor</li>
-                    <li>Monto transferido</li>
-                    <li>Número de cuenta destino</li>
-                    <li>Fecha de la transferencia</li>
-                  </ul>
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="userEmailForReceipt" className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                        Su correo electrónico para enviar el comprobante
-                      </Label>
-                      <Input
-                        id="userEmailForReceipt"
-                        type="email"
-                        value={patientEmail}
-                        onChange={(e) => {
-                          setPatientEmail(e.target.value)
-                          if (validationErrors.email) {
-                            setValidationErrors((prev) => ({ ...prev, email: "" }))
-                          }
-                        }}
-                        placeholder="su@correo.com"
-                        className={`rounded-xl border-border/50 ${validationErrors.email ? "border-destructive" : ""}`}
-                        required
-                      />
-                      {validationErrors.email && (
-                        <p className="text-sm text-destructive">{validationErrors.email}</p>
-                      )}
+            <div className="border border-border/50 rounded-xl p-4 space-y-3">
+              <p className="font-medium text-foreground flex items-center gap-2">
+                <span>📎</span> Adjuntar comprobante de transferencia
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Suba una foto o PDF del comprobante. Debe mostrar banco, monto, cuenta destino y fecha.
+              </p>
+              <div
+                className={`relative border-2 border-dashed rounded-xl p-4 transition-colors ${
+                  receiptFile
+                    ? "border-green-400 bg-green-50 dark:bg-green-950/20"
+                    : "border-border/50 hover:border-accent/50"
+                }`}
+              >
+                <input
+                  id="receipt-file-input"
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    if (file.size > 5 * 1024 * 1024) {
+                      setReceiptError("El archivo no debe superar los 5 MB")
+                      return
+                    }
+                    setReceiptError("")
+                    setReceiptFile(file)
+                  }}
+                />
+                {receiptFile ? (
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{receiptFile.type.startsWith("image/") ? "🖼️" : "📄"}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-green-800 dark:text-green-200 truncate">{receiptFile.name}</p>
+                      <p className="text-xs text-green-600 dark:text-green-400">{(receiptFile.size / 1024).toFixed(0)} KB · Haz clic para cambiar</p>
                     </div>
-                    <Button
+                    <button
                       type="button"
-                      onClick={() => {
-                        if (!patientEmail || !validateEmail(patientEmail)) {
-                          setValidationErrors((prev) => ({ ...prev, email: "Ingrese un correo electrónico válido" }))
-                          return
-                        }
-                        const subject = encodeURIComponent("Comprobante de transferencia - Consulta")
-                        const body = encodeURIComponent(`Hola ${patientName},\n\nAdjunto el comprobante de transferencia bancaria por el monto de $${getPrice()} CLP.\n\nGracias.`)
-                        // Usar mailto: para abrir el cliente de correo del usuario
-                        window.location.href = `mailto:ps.mariasanluis@gmail.com?subject=${subject}&body=${body}`
-                      }}
-                      className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={(e) => { e.stopPropagation(); setReceiptFile(null); setReceiptError("") }}
+                      className="text-green-600 hover:text-red-500 dark:text-green-400 p-1"
                     >
-                      📧 Abrir correo para enviar comprobante
-                    </Button>
+                      ✕
+                    </button>
                   </div>
-                </div>
+                ) : (
+                  <div className="text-center py-2">
+                    <p className="text-sm text-muted-foreground">Arrastra aquí o <span className="text-accent underline">selecciona archivo</span></p>
+                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG, PDF · Máx. 5 MB</p>
+                  </div>
+                )}
               </div>
+              {receiptError && <p className="text-sm text-destructive">{receiptError}</p>}
+              <p className="text-xs text-muted-foreground">Opcional — también puede enviar el comprobante a ps.mariasanluis@gmail.com</p>
             </div>
 
             <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-sm">
@@ -740,7 +754,7 @@ export function BookingSection() {
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
                 >
                   <span className="text-foreground">
-                    He realizado la transferencia bancaria por el monto de ${getPrice()} CLP y he enviado el comprobante por correo a ps.mariasanluis@gmail.com
+                    He realizado la transferencia bancaria por el monto de ${getPrice()} CLP
                   </span>
                   {validationErrors.transfer && (
                     <p className="text-sm text-destructive mt-1">{validationErrors.transfer}</p>

@@ -78,8 +78,8 @@ export function Navigation({ isStatic = false }: NavigationProps = {}) {
   const navigationOrder = config.navigation?.order || [
     "menu-items",
     "separator",
-    "social-icons",
     "booking-button",
+    "social-icons",
     "theme-toggle",
   ]
 
@@ -248,20 +248,21 @@ export function Navigation({ isStatic = false }: NavigationProps = {}) {
               
                       <div className="border-t border-border/50 my-2" />
 
-                      {/* Dark Mode Toggle Mobile */}
-                      {mounted && (
-                        <div className="px-2 py-2">
-                          <div className="flex items-center justify-between px-3 py-2">
-                            <span className="text-sm text-muted-foreground">Modo Oscuro</span>
-                            <ThemeToggle />
-                          </div>
-                        </div>
-                      )}
+              <div className="px-2 pt-2">
+                <Button
+                  onClick={() => scrollTo("agenda")}
+                  className="w-full bg-accent text-accent-foreground rounded-full hover:bg-accent/90 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Agendar sesión
+                </Button>
+              </div>
 
                       <div className="border-t border-border/50 my-2" />
 
-                      <div className="flex items-center gap-3 px-2">
+                      <div className="flex items-center justify-between gap-3 px-2">
                 <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Sígueme</span>
+                <div className="flex items-center gap-2">
                 <a
                   href={config.social.instagram}
                   target="_blank"
@@ -287,17 +288,19 @@ export function Navigation({ isStatic = false }: NavigationProps = {}) {
                 >
                   <Mail className="w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
                 </a>
+                </div>
               </div>
-              
-              <div className="px-2 pt-2">
-                <Button
-                  onClick={() => scrollTo("agenda")}
-                  className="w-full bg-accent text-accent-foreground rounded-full hover:bg-accent/90 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Calendar className="w-4 h-4" />
-                  Agendar sesión
-                </Button>
-              </div>
+
+                      <div className="border-t border-border/50 my-2" />
+
+                      {mounted && (
+                        <div className="px-2 py-2 flex justify-end">
+                          <div className="flex items-center gap-3 px-3 py-2">
+                            <span className="text-sm text-muted-foreground">Modo oscuro</span>
+                            <ThemeToggle />
+                          </div>
+                        </div>
+                      )}
             </div>
           </div>
         )}

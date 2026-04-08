@@ -19,15 +19,15 @@ Ve a **Vercel Dashboard** → Tu proyecto → **Settings** → **Environment Var
 Asegúrate de tener estas 3 variables configuradas:
 
 ```env
-NEXT_PUBLIC_BASE_URL=https://psicoterapiamaria.online
+NEXT_PUBLIC_BASE_URL=https://psmariasanluis.com
 GOOGLE_CLIENT_ID=tu_client_id_aqui
 GOOGLE_CLIENT_SECRET=tu_client_secret_aqui
-GOOGLE_REDIRECT_URI=https://psicoterapiamaria.online/api/google-calendar/callback
+GOOGLE_REDIRECT_URI=https://psmariasanluis.com/api/google-calendar/callback
 ```
 
 **⚠️ IMPORTANTE:**
-- `NEXT_PUBLIC_BASE_URL` debe ser exactamente `https://psicoterapiamaria.online` (sin `/` al final)
-- `GOOGLE_REDIRECT_URI` debe ser exactamente `https://psicoterapiamaria.online/api/google-calendar/callback` (sin `/` al final)
+- `NEXT_PUBLIC_BASE_URL` debe ser exactamente `https://psmariasanluis.com` (sin `/` al final)
+- `GOOGLE_REDIRECT_URI` debe ser exactamente `https://psmariasanluis.com/api/google-calendar/callback` (sin `/` al final)
 
 ### 2. Verificar en Google Cloud Console
 
@@ -38,7 +38,7 @@ GOOGLE_REDIRECT_URI=https://psicoterapiamaria.online/api/google-calendar/callbac
 5. En **"URIs de redirección autorizadas"**, verifica que tengas EXACTAMENTE:
 
 ```
-https://psicoterapiamaria.online/api/google-calendar/callback
+https://psmariasanluis.com/api/google-calendar/callback
 ```
 
 **⚠️ IMPORTANTE:**
@@ -58,7 +58,7 @@ Después de agregar/actualizar las variables de entorno:
 
 ### 4. Probar de Nuevo
 
-1. Ve a `https://psicoterapiamaria.online/dashboard`
+1. Ve a `https://psmariasanluis.com/dashboard`
 2. Haz clic en **"Vincular con Google"**
 3. Acepta los permisos en Google
 4. Debería redirigir correctamente
@@ -72,7 +72,7 @@ Después de agregar/actualizar las variables de entorno:
 Visita este endpoint para ver tu configuración actual:
 
 ```
-https://psicoterapiamaria.online/api/google-calendar/test
+https://psmariasanluis.com/api/google-calendar/test
 ```
 
 Esto te mostrará:
@@ -89,7 +89,7 @@ Esto te mostrará:
 **Causa:** La URI en Google Cloud Console no coincide con la de Vercel.
 
 **Solución:**
-1. Copia exactamente esta URI: `https://psicoterapiamaria.online/api/google-calendar/callback`
+1. Copia exactamente esta URI: `https://psmariasanluis.com/api/google-calendar/callback`
 2. Pégala en Google Cloud Console → Credenciales → Tu OAuth Client → URIs de redirección
 3. Asegúrate de que no haya espacios ni `/` al final
 4. Guarda los cambios
@@ -100,7 +100,7 @@ Esto te mostrará:
 **Causa:** `NEXT_PUBLIC_BASE_URL` no está configurado en Vercel.
 
 **Solución:**
-1. Agrega `NEXT_PUBLIC_BASE_URL=https://psicoterapiamaria.online` en Vercel
+1. Agrega `NEXT_PUBLIC_BASE_URL=https://psmariasanluis.com` en Vercel
 2. Redesplega el proyecto
 
 ### Error: "access_denied"
@@ -117,8 +117,8 @@ Esto te mostrará:
 **Causa:** Google redirigió sin el código de autorización. Esto generalmente significa que la URI no coincide.
 
 **Solución:**
-1. Verifica que la URI en Google Cloud Console sea exactamente: `https://psicoterapiamaria.online/api/google-calendar/callback`
-2. Verifica que `GOOGLE_REDIRECT_URI` en Vercel sea exactamente: `https://psicoterapiamaria.online/api/google-calendar/callback`
+1. Verifica que la URI en Google Cloud Console sea exactamente: `https://psmariasanluis.com/api/google-calendar/callback`
+2. Verifica que `GOOGLE_REDIRECT_URI` en Vercel sea exactamente: `https://psmariasanluis.com/api/google-calendar/callback`
 3. Asegúrate de que ambas coincidan EXACTAMENTE (carácter por carácter)
 4. Redesplega en Vercel
 
@@ -128,11 +128,11 @@ Esto te mostrará:
 
 Antes de probar, verifica:
 
-- [ ] `NEXT_PUBLIC_BASE_URL` está configurado en Vercel: `https://psicoterapiamaria.online`
+- [ ] `NEXT_PUBLIC_BASE_URL` está configurado en Vercel: `https://psmariasanluis.com`
 - [ ] `GOOGLE_CLIENT_ID` está configurado en Vercel
 - [ ] `GOOGLE_CLIENT_SECRET` está configurado en Vercel
-- [ ] `GOOGLE_REDIRECT_URI` está configurado en Vercel: `https://psicoterapiamaria.online/api/google-calendar/callback`
-- [ ] En Google Cloud Console, la URI de redirección es: `https://psicoterapiamaria.online/api/google-calendar/callback`
+- [ ] `GOOGLE_REDIRECT_URI` está configurado en Vercel: `https://psmariasanluis.com/api/google-calendar/callback`
+- [ ] En Google Cloud Console, la URI de redirección es: `https://psmariasanluis.com/api/google-calendar/callback`
 - [ ] Ambas URIs coinciden EXACTAMENTE (sin espacios, sin `/` al final)
 - [ ] El proyecto fue redesplegado en Vercel después de agregar las variables
 - [ ] Tu email está en "Usuarios de prueba" en Google Cloud Console (si está en modo de prueba)
@@ -155,7 +155,7 @@ Si aún no funciona, revisa los logs:
 
 - **Siempre copia y pega** las URIs, no las escribas manualmente (para evitar espacios o caracteres incorrectos)
 - **Las URIs son case-sensitive** - `https://` no es lo mismo que `HTTPS://`
-- **No agregues `/` al final** - `https://psicoterapiamaria.online/api/google-calendar/callback/` es diferente a `https://psicoterapiamaria.online/api/google-calendar/callback`
+- **No agregues `/` al final** - `https://psmariasanluis.com/api/google-calendar/callback/` es diferente a `https://psmariasanluis.com/api/google-calendar/callback`
 - **Espera unos minutos** después de cambiar la configuración en Google Cloud Console antes de probar
 
 ---

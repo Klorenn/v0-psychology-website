@@ -90,7 +90,7 @@ export function GoogleCalendarSettings() {
           setError(
             "No se recibió el código de autorización de Google. " +
             "Esto generalmente significa que la URI de redirección en Google Cloud Console no coincide exactamente con la configurada. " +
-            "Verifica que hayas agregado: https://psicoterapiamaria.online/api/google-calendar/callback"
+            "Verifica que hayas agregado: https://psmariasanluis.com/api/google-calendar/callback"
           )
         }
       } else if (errorMsg === "token_exchange_failed") {
@@ -103,7 +103,7 @@ export function GoogleCalendarSettings() {
         setError(
           "Error de configuración: La URI de redirección no coincide. " +
           "Verifica que en Google Cloud Console hayas agregado exactamente: " +
-          "https://psicoterapiamaria.online/api/google-calendar/callback"
+          "https://psmariasanluis.com/api/google-calendar/callback"
         )
       } else {
         setError(`Error: ${errorMsg}`)

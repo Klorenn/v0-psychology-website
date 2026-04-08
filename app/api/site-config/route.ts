@@ -57,6 +57,38 @@ export async function GET() {
         subtitle: config.location?.subtitle || defaultConfig.location.subtitle,
         title: config.location?.title || defaultConfig.location.title,
       },
+      navigation: (() => {
+        const legacyOrder = [
+          "menu-items",
+          "separator",
+          "social-icons",
+          "booking-button",
+          "theme-toggle",
+        ] as const
+        const nextOrder = [
+          "menu-items",
+          "separator",
+          "booking-button",
+          "social-icons",
+          "theme-toggle",
+        ] as const
+        const raw = config.navigation?.order
+        const useLegacyMigration =
+          Array.isArray(raw) &&
+          raw.length === legacyOrder.length &&
+          legacyOrder.every((id, i) => raw[i] === id)
+        const order =
+          useLegacyMigration
+            ? [...nextOrder]
+            : raw?.length
+              ? raw
+              : defaultConfig.navigation.order
+        return {
+          ...defaultConfig.navigation,
+          ...config.navigation,
+          order,
+        }
+      })(),
     }
     
     return NextResponse.json(mergedConfig)
@@ -152,8 +184,8 @@ export async function POST(request: NextRequest) {
       config.navigation.order = [
         "menu-items",
         "separator",
-        "social-icons",
         "booking-button",
+        "social-icons",
         "theme-toggle",
       ]
     }

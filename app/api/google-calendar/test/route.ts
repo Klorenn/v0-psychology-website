@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 
 /**
  * Endpoint de prueba para verificar que la ruta de callback está funcionando
- * Visita: https://psicoterapiamaria.online/api/google-calendar/test
+ * Visita: https://psmariasanluis.com/api/google-calendar/test
  */
 export async function GET(request: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
@@ -22,9 +22,9 @@ export async function GET(request: NextRequest) {
     },
     instructions: {
       step1: "Verifica que GOOGLE_REDIRECT_URI en Vercel sea exactamente:",
-      redirectUriExpected: "https://psicoterapiamaria.online/api/google-calendar/callback",
+      redirectUriExpected: "https://psmariasanluis.com/api/google-calendar/callback",
       step2: "En Google Cloud Console, agrega esta URI en 'URIs de redirección autorizadas':",
-      redirectUriForGoogle: "https://psicoterapiamaria.online/api/google-calendar/callback",
+      redirectUriForGoogle: "https://psmariasanluis.com/api/google-calendar/callback",
       step3: "Asegúrate de que coincidan exactamente (sin espacios, sin / al final)",
     },
     testCallback: {

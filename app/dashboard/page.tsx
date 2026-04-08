@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useSyncExternalStore, useMemo, useCallback } from "react"
+import { useEffect, useState, useSyncExternalStore, useMemo, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -33,7 +33,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
-import { requestNotificationPermission, canSendNotifications, notifyAppointmentApproved, notifyAppointmentRejected } from "@/lib/notifications"
+import { requestNotificationPermission, canSendNotifications, notifyAppointmentApproved, notifyAppointmentRejected, notifyNewAppointment } from "@/lib/notifications"
 import { VisualPageEditor } from "@/components/visual-page-editor"
 import { ThemeSelectorExtended } from "@/components/theme-selector-extended"
 import { EmailTemplateEditor } from "@/components/email-template-editor"
@@ -150,6 +150,8 @@ export default function DashboardPage() {
   const [showChart, setShowChart] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth())
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear())
+  // Ref para rastrear IDs de citas ya vistas y detectar nuevas llegadas
+  const knownAppointmentIds = useRef<Set<string>>(new Set())
 
   // RESTAURAR SESIÓN DESDE LOCALSTORAGE INMEDIATAMENTE AL MONTAR
   // Esto debe ejecutarse ANTES de que useSyncExternalStore se evalúe
@@ -229,8 +231,8 @@ export default function DashboardPage() {
               order: [
                 "menu-items",
                 "separator",
-                "social-icons",
                 "booking-button",
+                "social-icons",
                 "theme-toggle",
               ],
             }
@@ -338,6 +340,11 @@ export default function DashboardPage() {
           
           // Forzar actualización después de inicializar
           setTimeUpdate((t) => t + 1)
+
+          // Marcar todas las citas existentes como conocidas para no notificarlas al iniciar
+          for (const apt of loadedAppointments) {
+            knownAppointmentIds.current.add(apt.id)
+          }
         } catch (error) {
           console.error("❌ Error inicializando store:", error)
           // Intentar inicializar la base de datos si hay error
@@ -370,6 +377,23 @@ export default function DashboardPage() {
       try {
         await appointmentsStore.init(true) // Forzar recarga
         setTimeUpdate((t) => t + 1)
+
+        // Notificar sobre nuevas citas pendientes
+        if (canSendNotifications()) {
+          const currentAppointments = appointmentsStore.getAll()
+          const pendingOnes = currentAppointments.filter((a) => a.status === "pending")
+          for (const apt of pendingOnes) {
+            if (!knownAppointmentIds.current.has(apt.id)) {
+              knownAppointmentIds.current.add(apt.id)
+              const dateStr = `${apt.date.getDate()} de ${monthNames[apt.date.getMonth()]}`
+              notifyNewAppointment(apt.patientName, dateStr, apt.time)
+            }
+          }
+          // Registrar citas ya conocidas que no están pendientes (para no notificarlas si vuelven)
+          for (const apt of currentAppointments) {
+            knownAppointmentIds.current.add(apt.id)
+          }
+        }
       } catch (error) {
         console.error("Error en refresh periódico:", error)
       }
@@ -440,8 +464,8 @@ export default function DashboardPage() {
     const granted = await requestNotificationPermission()
     if (granted) {
       setNotificationsEnabled(true)
-      notifyAppointmentApproved("Sistema", "ahora", "ahora")
-      alert("✅ Notificaciones activadas. Recibirás alertas cuando aceptes o rechaces citas.")
+      notifyNewAppointment("Paciente de prueba", "hoy", "10:00")
+      alert("✅ Notificaciones activadas. Recibirás una alerta cada vez que llegue una nueva cita.")
     } else {
       alert("❌ Permisos de notificación denegados. Puedes activarlos más tarde desde la configuración de tu navegador.")
     }

@@ -20,8 +20,8 @@ export function useSiteConfig(): SiteConfig {
               order: [
                 "menu-items",
                 "separator",
-                "social-icons",
                 "booking-button",
+                "social-icons",
                 "theme-toggle",
               ],
             }

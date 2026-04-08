@@ -1,6 +1,6 @@
 # 📅 Configuración de Google Calendar OAuth
 
-Guía paso a paso para configurar Google Calendar OAuth 2.0 en Google Cloud Console para el dominio `psicoterapiamaria.online`.
+Guía paso a paso para configurar Google Calendar OAuth 2.0 en Google Cloud Console para el dominio `psmariasanluis.com`.
 
 ---
 
@@ -35,7 +35,7 @@ Guía paso a paso para configurar Google Calendar OAuth 2.0 en Google Cloud Cons
    - Clic en **"Crear"**
    - **Nombre de la app**: `Psicoterapia Maria`
    - **Email de soporte**: Tu email (ej: `ps.mariasanluis@gmail.com`)
-   - **Dominios autorizados**: `psicoterapiamaria.online`
+   - **Dominios autorizados**: `psmariasanluis.com`
    - Clic en **"Guardar y continuar"**
    - **Scopes**: Por ahora puedes omitir, clic en **"Guardar y continuar"**
    - **Usuarios de prueba**: Agrega tu email de Google (el que usarás para Calendar)
@@ -47,7 +47,7 @@ Guía paso a paso para configurar Google Calendar OAuth 2.0 en Google Cloud Cons
    - **Nombre**: `Psicoterapia Maria Calendar`
    - **URI de redirección autorizadas**: Agrega estas URLs:
      ```
-     https://psicoterapiamaria.online/api/google-calendar/callback
+     https://psmariasanluis.com/api/google-calendar/callback
      ```
      ⚠️ **IMPORTANTE**: 
      - Debe ser exactamente `https://` (no `http://`)
@@ -75,7 +75,7 @@ Agrega estas variables en **Vercel** (Settings → Environment Variables):
 ```env
 GOOGLE_CLIENT_ID=tu_client_id_aqui
 GOOGLE_CLIENT_SECRET=tu_client_secret_aqui
-GOOGLE_REDIRECT_URI=https://psicoterapiamaria.online/api/google-calendar/callback
+GOOGLE_REDIRECT_URI=https://psmariasanluis.com/api/google-calendar/callback
 ```
 
 **Reemplaza:**
@@ -103,7 +103,7 @@ Antes de probar la conexión, verifica que todo esté configurado correctamente:
 
 1. **Visita el endpoint de prueba:**
    ```
-   https://psicoterapiamaria.online/api/google-calendar/test
+   https://psmariasanluis.com/api/google-calendar/test
    ```
    Esto te mostrará la configuración actual y te indicará si hay algo mal.
 
@@ -111,21 +111,21 @@ Antes de probar la conexión, verifica que todo esté configurado correctamente:
    - Ve a Vercel Dashboard → Settings → Environment Variables
    - Confirma que `GOOGLE_REDIRECT_URI` sea exactamente:
      ```
-     https://psicoterapiamaria.online/api/google-calendar/callback
+     https://psmariasanluis.com/api/google-calendar/callback
      ```
 
 3. **Verifica en Google Cloud Console:**
    - Ve a Credenciales → Tu ID de cliente OAuth
    - Confirma que en "URIs de redirección autorizadas" esté:
      ```
-     https://psicoterapiamaria.online/api/google-calendar/callback
+     https://psmariasanluis.com/api/google-calendar/callback
      ```
    - **IMPORTANTE**: Debe ser exactamente igual, sin espacios, sin `/` al final
 
 ## 🚀 Paso 8: Probar la Conexión
 
 1. **Redesplega tu proyecto en Vercel** después de agregar las variables de entorno
-2. Ve a tu dashboard: `https://psicoterapiamaria.online/dashboard`
+2. Ve a tu dashboard: `https://psmariasanluis.com/dashboard`
 3. Busca la sección **"Google Calendar"**
 4. Haz clic en **"Vincular con Google"**
 5. Se abrirá una ventana de Google pidiendo autorización
@@ -140,7 +140,7 @@ Antes de probar la conexión, verifica que todo esté configurado correctamente:
 
 - [ ] Google Calendar API habilitada
 - [ ] ID de cliente OAuth creado (tipo "Aplicación web")
-- [ ] URI de redirección agregada: `https://psicoterapiamaria.online/api/google-calendar/callback`
+- [ ] URI de redirección agregada: `https://psmariasanluis.com/api/google-calendar/callback`
 - [ ] Variables de entorno configuradas en Vercel:
   - [ ] `GOOGLE_CLIENT_ID`
   - [ ] `GOOGLE_CLIENT_SECRET`
@@ -164,7 +164,7 @@ Antes de probar la conexión, verifica que todo esté configurado correctamente:
    - Haz clic en tu ID de cliente OAuth
    - En "URIs de redirección autorizadas", debe estar EXACTAMENTE:
      ```
-     https://psicoterapiamaria.online/api/google-calendar/callback
+     https://psmariasanluis.com/api/google-calendar/callback
      ```
    - Si no está, agrégalo y guarda
 
@@ -174,7 +174,7 @@ Antes de probar la conexión, verifica que todo esté configurado correctamente:
    - Busca `GOOGLE_REDIRECT_URI`
    - Debe ser EXACTAMENTE:
      ```
-     https://psicoterapiamaria.online/api/google-calendar/callback
+     https://psmariasanluis.com/api/google-calendar/callback
      ```
    - Si es diferente, edítala y guarda
 
@@ -188,7 +188,7 @@ Antes de probar la conexión, verifica que todo esté configurado correctamente:
    - ✅ Debe empezar con `https://` (nunca `http://`)
    - ✅ No debe terminar con `/`
    - ✅ No debe tener espacios al inicio o final
-   - ✅ El dominio debe ser exactamente `psicoterapiamaria.online` (sin `www.`)
+   - ✅ El dominio debe ser exactamente `psmariasanluis.com` (sin `www.`)
 
 5. **Después de corregir:**
    - Guarda los cambios en Google Cloud Console
@@ -198,7 +198,7 @@ Antes de probar la conexión, verifica que todo esté configurado correctamente:
    - Intenta conectar nuevamente
 
 6. **Verifica con el endpoint de prueba:**
-   - Visita: `https://psicoterapiamaria.online/api/google-calendar/test`
+   - Visita: `https://psmariasanluis.com/api/google-calendar/test`
    - Revisa que `redirectUri` sea correcto
 
 ### Error: "access_denied"
@@ -250,7 +250,7 @@ Antes de probar la conexión, verifica que todo esté configurado correctamente:
 
 1. **Modo de Prueba**: Por defecto, las apps OAuth están en modo de prueba. Solo los usuarios agregados pueden autorizar. Para producción, necesitarás verificar la app con Google (proceso que puede tardar varios días).
 
-2. **Dominio**: Asegúrate de que `psicoterapiamaria.online` esté correctamente configurado en Vercel y apunte a tu proyecto.
+2. **Dominio**: Asegúrate de que `psmariasanluis.com` esté correctamente configurado en Vercel y apunte a tu proyecto.
 
 3. **HTTPS**: Google requiere HTTPS para OAuth en producción. Vercel lo proporciona automáticamente.
 

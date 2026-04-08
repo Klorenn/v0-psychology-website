@@ -15,7 +15,7 @@ export interface SiteConfig {
   navigation: {
     logo: string
     logoText: string
-    order?: string[] // Orden de elementos: ["menu-items", "separator", "social-icons", "booking-button", "theme-toggle"]
+    order?: string[] // Orden de elementos: ["menu-items", "separator", "booking-button", "social-icons", "theme-toggle"]
   }
   
   // Values Section
@@ -119,7 +119,7 @@ const defaultConfig: SiteConfig = {
   navigation: {
     logo: "",
     logoText: "María San Luis",
-    order: ["menu-items", "separator", "social-icons", "booking-button", "theme-toggle"],
+    order: ["menu-items", "separator", "booking-button", "social-icons", "theme-toggle"],
   },
   values: {
     subtitle: "Enfoque terapéutico",
@@ -161,7 +161,7 @@ const defaultConfig: SiteConfig = {
     mapEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2990.123456789!2d-72.5902778!3d-38.7358333!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9614e3b2b3b3b3b3%3A0x1234567890abcdef!2sTemuco%2C%20Araucan%C3%ADa%2C%20Chile!5e0!3m2!1ses!2scl!4v1704067200000!5m2!1ses!2scl",
   },
   social: {
-    instagram: "https://www.instagram.com/ps.msanluis/",
+    instagram: "https://www.instagram.com/ps.mariasanluis/",
     linkedin: "https://www.linkedin.com/in/maria-san-luis-03481b337/",
     email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "",
   },

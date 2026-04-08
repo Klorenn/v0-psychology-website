@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
   // Este endpoint es público - los usuarios pueden crear citas sin autenticación
   try {
     const body = await request.json()
-    let { appointmentId, patientName, patientEmail, patientPhone, consultationReason, emergencyContactRelation, emergencyContactName, emergencyContactPhone, appointmentType, date, time } = body
+    let { appointmentId, patientName, patientEmail, patientPhone, consultationReason, emergencyContactRelation, emergencyContactName, emergencyContactPhone, appointmentType, date, time, receiptData, receiptFilename, receiptMimetype } = body
 
     if (!appointmentId || !patientName || !patientEmail || !patientPhone || !appointmentType || !date || !time) {
       return NextResponse.json({ error: "Faltan campos requeridos" }, { status: 400 })
@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
       "Diciembre",
     ]
 
+    const hasReceipt = !!(receiptData && receiptFilename && receiptMimetype)
     const formattedDate = `${appointmentDate.getDate()} de ${monthNames[appointmentDate.getMonth()]}, ${appointmentDate.getFullYear()}`
     const price = appointmentType === "online" ? "20.000" : "27.000"
 
@@ -246,18 +247,25 @@ export async function POST(request: NextRequest) {
             </div>
 
             <div class="warning">
-              <strong>⚠️ Importante:</strong> El paciente debe cancelar el monto de $${price} CLP por transferencia y enviar el comprobante por correo antes de que se confirme la cita.
+              <strong>⚠️ Importante:</strong> El paciente debe cancelar el monto de $${price} CLP por transferencia antes de que se confirme la cita.
             </div>
-            
-            <div class="info-section" style="background-color: #dbeafe; border-left: 4px solid #3b82f6;">
-              <p><strong>📧 Envío de comprobante</strong></p>
-              <p style="font-size: 13px; margin-top: 8px; color: #1e40af;">
-                El paciente debe enviar el comprobante de transferencia por correo a: <strong>${RECIPIENT_EMAIL}</strong>
-              </p>
-              <p style="font-size: 12px; margin-top: 8px; color: #1e40af;">
-                El comprobante debe mostrar claramente: banco emisor, monto transferido, número de cuenta destino y fecha.
+
+            ${hasReceipt ? `
+            <div class="info-section" style="background-color: #dcfce7; border-left: 4px solid #22c55e;">
+              <p><strong>✅ Comprobante adjunto</strong></p>
+              <p style="font-size: 13px; margin-top: 8px; color: #166534;">
+                El paciente adjuntó el comprobante de pago (<strong>${receiptFilename}</strong>).
+                Puedes verlo en el panel de administración.
               </p>
             </div>
+            ` : `
+            <div class="info-section" style="background-color: #fef9c3; border-left: 4px solid #eab308;">
+              <p><strong>⏳ Comprobante pendiente</strong></p>
+              <p style="font-size: 13px; margin-top: 8px; color: #854d0e;">
+                El paciente aún no ha adjuntado comprobante. Puede enviarlo por correo a: <strong>${RECIPIENT_EMAIL}</strong>
+              </p>
+            </div>
+            `}
 
             <div class="buttons">
               <a href="${acceptUrl}" class="button button-accept">✓ Aceptar Cita</a>
@@ -320,8 +328,12 @@ Para rechazar la cita, visita: ${rejectUrl}
         time,
         status: "pending",
         createdAt: await getSantiagoDateTime(),
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas para enviar el comprobante
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         paymentMethod: "transfer",
+        receiptData: hasReceipt ? receiptData : undefined,
+        receiptFilename: hasReceipt ? receiptFilename : undefined,
+        receiptMimetype: hasReceipt ? receiptMimetype : undefined,
+        receiptUrl: hasReceipt ? `/api/receipts/${appointmentId}` : undefined,
       })
       console.log("✅ Cita guardada en base de datos:", appointmentId)
     } catch (dbError) {

@@ -14,8 +14,8 @@ interface NavigationOrderEditorProps {
 const navigationItems = [
   { id: "menu-items", label: "Botones de Menú", description: "Sobre mí, Valores, Ubicación, Reseñas" },
   { id: "separator", label: "Separador", description: "Línea divisoria" },
-  { id: "social-icons", label: "Iconos Sociales", description: "Instagram, LinkedIn, Email" },
   { id: "booking-button", label: "Botón Agendar", description: "Botón principal de agendamiento" },
+  { id: "social-icons", label: "Iconos Sociales", description: "Instagram, LinkedIn, Email" },
   { id: "theme-toggle", label: "Toggle Día/Noche", description: "Cambiar entre modo claro y oscuro" },
 ]
 

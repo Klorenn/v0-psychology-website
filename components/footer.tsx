@@ -71,23 +71,32 @@ export function Footer() {
             </p>
             <div className="flex items-center gap-1">
               <span className="text-xs text-muted-foreground mr-2">Sígueme:</span>
-              <a 
-                href={config.social.instagram} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href={config.social.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-9 h-9 rounded-lg bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-all duration-200"
                 aria-label="Instagram"
               >
                 <Instagram className="w-4 h-4" strokeWidth={1.5} />
               </a>
-              <a 
-                href={config.social.linkedin} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href={config.social.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-9 h-9 rounded-lg bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-all duration-200"
                 aria-label="LinkedIn"
               >
                 <Linkedin className="w-4 h-4" strokeWidth={1.5} />
+              </a>
+              <a
+                href="https://www.psychologytoday.com/cl/psicologos/maria-jesus-chavez-san-luis-temuco-ar/1666990?utm_source=ig&utm_medium=social&utm_content=link_in_bio"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-9 px-3 rounded-lg bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-all duration-200 text-xs font-medium"
+                aria-label="Psychology Today"
+              >
+                Psychology Today
               </a>
             </div>
           </div>
