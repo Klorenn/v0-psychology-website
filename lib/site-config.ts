@@ -213,23 +213,23 @@ let currentConfig: SiteConfig = defaultConfig
 let listeners: Set<() => void> = new Set()
 
 export const siteConfigStore = {
-  get(): SiteConfig {
+  get: (): SiteConfig => {
     return currentConfig
   },
   
-  set(config: SiteConfig) {
+  set: (config: SiteConfig) => {
     currentConfig = config
     listeners.forEach((listener) => listener())
   },
   
-  subscribe(listener: () => void) {
+  subscribe: (listener: () => void) => {
     listeners.add(listener)
     return () => {
       listeners.delete(listener)
     }
   },
   
-  getDefault(): SiteConfig {
+  getDefault: (): SiteConfig => {
     return defaultConfig
   },
 }

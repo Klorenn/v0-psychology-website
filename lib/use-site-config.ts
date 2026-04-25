@@ -1,49 +1,92 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useSyncExternalStore } from "react"
 import { siteConfigStore, type SiteConfig } from "./site-config"
 
-export function useSiteConfig(): SiteConfig {
-  const [config, setConfig] = useState<SiteConfig>(siteConfigStore.get())
+// Track whether the API config has been loaded at least once
+let configLoaded = false
+let configLoadPromise: Promise<void> | null = null
+let configLoadListeners: Set<() => void> = new Set()
 
-  useEffect(() => {
-    // Cargar configuración desde la API
-    const loadConfig = async () => {
-      try {
-        const response = await fetch("/api/site-config")
-        if (response.ok) {
-          const data = await response.json()
-          // Asegurar que navigation.order tenga valores por defecto si faltan
-          if (!data.navigation?.order || !Array.isArray(data.navigation.order)) {
-            data.navigation = {
-              ...data.navigation,
-              order: [
-                "menu-items",
-                "separator",
-                "booking-button",
-                "social-icons",
-                "theme-toggle",
-              ],
-            }
+function notifyConfigLoaded() {
+  configLoaded = true
+  configLoadListeners.forEach((listener) => listener())
+}
+
+function loadConfigFromAPI(): Promise<void> {
+  if (configLoadPromise) return configLoadPromise
+
+  configLoadPromise = fetch("/api/site-config")
+    .then(async (response) => {
+      if (response.ok) {
+        const data = await response.json()
+        // Asegurar que navigation.order tenga valores por defecto si faltan
+        if (!data.navigation?.order || !Array.isArray(data.navigation.order)) {
+          data.navigation = {
+            ...data.navigation,
+            order: [
+              "menu-items",
+              "separator",
+              "booking-button",
+              "social-icons",
+              "theme-toggle",
+            ],
           }
-          siteConfigStore.set(data)
-          setConfig(data)
         }
-      } catch (error) {
-        console.error("Error cargando configuración:", error)
+        siteConfigStore.set(data)
       }
-    }
-
-    loadConfig()
-
-    // Suscribirse a cambios
-    const unsubscribe = siteConfigStore.subscribe(() => {
-      setConfig(siteConfigStore.get())
+    })
+    .catch((error) => {
+      console.error("Error cargando configuración:", error)
+    })
+    .finally(() => {
+      notifyConfigLoaded()
     })
 
-    return unsubscribe
+  return configLoadPromise
+}
+
+export function useSiteConfig(): SiteConfig {
+  const config = useSyncExternalStore(
+    siteConfigStore.subscribe,
+    siteConfigStore.get,
+    siteConfigStore.get
+  )
+
+  useEffect(() => {
+    if (!configLoaded && !configLoadPromise) {
+      loadConfigFromAPI()
+    }
   }, [])
 
   return config
 }
 
+/**
+ * Returns true once the site config has been loaded from the API.
+ * Use this to delay rendering until the real config is available,
+ * preventing content flicker.
+ */
+export function useSiteConfigReady(): boolean {
+  const [ready, setReady] = useState(configLoaded)
+
+  useEffect(() => {
+    if (configLoaded) {
+      setReady(true)
+      return
+    }
+
+    // Start loading if not already
+    if (!configLoadPromise) {
+      loadConfigFromAPI()
+    }
+
+    const listener = () => setReady(true)
+    configLoadListeners.add(listener)
+    return () => {
+      configLoadListeners.delete(listener)
+    }
+  }, [])
+
+  return ready
+}

@@ -9,10 +9,21 @@ import { LeaveReviewSection } from "@/components/leave-review-section"
 import { ReviewsSection } from "@/components/reviews-section"
 import { Footer } from "@/components/footer"
 import { ThemeApplier } from "@/components/theme-applier"
-import { useSiteConfig } from "@/lib/use-site-config"
+import { useSiteConfig, useSiteConfigReady } from "@/lib/use-site-config"
 
 export default function Home() {
   const config = useSiteConfig()
+  const ready = useSiteConfigReady()
+
+  // Don't render anything until the real config is loaded from API,
+  // preventing the flash of default content being replaced.
+  if (!ready) {
+    return (
+      <main className="min-h-screen">
+        <ThemeApplier />
+      </main>
+    )
+  }
 
   const renderSection = (sectionId: string) => {
     switch (sectionId) {
