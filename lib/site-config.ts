@@ -105,7 +105,7 @@ export interface SiteConfig {
   }
 }
 
-const defaultConfig: SiteConfig = {
+export const defaultConfig: SiteConfig = {
   hero: {
     subtitle: "Psicóloga Clínica",
     title: "María San Luis",

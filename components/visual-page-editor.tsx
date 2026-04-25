@@ -4,8 +4,9 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { FileUpload } from "@/components/file-upload"
-import { Save, X, Edit2, GripVertical, Eye, EyeOff } from "lucide-react"
+import { Save, X, Edit2, GripVertical, Eye, EyeOff, RotateCcw } from "lucide-react"
 import type { SiteConfig } from "@/lib/site-config"
+import { defaultConfig } from "@/lib/site-config"
 import { authenticatedFetch } from "@/lib/api-client"
 import { HeroSection } from "@/components/hero-section"
 import { ValuesSection } from "@/components/values-section"
@@ -183,6 +184,14 @@ export function VisualPageEditor({ config, onConfigChange, onSave }: VisualPageE
         <Button onClick={handleSave} disabled={saving} size="sm" className="bg-accent text-accent-foreground">
           <Save className="w-4 h-4 mr-2" />
           {saving ? "Guardando..." : "Guardar"}
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => onConfigChange(defaultConfig)}
+        >
+          <RotateCcw className="w-4 h-4 mr-2" />
+          Restablecer
         </Button>
       </div>
 
