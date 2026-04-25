@@ -261,7 +261,7 @@ export function Navigation({ isStatic = false }: NavigationProps = {}) {
                       <div className="border-t border-border/50 my-2" />
 
                       <div className="flex items-center justify-between gap-3 px-2">
-                <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Sígueme</span>
+                <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Conecta conmigo</span>
                 <div className="flex items-center gap-2">
                 <a
                   href={config.social.instagram}

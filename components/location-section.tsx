@@ -35,7 +35,7 @@ export function LocationSection() {
                   <Clock className="w-5 h-5 text-accent" strokeWidth={1.5} />
                 </div>
                 <div>
-                  <h3 className="font-medium text-foreground mb-1">Horarios</h3>
+                  <h3 className="font-medium text-foreground mb-1">Horarios de atención</h3>
                   <p className="text-sm text-muted-foreground">{config.location.schedule.days}</p>
                   <p className="text-sm text-muted-foreground">{config.location.schedule.hours}</p>
                 </div>

@@ -109,12 +109,12 @@ const defaultConfig: SiteConfig = {
   hero: {
     subtitle: "Psicóloga Clínica",
     title: "Psicóloga clínica",
-    description: "Le acompaño en su proceso terapéutico con calidez, respeto y profesionalismo, ofreciendo un espacio seguro para su bienestar emocional.",
+    description: "Acompaño procesos de transformación desde una mirada profesional, cálida y actualizada. Un espacio para sanar, integrar tus fortalezas y alcanzar el equilibrio emocional necesario para vivir una vida plena y alineada con lo que realmente valoras.",
     profileImage: "/images/whatsapp-20image-202026-01-01-20at-2019.jpeg",
     imagePosition: "center 25%",
-    ctaPrimary: "Agendar sesión",
+    ctaPrimary: "Solicitar atención",
     ctaSecondary: "Sobre mí",
-    aboutMe: "Soy María Jesús Chávez San Luis, psicóloga clínica. Mi trabajo se centra en acompañar procesos emocionales desde una mirada respetuosa, cercana y profesional, considerando la historia y el ritmo de cada persona.",
+    aboutMe: "Soy María San Luis, psicóloga clínica. Mi trabajo se centra en acompañar procesos emocionales desde una mirada respetuosa, cercana y profesional, considerando la historia y el ritmo de cada persona.",
   },
   navigation: {
     logo: "",
@@ -128,23 +128,23 @@ const defaultConfig: SiteConfig = {
     items: [
       {
         icon: "Heart",
-        title: "Empatía",
-        description: "Escucha activa y comprensión respetuosa de su experiencia personal.",
+        title: "Técnicas de Terapia Cognitivo-Conductual",
+        description: "Herramientas basadas en evidencia para identificar y transformar patrones de pensamiento y conducta.",
+      },
+      {
+        icon: "Zap",
+        title: "Técnicas de Psicoterapia Breve",
+        description: "Intervenciones focalizadas y eficientes orientadas a resultados concretos en tiempos acotados.",
+      },
+      {
+        icon: "Star",
+        title: "Terapia Breve para el Manejo de la Autoestima",
+        description: "Estrategias terapéuticas para fortalecer la autoimagen y la valoración personal.",
       },
       {
         icon: "Shield",
-        title: "Confianza",
-        description: "Un espacio seguro donde puede expresarse con libertad y autenticidad.",
-      },
-      {
-        icon: "Users",
-        title: "Acompañamiento",
-        description: "Trabajo colaborativo en su proceso terapéutico, respetando su ritmo y necesidades.",
-      },
-      {
-        icon: "Lock",
-        title: "Confidencialidad",
-        description: "Privacidad y confidencialidad absolutas, garantizadas por el código deontológico profesional.",
+        title: "Diagnóstico y Evaluación en el Espectro Autista desde una Perspectiva Biopsicosocial",
+        description: "Evaluación integral del espectro autista considerando factores biológicos, psicológicos y sociales.",
       },
     ],
   },
@@ -156,7 +156,7 @@ const defaultConfig: SiteConfig = {
     country: "Chile",
     schedule: {
       days: "Lunes a Viernes",
-      hours: "9:00 - 18:00 hrs",
+      hours: "9:00 a 18:00 hrs",
     },
     mapEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2990.123456789!2d-72.5902778!3d-38.7358333!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9614e3b2b3b3b3b3%3A0x1234567890abcdef!2sTemuco%2C%20Araucan%C3%ADa%2C%20Chile!5e0!3m2!1ses!2scl!4v1704067200000!5m2!1ses!2scl",
   },
@@ -191,7 +191,7 @@ const defaultConfig: SiteConfig = {
       "Si tiene alguna consulta, necesita modificar la fecha u hora, o requiere información adicional, puede contactarme con confianza.",
       "",
       "Saludos cordiales,",
-      "**María Jesús Chávez**",
+      "**María San Luis**",
       "Psicóloga Clínica"
     ].join("\n"),
   },

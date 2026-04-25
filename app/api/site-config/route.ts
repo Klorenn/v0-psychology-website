@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
         "Si necesitas decirme algo antes de venir, tienes alguna inquietud o te surge la necesidad de reprogramar, puedes escribirme con total confianza. Estoy aquí para acompañarte 🌿",
         "",
         "Un abrazo grande,",
-        "**María Jesús Chávez**",
+        "**María San Luis**",
         "Psicóloga Clínica"
       ].join("\n")
     }

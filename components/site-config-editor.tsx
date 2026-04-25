@@ -197,7 +197,7 @@ export function SiteConfigEditor({ onClose }: SiteConfigEditorProps) {
             <Input
               value={config.hero.title}
               onChange={(e) => setConfig({ ...config, hero: { ...config.hero, title: e.target.value } })}
-              placeholder="Soy María Jesús Chavez San Luis"
+              placeholder="Soy María San Luis"
             />
           </div>
           <div>

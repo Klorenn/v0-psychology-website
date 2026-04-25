@@ -81,7 +81,7 @@ export async function sendAppointmentConfirmationEmail(
 
       <p style="margin-top: 32px">
         Un abrazo,<br />
-        <strong>María Jesús Chávez</strong><br />
+        <strong>María San Luis</strong><br />
         Psicóloga Clínica
       </p>
     </div>
@@ -107,7 +107,7 @@ export async function sendAppointmentConfirmationEmail(
 
       <p style="margin-top: 32px">
         Un abrazo,<br />
-        <strong>María Jesús Chavez San Luis</strong><br />
+        <strong>María San Luis</strong><br />
         Psicóloga
       </p>
     </div>

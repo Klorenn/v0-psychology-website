@@ -15,9 +15,9 @@ export function Footer() {
         <div className="grid md:grid-cols-3 gap-8 lg:gap-12 mb-16">
           {/* About Section */}
           <div className="space-y-4">
-            <h3 className="font-serif text-2xl text-foreground mb-4">Atención psicológica</h3>
+            <h3 className="font-serif text-2xl text-foreground mb-4">Espacio terapéutico</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Espacio de acompañamiento emocional con calidez, respeto y profesionalismo.
+              Un espacio cálido y profesional para acompañarte en tu proceso de bienestar y crecimiento personal.
             </p>
           </div>
 
@@ -39,7 +39,7 @@ export function Footer() {
 
           {/* Location & Hours Section */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-foreground mb-5 text-xs uppercase tracking-widest">Ubicación</h4>
+            <h4 className="font-semibold text-foreground mb-5 text-xs uppercase tracking-widest">Horarios de atención</h4>
             <div className="space-y-4">
               <div className="flex items-start gap-3 text-sm">
                 <div className="w-9 h-9 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
@@ -56,7 +56,8 @@ export function Footer() {
                 </div>
                 <div>
                   <p className="text-foreground font-medium">{config.location?.schedule?.days || "Lunes a Viernes"}</p>
-                  <p className="text-muted-foreground">{config.location?.schedule?.hours || "9:00 - 18:00 hrs"}</p>
+                  <p className="text-muted-foreground">{config.location?.schedule?.hours || "9:00 a 18:00 hrs"}</p>
+                  <p className="text-muted-foreground text-xs mt-1">(Agenda sujeta a disponibilidad)</p>
                 </div>
               </div>
             </div>
@@ -67,10 +68,10 @@ export function Footer() {
         <div className="pt-8 border-t border-border/30">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <p className="text-xs text-muted-foreground text-center md:text-left">
-              © {new Date().getFullYear()} María Chavez · Todos los derechos reservados
+              ©️ {new Date().getFullYear()} María San Luis | Psicóloga Clínica
             </p>
             <div className="flex items-center gap-1">
-              <span className="text-xs text-muted-foreground mr-2">Sígueme:</span>
+              <span className="text-xs text-muted-foreground mr-2">Conecta conmigo:</span>
               <a
                 href={config.social.instagram}
                 target="_blank"

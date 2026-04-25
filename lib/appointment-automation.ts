@@ -133,7 +133,7 @@ Si la sesión es online, te sugiero considerar lo siguiente para que podamos apr
 Si antes de la sesión necesitas comentarme algo, tienes alguna inquietud o te surge la necesidad de reprogramar, puedes escribirme con total confianza. Estoy aquí para acompañarte.
 
 Un abrazo,
-María Jesús Chávez
+María San Luis
 Psicóloga Clínica${appointment.consultationReason ? `\n\n💭 Motivo de consulta: ${appointment.consultationReason}` : ""}`
 
     // Template para sesiones PRESENCIALES (se envía por Resend)
@@ -152,7 +152,7 @@ Para cuidar tu espacio y dejar la hora reservada, te agradeceré realizar el pag
 Si antes de la sesión necesitas comentarme algo, tienes alguna inquietud o te surge la necesidad de reprogramar, puedes escribirme con total confianza. Estoy aquí para acompañarte.
 
 Un abrazo,
-María Jesús Chávez
+María San Luis
 Psicóloga Clínica${appointment.consultationReason ? `\n\n💭 Motivo de consulta: ${appointment.consultationReason}` : ""}`
 
     // Descripción completa para el evento de Google Calendar (presencial)
@@ -183,7 +183,7 @@ Para cuidar tu espacio y dejar la hora reservada, te agradeceré realizar el pag
 Si antes de la sesión necesitas comentarme algo, tienes alguna inquietud o te surge la necesidad de reprogramar, puedes escribirme con total confianza. Estoy aquí para acompañarte.
 
 Un abrazo,
-María Jesús Chávez
+María San Luis
 Psicóloga Clínica${appointment.consultationReason ? `\n\n💭 Motivo de consulta: ${appointment.consultationReason}` : ""}`
 
     let eventResult: { eventId: string; htmlLink: string; meetLink: string | null; meetStatus: "created" | "not_supported" } | null = null

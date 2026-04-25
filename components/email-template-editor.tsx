@@ -69,7 +69,7 @@ Para cuidar tu espacio y dejar la hora reservada, te agradeceré realizar el pag
 Si necesitas decirme algo antes de venir, tienes alguna inquietud o te surge la necesidad de reprogramar, puedes escribirme con total confianza. Estoy aquí para acompañarte 🌿
 
 Un abrazo grande,
-**María Jesús Chávez**
+**María San Luis**
 Psicóloga Clínica`
     }
     setSubject(defaultTemplate.subject)
