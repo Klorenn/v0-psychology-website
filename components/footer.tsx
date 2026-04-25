@@ -17,7 +17,7 @@ export function Footer() {
           <div className="space-y-4">
             <h3 className="font-serif text-2xl text-foreground mb-4">Espacio terapéutico</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Un espacio cálido y profesional para acompañarte en tu proceso de bienestar y crecimiento personal.
+              Acompaño procesos de transformación desde una mirada profesional, cálida y actualizada. Un espacio para sanar, integrar tus fortalezas y alcanzar el equilibrio emocional necesario para vivir una vida plena y alineada con lo que realmente valoras.
             </p>
           </div>
 
