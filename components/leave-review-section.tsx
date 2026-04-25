@@ -78,14 +78,14 @@ export function LeaveReviewSection({ hideHeader = false }: LeaveReviewSectionPro
   const characterCount = content.length
   const isContentValid = characterCount >= MIN_LENGTH && characterCount <= MAX_LENGTH
 
-  return (
-    <section id="dejar-reseña" className="py-20 px-6 bg-card">
-<div className="max-w-4xl mx-auto">
+return (
+    <section id="dejar-reseña" className="py-20 px-6 bg-muted/30">
+      <div className="max-w-4xl mx-auto">
         {/* Sección para dejar reseña */}
         {!showForm && !submitSuccess && (
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-background rounded-2xl p-8 shadow-sm border border-border/50">
-              {!hideHeader && (
+          <div className={hideHeader ? "flex justify-center" : "max-w-2xl mx-auto"}>
+            {!hideHeader ? (
+              <div className="bg-background rounded-2xl p-8 shadow-sm border border-border/50">
                 <div className="text-center mb-6">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-accent/10 mb-4">
                     <Star className="w-8 h-8 text-accent" />
@@ -97,7 +97,20 @@ export function LeaveReviewSection({ hideHeader = false }: LeaveReviewSectionPro
                     La experiencia de quienes han confiado en mi acompañamiento profesional.
                   </p>
                 </div>
-              )}
+                <div className="flex justify-center">
+                  <Magnetic intensity={0.5} range={120}>
+                    <Button
+                      onClick={() => setShowForm(true)}
+                      className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 px-8 py-6 text-base font-medium"
+                      size="lg"
+                    >
+                      <Star className="w-5 h-5 mr-2" />
+                      Escribir testimonio
+                    </Button>
+                  </Magnetic>
+                </div>
+              </div>
+            ) : (
               <div className="flex justify-center">
                 <Magnetic intensity={0.5} range={120}>
                   <Button
@@ -110,7 +123,7 @@ export function LeaveReviewSection({ hideHeader = false }: LeaveReviewSectionPro
                   </Button>
                 </Magnetic>
               </div>
-            </div>
+            )}
           </div>
         )}
 
