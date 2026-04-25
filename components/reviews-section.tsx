@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Star, Loader2 } from "lucide-react"
+import { Star, Loader2, MessageSquarePlus } from "lucide-react"
 import type { Review } from "@/lib/reviews-store"
 import { Testimonial } from "@/components/ui/testimonial"
+import { LeaveReviewSection } from "@/components/leave-review-section"
 
 export function ReviewsSection() {
   const [reviews, setReviews] = useState<Review[]>([])
@@ -83,7 +84,7 @@ export function ReviewsSection() {
             <Loader2 className="w-6 h-6 animate-spin text-accent" />
           </div>
         ) : reviews.length > 0 ? (
-          <div className="relative mb-12 min-h-[500px] flex items-center justify-center w-full py-8">
+          <div className="relative min-h-[500px] flex items-center justify-center w-full py-8">
             <Testimonial reviews={reviews} />
           </div>
         ) : (
@@ -93,6 +94,11 @@ export function ReviewsSection() {
             <p className="text-sm text-muted-foreground">Los testimonios se publican con el consentimiento de quienes participan en el proceso terapéutico</p>
           </div>
         )}
+
+        {/* Botón Escribir testimonio */}
+        <div className="mt-8">
+          <LeaveReviewSection hideHeader />
+        </div>
 
       </div>
     </section>

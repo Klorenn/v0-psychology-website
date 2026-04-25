@@ -12,7 +12,11 @@ import { Magnetic } from "@/components/ui/magnetic"
 const MIN_LENGTH = 50
 const MAX_LENGTH = 1000
 
-export function LeaveReviewSection() {
+interface LeaveReviewSectionProps {
+  hideHeader?: boolean
+}
+
+export function LeaveReviewSection({ hideHeader = false }: LeaveReviewSectionProps) {
   const [showForm, setShowForm] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
@@ -76,22 +80,24 @@ export function LeaveReviewSection() {
 
   return (
     <section id="dejar-reseña" className="py-20 px-6 bg-card">
-      <div className="max-w-4xl mx-auto">
+<div className="max-w-4xl mx-auto">
         {/* Sección para dejar reseña */}
         {!showForm && !submitSuccess && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-background rounded-2xl p-8 shadow-sm border border-border/50">
-              <div className="text-center mb-6">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-accent/10 mb-4">
-                  <Star className="w-8 h-8 text-accent" />
+              {!hideHeader && (
+                <div className="text-center mb-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-accent/10 mb-4">
+                    <Star className="w-8 h-8 text-accent" />
+                  </div>
+                  <h3 className="font-serif text-2xl text-foreground mb-2">
+                    Testimonios
+                  </h3>
+                  <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                    La experiencia de quienes han confiado en mi acompañamiento profesional.
+                  </p>
                 </div>
-                <h3 className="font-serif text-2xl text-foreground mb-2">
-                  Testimonios
-                </h3>
-                <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                  La experiencia de quienes han confiado en mi acompañamiento profesional.
-                </p>
-              </div>
+              )}
               <div className="flex justify-center">
                 <Magnetic intensity={0.5} range={120}>
                   <Button

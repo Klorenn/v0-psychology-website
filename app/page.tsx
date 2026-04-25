@@ -48,20 +48,6 @@ export default function Home() {
       <Navigation />
       {config.sectionOrder.map((sectionId) => {
         const section = renderSection(sectionId)
-        // Si es la sección de booking, agregar LeaveReviewSection y ReviewsSection después
-        if (sectionId === "booking") {
-          return (
-            <div key="booking-with-review">
-              {section}
-              <LeaveReviewSection />
-              <ReviewsSection />
-            </div>
-          )
-        }
-        // No mostrar ReviewsSection si ya está incluida después de booking
-        if (sectionId === "reviews") {
-          return null
-        }
         return section
       })}
       <Footer />
