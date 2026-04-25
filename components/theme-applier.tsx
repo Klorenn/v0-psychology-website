@@ -1,15 +1,20 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useLayoutEffect } from "react"
 import { useTheme } from "next-themes"
 import { useSiteConfig } from "@/lib/use-site-config"
 import { getThemeById } from "@/lib/themes-extended"
+
+// Use useLayoutEffect on client, useEffect on server (SSR safety)
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect
 
 export function ThemeApplier() {
   const { setTheme } = useTheme()
   const config = useSiteConfig()
 
-  useEffect(() => {
+  // Apply theme colors synchronously before paint
+  useIsomorphicLayoutEffect(() => {
     // Asegurar que el tema tenga valores por defecto
     const themeConfig = config.theme || {
       themeId: "lavender",

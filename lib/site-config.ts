@@ -108,11 +108,11 @@ export interface SiteConfig {
 const defaultConfig: SiteConfig = {
   hero: {
     subtitle: "Psicóloga Clínica",
-    title: "Psicóloga clínica",
+    title: "María San Luis",
     description: "Acompaño procesos de transformación desde una mirada profesional, cálida y actualizada. Un espacio para sanar, integrar tus fortalezas y alcanzar el equilibrio emocional necesario para vivir una vida plena y alineada con lo que realmente valoras.",
     profileImage: "/images/whatsapp-20image-202026-01-01-20at-2019.jpeg",
     imagePosition: "center 25%",
-    ctaPrimary: "Solicitar atención",
+    ctaPrimary: "Agendar Sesión",
     ctaSecondary: "Sobre mí",
     aboutMe: "Soy María San Luis, psicóloga clínica. Mi trabajo se centra en acompañar procesos emocionales desde una mirada respetuosa, cercana y profesional, considerando la historia y el ritmo de cada persona.",
   },
@@ -128,23 +128,23 @@ const defaultConfig: SiteConfig = {
     items: [
       {
         icon: "Heart",
-        title: "Técnicas de Terapia Cognitivo-Conductual",
-        description: "Herramientas basadas en evidencia para identificar y transformar patrones de pensamiento y conducta.",
-      },
-      {
-        icon: "Zap",
-        title: "Técnicas de Psicoterapia Breve",
-        description: "Intervenciones focalizadas y eficientes orientadas a resultados concretos en tiempos acotados.",
-      },
-      {
-        icon: "Star",
-        title: "Terapia Breve para el Manejo de la Autoestima",
-        description: "Estrategias terapéuticas para fortalecer la autoimagen y la valoración personal.",
+        title: "Empatía",
+        description: "Escucha activa y comprensión genuina de su experiencia única.",
       },
       {
         icon: "Shield",
-        title: "Diagnóstico y Evaluación en el Espectro Autista desde una Perspectiva Biopsicosocial",
-        description: "Evaluación integral del espectro autista considerando factores biológicos, psicológicos y sociales.",
+        title: "Confianza",
+        description: "Un vínculo seguro donde usted puede ser completamente usted mismo.",
+      },
+      {
+        icon: "Star",
+        title: "Acompañamiento",
+        description: "Caminaremos juntos en cada paso de su proceso de sanación.",
+      },
+      {
+        icon: "Zap",
+        title: "Confidencialidad",
+        description: "Absoluta privacidad y respeto por su historia personal.",
       },
     ],
   },
